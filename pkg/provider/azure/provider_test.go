@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/grafana/unused-pds/pkg/provider/azure"
 )
 
@@ -39,11 +38,15 @@ func TestListUnusedDisks(t *testing.T) {
 		ctx   = context.Background()
 		subID = "my-subscription"
 		ts    = httptest.NewServer(http.HandlerFunc(mock))
-		c     = compute.NewDisksClientWithBaseURI(ts.URL, subID)
 	)
 	defer ts.Close()
 
-	disks, err := azure.ListUnusedDisks(ctx, c)
+	p, err := azure.NewProvider(subID, azure.WithBaseURI(ts.URL))
+	if err != nil {
+		t.Fatalf("unexpected error creating provider: %v", err)
+	}
+
+	disks, err := p.ListUnusedDisks(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
