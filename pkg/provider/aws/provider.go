@@ -17,8 +17,8 @@ type provider struct {
 	client *ec2.Client
 }
 
-func NewProvider(ctx context.Context) (unused.Provider, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+func NewProvider(ctx context.Context, optFns ...func(*config.LoadOptions) error) (unused.Provider, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot load AWS config: %w", err)
 	}
@@ -29,10 +29,6 @@ func NewProvider(ctx context.Context) (unused.Provider, error) {
 }
 
 func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
-	return ListUnusedDisks(ctx, p.client)
-}
-
-func ListUnusedDisks(ctx context.Context, c ec2.DescribeVolumesAPIClient) (unused.Disks, error) {
 	params := &ec2.DescribeVolumesInput{
 		Filters: []types.Filter{
 			{
@@ -42,12 +38,12 @@ func ListUnusedDisks(ctx context.Context, c ec2.DescribeVolumesAPIClient) (unuse
 		},
 	}
 
-	p := ec2.NewDescribeVolumesPaginator(c, params)
+	pager := ec2.NewDescribeVolumesPaginator(p.client, params)
 
 	var upds unused.Disks
 
-	for p.HasMorePages() {
-		res, err := p.NextPage(ctx)
+	for pager.HasMorePages() {
+		res, err := pager.NextPage(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("cannot list AWS unused disks: %w", err)
 		}
