@@ -17,7 +17,7 @@ func TestDisk(t *testing.T) {
 		compute.Disk{
 			Name: &name,
 			DiskProperties: &compute.DiskProperties{
-				TimeCreated: &date.Time{createdAt},
+				TimeCreated: &date.Time{Time: createdAt},
 			},
 		},
 	}
