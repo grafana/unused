@@ -17,7 +17,7 @@ func (d *disk) Provider() string { return "AWS" }
 
 func (d *disk) Name() string {
 	for _, t := range d.Volume.Tags {
-		if *t.Key == "Name" {
+		if *t.Key == "Name" || *t.Key == "CSIVolumeName" {
 			return *t.Value
 		}
 	}
