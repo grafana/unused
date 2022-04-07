@@ -11,9 +11,10 @@ var _ unused.Disk = &disk{}
 
 type disk struct {
 	types.Volume
+	provider *provider
 }
 
-func (d *disk) Provider() string { return "AWS" }
+func (d *disk) Provider() unused.Provider { return d.provider }
 
 func (d *disk) Name() string {
 	for _, t := range d.Volume.Tags {

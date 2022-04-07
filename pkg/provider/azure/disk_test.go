@@ -20,9 +20,10 @@ func TestDisk(t *testing.T) {
 				TimeCreated: &date.Time{Time: createdAt},
 			},
 		},
+		&provider{},
 	}
 
-	if exp, got := "Azure", d.Provider(); exp != got {
+	if exp, got := "Azure", d.Provider().Name(); exp != got {
 		t.Errorf("expecting Provider() %q, got %q", exp, got)
 	}
 

@@ -8,7 +8,7 @@ type Disks []Disk
 type ByFunc func(p, q Disk) bool
 
 func ByProvider(p, q Disk) bool {
-	return p.Provider() < q.Provider()
+	return p.Provider().Name() < q.Provider().Name()
 }
 
 func ByName(p, q Disk) bool {

@@ -48,7 +48,7 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 						continue
 					}
 
-					disks = append(disks, &disk{d})
+					disks = append(disks, &disk{d, p})
 				}
 			}
 			return nil

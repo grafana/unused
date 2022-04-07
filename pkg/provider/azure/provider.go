@@ -53,7 +53,7 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 			if d.ManagedBy != nil {
 				continue
 			}
-			upds = append(upds, &disk{d})
+			upds = append(upds, &disk{d, p})
 		}
 
 		err := res.NextWithContext(ctx)

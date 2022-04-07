@@ -16,9 +16,10 @@ func TestDisk(t *testing.T) {
 			Name:              "my-disk",
 			CreationTimestamp: createdAt.Format(time.RFC3339),
 		},
+		&provider{},
 	}
 
-	if exp, got := "GCP", d.Provider(); exp != got {
+	if exp, got := "GCP", d.Provider().Name(); exp != got {
 		t.Errorf("expecting Provider() %q, got %q", exp, got)
 	}
 

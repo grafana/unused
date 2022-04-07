@@ -24,9 +24,10 @@ func TestDisk(t *testing.T) {
 						},
 					},
 				},
+				&provider{},
 			}
 
-			if exp, got := "AWS", d.Provider(); exp != got {
+			if exp, got := "AWS", d.Provider().Name(); exp != got {
 				t.Errorf("expecting Provider() %q, got %q", exp, got)
 			}
 

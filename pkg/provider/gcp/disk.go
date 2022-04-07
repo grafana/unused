@@ -12,9 +12,10 @@ var _ unused.Disk = &disk{}
 
 type disk struct {
 	*compute.Disk
+	provider *provider
 }
 
-func (d *disk) Provider() string { return "GCP" }
+func (d *disk) Provider() unused.Provider { return d.provider }
 
 func (d *disk) Name() string { return d.Disk.Name }
 
