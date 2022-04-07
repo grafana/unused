@@ -17,6 +17,8 @@ type provider struct {
 	client *ec2.Client
 }
 
+func (p *provider) Name() string { return "AWS" }
+
 func NewProvider(ctx context.Context, optFns ...func(*config.LoadOptions) error) (unused.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 	if err != nil {

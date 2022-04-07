@@ -19,6 +19,8 @@ type provider struct {
 	svc     *compute.DisksService
 }
 
+func (p *provider) Name() string { return "GCP" }
+
 func NewProvider(ctx context.Context, project string, opts ...option.ClientOption) (unused.Provider, error) {
 	if project == "" {
 		return nil, ErrMissingProject

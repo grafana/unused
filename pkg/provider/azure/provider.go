@@ -15,6 +15,8 @@ type provider struct {
 	client compute.DisksClient
 }
 
+func (p *provider) Name() string { return "Azure" }
+
 type OptionFunc func(c *compute.DisksClient)
 
 func WithBaseURI(uri string) OptionFunc {
