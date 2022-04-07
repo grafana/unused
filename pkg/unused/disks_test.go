@@ -1,32 +1,35 @@
-package unused
+package unused_test
 
 import (
 	"testing"
 	"time"
+
+	"github.com/grafana/unused-pds/pkg/unused"
+	"github.com/grafana/unused-pds/pkg/unused/unusedtest"
 )
 
 func TestDisksSort(t *testing.T) {
 	var (
 		now = time.Now()
 
-		foo = provider("foo")
-		baz = provider("baz")
-		bar = provider("bar")
+		foo = unusedtest.NewProvider("foo")
+		baz = unusedtest.NewProvider("baz")
+		bar = unusedtest.NewProvider("bar")
 
-		gcp = disk{"ghi", &foo, now.Add(-10 * time.Minute)}
-		aws = disk{"abc", &baz, now.Add(-5 * time.Minute)}
-		az  = disk{"def", &bar, now.Add(-2 * time.Minute)}
+		gcp = unusedtest.NewDisk("ghi", foo, now.Add(-10*time.Minute))
+		aws = unusedtest.NewDisk("abc", baz, now.Add(-5*time.Minute))
+		az  = unusedtest.NewDisk("def", bar, now.Add(-2*time.Minute))
 
-		disks = Disks{gcp, aws, az}
+		disks = unused.Disks{gcp, aws, az}
 	)
 
 	tests := map[string]struct {
-		exp []disk
-		by  ByFunc
+		exp []unused.Disk
+		by  unused.ByFunc
 	}{
-		"ByProvider":  {[]disk{az, aws, gcp}, ByProvider},
-		"ByName":      {[]disk{aws, az, gcp}, ByName},
-		"ByCreatedAt": {[]disk{gcp, aws, az}, ByCreatedAt},
+		"ByProvider":  {[]unused.Disk{az, aws, gcp}, unused.ByProvider},
+		"ByName":      {[]unused.Disk{aws, az, gcp}, unused.ByName},
+		"ByCreatedAt": {[]unused.Disk{gcp, aws, az}, unused.ByCreatedAt},
 	}
 
 	for n, tt := range tests {
