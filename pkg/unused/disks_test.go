@@ -1,35 +1,9 @@
 package unused
 
 import (
-	"context"
-	"fmt"
 	"testing"
 	"time"
 )
-
-var _ Disk = disk{}
-
-type disk struct {
-	name      string
-	provider  *provider
-	createdAt time.Time
-}
-
-func (d disk) Provider() Provider   { return d.provider }
-func (d disk) Name() string         { return d.name }
-func (d disk) CreatedAt() time.Time { return d.createdAt }
-
-func (d disk) String() string {
-	return fmt.Sprintf("disk{Provider:%q, Name:%q, CreatedAt:%q}", d.provider.Name(), d.name, d.createdAt.Format(time.RFC3339))
-}
-
-type provider string
-
-func (p *provider) Name() string { return string(*p) }
-
-func (p *provider) ListUnusedDisks(ctx context.Context) (Disks, error) {
-	return nil, nil
-}
 
 func TestDisksSort(t *testing.T) {
 	var (
