@@ -25,14 +25,17 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	if err := realMain(ctx, gcpProjects, awsProfiles, azureSubs); err != nil {
+	var d ui.Displayer
+	d = ui.NewTable(os.Stdout)
+
+	if err := realMain(ctx, d, gcpProjects, awsProfiles, azureSubs); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string) error {
+func realMain(ctx context.Context, d ui.Displayer, gcpProjects, awsProfiles, azureSubs []string) error {
 	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		return err
@@ -43,5 +46,5 @@ func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string)
 		return err
 	}
 
-	return ui.DumpAsTable(os.Stdout, disks)
+	return d.Display(ctx, disks)
 }

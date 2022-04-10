@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -8,8 +9,18 @@ import (
 	"github.com/grafana/unused"
 )
 
-func DumpAsTable(out io.Writer, disks unused.Disks) error {
-	w := tabwriter.NewWriter(out, 8, 2, 0, ' ', 0)
+var _ Displayer = Table{}
+
+type Table struct {
+	out io.Writer
+}
+
+func NewTable(out io.Writer) Table {
+	return Table{out}
+}
+
+func (t Table) Display(ctx context.Context, disks unused.Disks) error {
+	w := tabwriter.NewWriter(t.out, 8, 2, 0, ' ', 0)
 
 	fmt.Fprintln(w, "PROVIDER\tNAME\tMETADATA")
 	for _, d := range disks {
