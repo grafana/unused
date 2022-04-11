@@ -62,6 +62,28 @@ func TestListUnusedDisks(t *testing.T) {
          <volumeType>standard</volumeType>
          <encrypted>true</encrypted>
          <multiAttachEnabled>false</multiAttachEnabled>
+         <tagSet>
+            <item>
+               <key>CSIVolumeName</key>
+               <value>prometheus-1</value>
+            </item>
+            <item>
+               <key>ebs.csi.aws.com/cluster</key>
+               <value>true</value>
+            </item>
+            <item>
+               <key>kubernetes.io-created-for-pv-name</key>
+               <value>pvc-prometheus-1</value>
+            </item>
+            <item>
+               <key>kubernetes.io-created-for-pvc-name</key>
+               <value>prometheus-1</value>
+            </item>
+            <item>
+               <key>kubernetes.io-created-for-pvc-namespace</key>
+               <value>monitoring</value>
+            </item>
+         </tagSet>
       </item>
    </volumeSet>
 </DescribeVolumesResponse>`))
@@ -95,5 +117,11 @@ func TestListUnusedDisks(t *testing.T) {
 	}
 
 	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "us-east-1a"}, disks[0].Meta())
-	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "us-west-2b"}, disks[1].Meta())
+	unusedtest.AssertEqualMeta(t, unused.Meta{
+		"zone":                                    "us-west-2b",
+		"ebs.csi.aws.com/cluster":                 "true",
+		"kubernetes.io-created-for-pv-name":       "pvc-prometheus-1",
+		"kubernetes.io-created-for-pvc-name":      "prometheus-1",
+		"kubernetes.io-created-for-pvc-namespace": "monitoring",
+	}, disks[1].Meta())
 }

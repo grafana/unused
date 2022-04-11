@@ -48,7 +48,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 					Disks: []*compute.Disk{
 						{Name: "disk-1", Zone: "us-central1-a"},
 						{Name: "with-users", Users: []string{"inkel"}},
-						{Name: "disk-2", Zone: "eu-west2-b"},
+						{Name: "disk-2", Zone: "eu-west2-b", Description: `{"kubernetes.io-created-for-pv-name":"pvc-prometheus-1","kubernetes.io-created-for-pvc-name":"prometheus-1","kubernetes.io-created-for-pvc-namespace":"monitoring"}`},
 					},
 				},
 			},
@@ -74,5 +74,10 @@ func TestProviderListUnusedDisks(t *testing.T) {
 	}
 
 	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "us-central1-a"}, disks[0].Meta())
-	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "eu-west2-b"}, disks[1].Meta())
+	unusedtest.AssertEqualMeta(t, unused.Meta{
+		"zone":                                    "eu-west2-b",
+		"kubernetes.io-created-for-pv-name":       "pvc-prometheus-1",
+		"kubernetes.io-created-for-pvc-name":      "prometheus-1",
+		"kubernetes.io-created-for-pvc-namespace": "monitoring",
+	}, disks[1].Meta())
 }

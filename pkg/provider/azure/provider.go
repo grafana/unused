@@ -60,9 +60,13 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 			if d.ManagedBy != nil {
 				continue
 			}
-			m := unused.Meta{
-				"location": *d.Location,
+
+			m := make(unused.Meta, len(d.Tags)+1)
+			m["location"] = *d.Location
+			for k, v := range d.Tags {
+				m[k] = *v
 			}
+
 			upds = append(upds, &disk{d, p, m})
 		}
 

@@ -2,6 +2,7 @@ package gcp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -56,10 +57,10 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 						continue
 					}
 
-					m := unused.Meta{
-						"zone": d.Zone,
+					m, err := diskMetadata(d)
+					if err != nil {
+						// TODO do something with this error
 					}
-
 					disks = append(disks, &disk{d, p, m})
 				}
 			}
@@ -70,4 +71,20 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	}
 
 	return disks, nil
+}
+
+func diskMetadata(d *compute.Disk) (unused.Meta, error) {
+	m := make(unused.Meta)
+
+	// GCP sends Kubernetes metadata as a JSON string in the
+	// Description field.
+	if d.Description != "" {
+		if err := json.Unmarshal([]byte(d.Description), &m); err != nil {
+			return nil, fmt.Errorf("cannot decode JSON description for disk %s: %w", d.Name, err)
+		}
+	}
+
+	m["zone"] = d.Zone
+
+	return m, nil
 }

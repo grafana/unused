@@ -36,7 +36,12 @@ func TestListUnusedDisks(t *testing.T) {
 		w.Write([]byte(`{
 "value": [
   {"name":"disk-1","managedBy":"grafana"},
-  {"name":"disk-2","location":"germanywestcentral"},
+  {"name":"disk-2","location":"germanywestcentral","tags": {
+      "created-by": "kubernetes-azure-dd",
+      "kubernetes.io-created-for-pv-name": "pvc-prometheus-1",
+      "kubernetes.io-created-for-pvc-name": "prometheus-1",
+      "kubernetes.io-created-for-pvc-namespace": "monitoring"
+  }},
   {"name":"disk-3","managedBy":"grafana"}
 ]
 }`))
@@ -64,6 +69,10 @@ func TestListUnusedDisks(t *testing.T) {
 	}
 
 	unusedtest.AssertEqualMeta(t, unused.Meta{
-		"location": "germanywestcentral",
+		"location":                                "germanywestcentral",
+		"created-by":                              "kubernetes-azure-dd",
+		"kubernetes.io-created-for-pv-name":       "pvc-prometheus-1",
+		"kubernetes.io-created-for-pvc-name":      "prometheus-1",
+		"kubernetes.io-created-for-pvc-namespace": "monitoring",
 	}, disks[0].Meta())
 }
