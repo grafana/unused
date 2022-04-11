@@ -24,7 +24,7 @@ func (p *provider) Name() string { return "GCP" }
 
 func (p *provider) Meta() unused.Meta { return p.meta }
 
-func NewProvider(ctx context.Context, project string, opts ...option.ClientOption) (unused.Provider, error) {
+func NewProvider(ctx context.Context, project string, meta unused.Meta, opts ...option.ClientOption) (unused.Provider, error) {
 	if project == "" {
 		return nil, ErrMissingProject
 	}
@@ -34,9 +34,14 @@ func NewProvider(ctx context.Context, project string, opts ...option.ClientOptio
 		return nil, fmt.Errorf("cannot create compute service: %w", err)
 	}
 
+	if meta == nil {
+		meta = make(unused.Meta)
+	}
+
 	return &provider{
 		project: project,
 		svc:     compute.NewDisksService(svc),
+		meta:    meta,
 	}, nil
 }
 
