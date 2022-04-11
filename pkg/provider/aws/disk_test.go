@@ -25,6 +25,7 @@ func TestDisk(t *testing.T) {
 					},
 				},
 				&provider{},
+				nil,
 			}
 
 			if exp, got := "AWS", d.Provider().Name(); exp != got {

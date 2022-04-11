@@ -46,9 +46,9 @@ func TestProviderListUnusedDisks(t *testing.T) {
 			Items: map[string]compute.DisksScopedList{
 				"foo": {
 					Disks: []*compute.Disk{
-						{Name: "disk-1"},
+						{Name: "disk-1", Zone: "us-central1-a"},
 						{Name: "with-users", Users: []string{"inkel"}},
-						{Name: "disk-2"},
+						{Name: "disk-2", Zone: "eu-west2-b"},
 					},
 				},
 			},
@@ -72,4 +72,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 	if exp, got := 2, len(disks); exp != got {
 		t.Errorf("expecting %d disks, got %d", exp, got)
 	}
+
+	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "us-central1-a"}, disks[0].Meta())
+	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "eu-west2-b"}, disks[1].Meta())
 }

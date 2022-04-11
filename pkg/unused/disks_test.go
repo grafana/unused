@@ -37,10 +37,36 @@ func TestDisksSort(t *testing.T) {
 			disks.Sort(tt.by)
 
 			for i, got := range disks {
-				if e := tt.exp[i]; e != got {
-					t.Errorf("expecting disks[%d] %v, got %v", i, e, got)
-				}
+				assertEqualDisks(t, tt.exp[i], got)
 			}
 		})
+	}
+}
+
+func assertEqualDisks(t *testing.T, p, q unused.Disk) {
+	t.Helper()
+
+	if e, g := p.Name(), q.Name(); e != g {
+		t.Errorf("expecting name %q, got %q", e, g)
+	}
+
+	if e, g := p.Provider(), q.Provider(); e != g {
+		t.Errorf("expecting provider %v, got %v", e, g)
+	}
+
+	if e, g := p.CreatedAt(), q.CreatedAt(); !e.Equal(g) {
+		t.Errorf("expecting created at %v, got %v", e, g)
+	}
+
+	mp, mq := p.Meta(), q.Meta()
+
+	if e, g := len(mp), len(mq); e != g {
+		t.Fatalf("expecting %d metadata items, got %d", e, g)
+	}
+
+	for k, v := range mp {
+		if mq[k] != v {
+			t.Errorf("expecting metadata %q with value %q, got %q", k, v, mq[k])
+		}
 	}
 }

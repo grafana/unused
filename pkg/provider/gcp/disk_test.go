@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/grafana/unused-pds/pkg/unused"
+	"github.com/grafana/unused-pds/pkg/unused/unusedtest"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -17,6 +18,7 @@ func TestDisk(t *testing.T) {
 			CreationTimestamp: createdAt.Format(time.RFC3339),
 		},
 		&provider{},
+		unused.Meta{"foo": "bar"},
 	}
 
 	if exp, got := "GCP", d.Provider().Name(); exp != got {
@@ -30,4 +32,6 @@ func TestDisk(t *testing.T) {
 	if !createdAt.Equal(d.CreatedAt()) {
 		t.Errorf("expecting CreatedAt() %v, got %v", createdAt, d.CreatedAt())
 	}
+
+	unusedtest.AssertEqualMeta(t, unused.Meta{"foo": "bar"}, d.Meta())
 }

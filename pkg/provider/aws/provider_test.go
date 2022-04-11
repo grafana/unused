@@ -56,7 +56,7 @@ func TestListUnusedDisks(t *testing.T) {
          <volumeId>vol-abcdef01234567890</volumeId>
          <size>120</size>
          <snapshotId/>
-         <availabilityZone>us-east-1a</availabilityZone>
+         <availabilityZone>us-west-2b</availabilityZone>
          <status>available</status>
          <createTime>2022-02-12T17:25:21.000Z</createTime>
          <volumeType>standard</volumeType>
@@ -93,4 +93,7 @@ func TestListUnusedDisks(t *testing.T) {
 	if exp, got := 2, len(disks); exp != got {
 		t.Errorf("expecting %d disks, got %d", exp, got)
 	}
+
+	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "us-east-1a"}, disks[0].Meta())
+	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "us-west-2b"}, disks[1].Meta())
 }

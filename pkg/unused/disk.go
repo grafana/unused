@@ -12,4 +12,7 @@ type Disk interface {
 
 	// CreatedAt returns the time.Time when the disk was created
 	CreatedAt() time.Time
+
+	// Meta returns the disk metadata
+	Meta() Meta
 }

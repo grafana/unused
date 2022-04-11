@@ -36,7 +36,7 @@ func TestListUnusedDisks(t *testing.T) {
 		w.Write([]byte(`{
 "value": [
   {"name":"disk-1","managedBy":"grafana"},
-  {"name":"disk-2"},
+  {"name":"disk-2","location":"germanywestcentral"},
   {"name":"disk-3","managedBy":"grafana"}
 ]
 }`))
@@ -62,4 +62,8 @@ func TestListUnusedDisks(t *testing.T) {
 	if exp, got := 1, len(disks); exp != got {
 		t.Errorf("expecting %d disks, got %d", exp, got)
 	}
+
+	unusedtest.AssertEqualMeta(t, unused.Meta{
+		"location": "germanywestcentral",
+	}, disks[0].Meta())
 }

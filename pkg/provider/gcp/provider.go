@@ -56,7 +56,11 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 						continue
 					}
 
-					disks = append(disks, &disk{d, p})
+					m := unused.Meta{
+						"zone": d.Zone,
+					}
+
+					disks = append(disks, &disk{d, p, m})
 				}
 			}
 			return nil

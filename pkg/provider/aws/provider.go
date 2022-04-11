@@ -59,7 +59,11 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 		}
 
 		for _, v := range res.Volumes {
-			upds = append(upds, &disk{v, p})
+			m := unused.Meta{
+				"zone": *v.AvailabilityZone,
+			}
+
+			upds = append(upds, &disk{v, p, m})
 		}
 	}
 
