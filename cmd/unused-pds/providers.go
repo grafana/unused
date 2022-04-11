@@ -24,7 +24,7 @@ func createProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 	}
 
 	for _, profile := range awsProfiles {
-		p, err := aws.NewProvider(ctx, config.WithSharedConfigProfile(profile))
+		p, err := aws.NewProvider(ctx, map[string]string{"profile": profile}, config.WithSharedConfigProfile(profile))
 		if err != nil {
 			return nil, fmt.Errorf("creating AWS provider for profile %s: %w", profile, err)
 		}

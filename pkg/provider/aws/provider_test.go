@@ -10,18 +10,53 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/grafana/unused-pds/pkg/provider/aws"
+	"github.com/grafana/unused-pds/pkg/unused"
 )
 
 func TestNewProvider(t *testing.T) {
 	ctx := context.Background()
 
-	p, err := aws.NewProvider(ctx)
+	p, err := aws.NewProvider(ctx, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if p == nil {
 		t.Fatal("expecting Provider, got nil")
+	}
+}
+
+func TestProviderMeta(t *testing.T) {
+	ctx := context.Background()
+
+	tests := map[string]unused.Meta{
+		"empty": nil,
+		"respect values": map[string]string{
+			"foo": "bar",
+		},
+	}
+
+	for name, expMeta := range tests {
+		t.Run(name, func(t *testing.T) {
+			p, err := aws.NewProvider(ctx, expMeta)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			meta := p.Meta()
+			if meta == nil {
+				t.Error("expecting metadata, got nil")
+			}
+
+			if exp, got := len(expMeta), len(meta); exp != got {
+				t.Errorf("expecting %d metadata value, got %d", exp, got)
+			}
+			for k, v := range expMeta {
+				if exp, got := v, meta[k]; exp != got {
+					t.Errorf("expecting metadata %q with value %q, got %q", k, exp, got)
+				}
+			}
+		})
 	}
 }
 
@@ -60,7 +95,7 @@ func TestListUnusedDisks(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	p, err := aws.NewProvider(ctx,
+	p, err := aws.NewProvider(ctx, nil,
 		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 			Value: awsutil.Credentials{
 				AccessKeyID:     "AKID",

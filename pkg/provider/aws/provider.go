@@ -22,14 +22,19 @@ func (p *provider) Name() string { return "AWS" }
 
 func (p *provider) Meta() unused.Meta { return p.meta }
 
-func NewProvider(ctx context.Context, optFns ...func(*config.LoadOptions) error) (unused.Provider, error) {
+func NewProvider(ctx context.Context, meta unused.Meta, optFns ...func(*config.LoadOptions) error) (unused.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot load AWS config: %w", err)
 	}
 
+	if meta == nil {
+		meta = make(unused.Meta)
+	}
+
 	return &provider{
 		client: ec2.NewFromConfig(cfg),
+		meta:   meta,
 	}, nil
 }
 
