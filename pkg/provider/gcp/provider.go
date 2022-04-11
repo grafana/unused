@@ -2,6 +2,7 @@ package gcp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -17,11 +18,14 @@ var _ unused.Provider = &provider{}
 type provider struct {
 	project string
 	svc     *compute.DisksService
+	meta    unused.Meta
 }
 
 func (p *provider) Name() string { return "GCP" }
 
-func NewProvider(ctx context.Context, project string, opts ...option.ClientOption) (unused.Provider, error) {
+func (p *provider) Meta() unused.Meta { return p.meta }
+
+func NewProvider(ctx context.Context, project string, meta unused.Meta, opts ...option.ClientOption) (unused.Provider, error) {
 	if project == "" {
 		return nil, ErrMissingProject
 	}
@@ -31,9 +35,14 @@ func NewProvider(ctx context.Context, project string, opts ...option.ClientOptio
 		return nil, fmt.Errorf("cannot create compute service: %w", err)
 	}
 
+	if meta == nil {
+		meta = make(unused.Meta)
+	}
+
 	return &provider{
 		project: project,
 		svc:     compute.NewDisksService(svc),
+		meta:    meta,
 	}, nil
 }
 
@@ -48,7 +57,11 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 						continue
 					}
 
-					disks = append(disks, &disk{d, p})
+					m, err := diskMetadata(d)
+					if err != nil {
+						// TODO do something with this error
+					}
+					disks = append(disks, &disk{d, p, m})
 				}
 			}
 			return nil
@@ -58,4 +71,20 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	}
 
 	return disks, nil
+}
+
+func diskMetadata(d *compute.Disk) (unused.Meta, error) {
+	m := make(unused.Meta)
+
+	// GCP sends Kubernetes metadata as a JSON string in the
+	// Description field.
+	if d.Description != "" {
+		if err := json.Unmarshal([]byte(d.Description), &m); err != nil {
+			return nil, fmt.Errorf("cannot decode JSON description for disk %s: %w", d.Name, err)
+		}
+	}
+
+	m["zone"] = d.Zone
+
+	return m, nil
 }

@@ -7,11 +7,13 @@ import (
 	"testing"
 
 	"github.com/grafana/unused-pds/pkg/provider/azure"
+	"github.com/grafana/unused-pds/pkg/unused"
+	"github.com/grafana/unused-pds/pkg/unused/unusedtest"
 )
 
 func TestNewProvider(t *testing.T) {
 	subID := "my-subscription"
-	p, err := azure.NewProvider(subID)
+	p, err := azure.NewProvider(subID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -21,6 +23,12 @@ func TestNewProvider(t *testing.T) {
 	}
 }
 
+func TestProviderMeta(t *testing.T) {
+	unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+		return azure.NewProvider("my-subscription", meta)
+	})
+}
+
 func TestListUnusedDisks(t *testing.T) {
 	// Azure is really strange when it comes to marhsaling JSON, so,
 	// yeah, this is an awful hack.
@@ -28,7 +36,12 @@ func TestListUnusedDisks(t *testing.T) {
 		w.Write([]byte(`{
 "value": [
   {"name":"disk-1","managedBy":"grafana"},
-  {"name":"disk-2"},
+  {"name":"disk-2","location":"germanywestcentral","tags": {
+      "created-by": "kubernetes-azure-dd",
+      "kubernetes.io-created-for-pv-name": "pvc-prometheus-1",
+      "kubernetes.io-created-for-pvc-name": "prometheus-1",
+      "kubernetes.io-created-for-pvc-namespace": "monitoring"
+  }},
   {"name":"disk-3","managedBy":"grafana"}
 ]
 }`))
@@ -41,7 +54,7 @@ func TestListUnusedDisks(t *testing.T) {
 	)
 	defer ts.Close()
 
-	p, err := azure.NewProvider(subID, azure.WithBaseURI(ts.URL))
+	p, err := azure.NewProvider(subID, nil, azure.WithBaseURI(ts.URL))
 	if err != nil {
 		t.Fatalf("unexpected error creating provider: %v", err)
 	}
@@ -54,4 +67,12 @@ func TestListUnusedDisks(t *testing.T) {
 	if exp, got := 1, len(disks); exp != got {
 		t.Errorf("expecting %d disks, got %d", exp, got)
 	}
+
+	unusedtest.AssertEqualMeta(t, unused.Meta{
+		"location":                                "germanywestcentral",
+		"created-by":                              "kubernetes-azure-dd",
+		"kubernetes.io-created-for-pv-name":       "pvc-prometheus-1",
+		"kubernetes.io-created-for-pvc-name":      "prometheus-1",
+		"kubernetes.io-created-for-pvc-namespace": "monitoring",
+	}, disks[0].Meta())
 }

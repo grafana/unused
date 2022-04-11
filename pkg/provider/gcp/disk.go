@@ -13,6 +13,7 @@ var _ unused.Disk = &disk{}
 type disk struct {
 	*compute.Disk
 	provider *provider
+	meta     unused.Meta
 }
 
 func (d *disk) Provider() unused.Provider { return d.provider }
@@ -25,3 +26,5 @@ func (d *disk) CreatedAt() time.Time {
 
 	return c
 }
+
+func (d *disk) Meta() unused.Meta { return d.meta }

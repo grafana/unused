@@ -18,9 +18,9 @@ func TestNewProvider(t *testing.T) {
 
 	for _, tt := range tests {
 		ctx := context.Background()
-		p := unusedtest.NewProvider(tt.name, tt.disks...)
+		p := unusedtest.NewProvider(tt.name, nil, tt.disks...)
 
-		if p.Name() != "no-disks" {
+		if p.Name() != tt.name {
 			t.Errorf("unexpected provider.Name() %q", p.Name())
 		}
 
@@ -39,4 +39,10 @@ func TestNewProvider(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestProviderMeta(t *testing.T) {
+	unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+		return unusedtest.NewProvider("my-provider", meta, nil), nil
+	})
 }

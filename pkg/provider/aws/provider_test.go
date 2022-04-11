@@ -10,12 +10,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/grafana/unused-pds/pkg/provider/aws"
+	"github.com/grafana/unused-pds/pkg/unused"
+	"github.com/grafana/unused-pds/pkg/unused/unusedtest"
 )
 
 func TestNewProvider(t *testing.T) {
 	ctx := context.Background()
 
-	p, err := aws.NewProvider(ctx)
+	p, err := aws.NewProvider(ctx, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -23,6 +25,12 @@ func TestNewProvider(t *testing.T) {
 	if p == nil {
 		t.Fatal("expecting Provider, got nil")
 	}
+}
+
+func TestProviderMeta(t *testing.T) {
+	unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+		return aws.NewProvider(context.Background(), meta)
+	})
 }
 
 func TestListUnusedDisks(t *testing.T) {
@@ -48,19 +56,41 @@ func TestListUnusedDisks(t *testing.T) {
          <volumeId>vol-abcdef01234567890</volumeId>
          <size>120</size>
          <snapshotId/>
-         <availabilityZone>us-east-1a</availabilityZone>
+         <availabilityZone>us-west-2b</availabilityZone>
          <status>available</status>
          <createTime>2022-02-12T17:25:21.000Z</createTime>
          <volumeType>standard</volumeType>
          <encrypted>true</encrypted>
          <multiAttachEnabled>false</multiAttachEnabled>
+         <tagSet>
+            <item>
+               <key>CSIVolumeName</key>
+               <value>prometheus-1</value>
+            </item>
+            <item>
+               <key>ebs.csi.aws.com/cluster</key>
+               <value>true</value>
+            </item>
+            <item>
+               <key>kubernetes.io-created-for-pv-name</key>
+               <value>pvc-prometheus-1</value>
+            </item>
+            <item>
+               <key>kubernetes.io-created-for-pvc-name</key>
+               <value>prometheus-1</value>
+            </item>
+            <item>
+               <key>kubernetes.io-created-for-pvc-namespace</key>
+               <value>monitoring</value>
+            </item>
+         </tagSet>
       </item>
    </volumeSet>
 </DescribeVolumesResponse>`))
 	}))
 	defer ts.Close()
 
-	p, err := aws.NewProvider(ctx,
+	p, err := aws.NewProvider(ctx, nil,
 		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 			Value: awsutil.Credentials{
 				AccessKeyID:     "AKID",
@@ -85,4 +115,13 @@ func TestListUnusedDisks(t *testing.T) {
 	if exp, got := 2, len(disks); exp != got {
 		t.Errorf("expecting %d disks, got %d", exp, got)
 	}
+
+	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "us-east-1a"}, disks[0].Meta())
+	unusedtest.AssertEqualMeta(t, unused.Meta{
+		"zone":                                    "us-west-2b",
+		"ebs.csi.aws.com/cluster":                 "true",
+		"kubernetes.io-created-for-pv-name":       "pvc-prometheus-1",
+		"kubernetes.io-created-for-pvc-name":      "prometheus-1",
+		"kubernetes.io-created-for-pvc-namespace": "monitoring",
+	}, disks[1].Meta())
 }

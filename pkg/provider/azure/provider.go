@@ -13,9 +13,12 @@ var _ unused.Provider = &provider{}
 
 type provider struct {
 	client compute.DisksClient
+	meta   unused.Meta
 }
 
 func (p *provider) Name() string { return "Azure" }
+
+func (p *provider) Meta() unused.Meta { return p.meta }
 
 type OptionFunc func(c *compute.DisksClient)
 
@@ -31,13 +34,17 @@ func WithAuthorizer(authorizer autorest.Authorizer) OptionFunc {
 	}
 }
 
-func NewProvider(subID string, opts ...OptionFunc) (unused.Provider, error) {
+func NewProvider(subID string, meta unused.Meta, opts ...OptionFunc) (unused.Provider, error) {
 	c := compute.NewDisksClient(subID)
 	for _, o := range opts {
 		o(&c)
 	}
 
-	return &provider{client: c}, nil
+	if meta == nil {
+		meta = make(unused.Meta)
+	}
+
+	return &provider{client: c, meta: meta}, nil
 }
 
 func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
@@ -53,7 +60,14 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 			if d.ManagedBy != nil {
 				continue
 			}
-			upds = append(upds, &disk{d, p})
+
+			m := make(unused.Meta, len(d.Tags)+1)
+			m["location"] = *d.Location
+			for k, v := range d.Tags {
+				m[k] = *v
+			}
+
+			upds = append(upds, &disk{d, p, m})
 		}
 
 		err := res.NextWithContext(ctx)

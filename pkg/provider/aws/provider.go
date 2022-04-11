@@ -15,18 +15,26 @@ var _ unused.Provider = &provider{}
 
 type provider struct {
 	client *ec2.Client
+	meta   unused.Meta
 }
 
 func (p *provider) Name() string { return "AWS" }
 
-func NewProvider(ctx context.Context, optFns ...func(*config.LoadOptions) error) (unused.Provider, error) {
+func (p *provider) Meta() unused.Meta { return p.meta }
+
+func NewProvider(ctx context.Context, meta unused.Meta, optFns ...func(*config.LoadOptions) error) (unused.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot load AWS config: %w", err)
 	}
 
+	if meta == nil {
+		meta = make(unused.Meta)
+	}
+
 	return &provider{
 		client: ec2.NewFromConfig(cfg),
+		meta:   meta,
 	}, nil
 }
 
@@ -51,7 +59,19 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 		}
 
 		for _, v := range res.Volumes {
-			upds = append(upds, &disk{v, p})
+			m := unused.Meta{
+				"zone": *v.AvailabilityZone,
+			}
+			for _, t := range v.Tags {
+				k := *t.Key
+				if k == "Name" || k == "CSIVolumeName" {
+					// already returned in Name()
+					continue
+				}
+				m[k] = *t.Value
+			}
+
+			upds = append(upds, &disk{v, p, m})
 		}
 	}
 

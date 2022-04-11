@@ -21,6 +21,7 @@ func TestDisk(t *testing.T) {
 			},
 		},
 		&provider{},
+		nil,
 	}
 
 	if exp, got := "Azure", d.Provider().Name(); exp != got {

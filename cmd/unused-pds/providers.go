@@ -16,7 +16,7 @@ func createProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 	providers := make([]unused.Provider, 0, len(gcpProjects)+len(awsProfiles)+len(azureSubs))
 
 	for _, projectID := range gcpProjects {
-		p, err := gcp.NewProvider(ctx, projectID)
+		p, err := gcp.NewProvider(ctx, projectID, map[string]string{"project": projectID})
 		if err != nil {
 			return nil, fmt.Errorf("creating GCP provider for project %s: %w", projectID, err)
 		}
@@ -24,7 +24,7 @@ func createProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 	}
 
 	for _, profile := range awsProfiles {
-		p, err := aws.NewProvider(ctx, config.WithSharedConfigProfile(profile))
+		p, err := aws.NewProvider(ctx, map[string]string{"profile": profile}, config.WithSharedConfigProfile(profile))
 		if err != nil {
 			return nil, fmt.Errorf("creating AWS provider for profile %s: %w", profile, err)
 		}
@@ -38,7 +38,7 @@ func createProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 		}
 
 		for _, sub := range azureSubs {
-			p, err := azure.NewProvider(sub, azure.WithAuthorizer(a))
+			p, err := azure.NewProvider(sub, map[string]string{"subscription": sub}, azure.WithAuthorizer(a))
 			if err != nil {
 				return nil, fmt.Errorf("creating Azure provider for subscription %s: %w", sub, err)
 			}
