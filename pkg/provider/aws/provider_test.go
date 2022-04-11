@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/grafana/unused-pds/pkg/provider/aws"
 	"github.com/grafana/unused-pds/pkg/unused"
+	"github.com/grafana/unused-pds/pkg/unused/unusedtest"
 )
 
 func TestNewProvider(t *testing.T) {
@@ -27,37 +28,9 @@ func TestNewProvider(t *testing.T) {
 }
 
 func TestProviderMeta(t *testing.T) {
-	ctx := context.Background()
-
-	tests := map[string]unused.Meta{
-		"empty": nil,
-		"respect values": map[string]string{
-			"foo": "bar",
-		},
-	}
-
-	for name, expMeta := range tests {
-		t.Run(name, func(t *testing.T) {
-			p, err := aws.NewProvider(ctx, expMeta)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			meta := p.Meta()
-			if meta == nil {
-				t.Error("expecting metadata, got nil")
-			}
-
-			if exp, got := len(expMeta), len(meta); exp != got {
-				t.Errorf("expecting %d metadata value, got %d", exp, got)
-			}
-			for k, v := range expMeta {
-				if exp, got := v, meta[k]; exp != got {
-					t.Errorf("expecting metadata %q with value %q, got %q", k, exp, got)
-				}
-			}
-		})
-	}
+	unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+		return aws.NewProvider(context.Background(), meta)
+	})
 }
 
 func TestListUnusedDisks(t *testing.T) {

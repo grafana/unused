@@ -10,6 +10,7 @@ import (
 
 	"github.com/grafana/unused-pds/pkg/provider/gcp"
 	"github.com/grafana/unused-pds/pkg/unused"
+	"github.com/grafana/unused-pds/pkg/unused/unusedtest"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 )
@@ -26,35 +27,9 @@ func TestNewProvider(t *testing.T) {
 	})
 
 	t.Run("metadata", func(t *testing.T) {
-		tests := map[string]unused.Meta{
-			"empty": nil,
-			"respect values": map[string]string{
-				"foo": "bar",
-			},
-		}
-
-		for name, expMeta := range tests {
-			t.Run(name, func(t *testing.T) {
-				p, err := gcp.NewProvider(context.Background(), "my-provider", expMeta)
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-
-				meta := p.Meta()
-				if meta == nil {
-					t.Error("expecting metadata, got nil")
-				}
-
-				if exp, got := len(expMeta), len(meta); exp != got {
-					t.Errorf("expecting %d metadata value, got %d", exp, got)
-				}
-				for k, v := range expMeta {
-					if exp, got := v, meta[k]; exp != got {
-						t.Errorf("expecting metadata %q with value %q, got %q", k, exp, got)
-					}
-				}
-			})
-		}
+		unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+			return gcp.NewProvider(context.Background(), "my-provider", meta)
+		})
 	})
 }
 
