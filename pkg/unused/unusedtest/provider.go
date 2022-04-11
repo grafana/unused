@@ -14,8 +14,11 @@ type provider struct {
 	meta  unused.Meta
 }
 
-func NewProvider(name string, disks ...unused.Disk) *provider {
-	return &provider{name, disks, nil}
+func NewProvider(name string, meta unused.Meta, disks ...unused.Disk) *provider {
+	if meta == nil {
+		meta = make(unused.Meta)
+	}
+	return &provider{name, disks, meta}
 }
 
 func (p *provider) Name() string { return p.name }
