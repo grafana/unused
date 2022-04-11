@@ -7,11 +7,13 @@ import (
 	"testing"
 
 	"github.com/grafana/unused-pds/pkg/provider/azure"
+	"github.com/grafana/unused-pds/pkg/unused"
+	"github.com/grafana/unused-pds/pkg/unused/unusedtest"
 )
 
 func TestNewProvider(t *testing.T) {
 	subID := "my-subscription"
-	p, err := azure.NewProvider(subID)
+	p, err := azure.NewProvider(subID, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -19,6 +21,12 @@ func TestNewProvider(t *testing.T) {
 	if p == nil {
 		t.Fatal("expecting provider")
 	}
+}
+
+func TestProviderMeta(t *testing.T) {
+	unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+		return azure.NewProvider("my-subscription", meta)
+	})
 }
 
 func TestListUnusedDisks(t *testing.T) {
@@ -41,7 +49,7 @@ func TestListUnusedDisks(t *testing.T) {
 	)
 	defer ts.Close()
 
-	p, err := azure.NewProvider(subID, azure.WithBaseURI(ts.URL))
+	p, err := azure.NewProvider(subID, nil, azure.WithBaseURI(ts.URL))
 	if err != nil {
 		t.Fatalf("unexpected error creating provider: %v", err)
 	}

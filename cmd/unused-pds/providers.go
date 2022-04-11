@@ -38,7 +38,7 @@ func createProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 		}
 
 		for _, sub := range azureSubs {
-			p, err := azure.NewProvider(sub, azure.WithAuthorizer(a))
+			p, err := azure.NewProvider(sub, map[string]string{"subscription": sub}, azure.WithAuthorizer(a))
 			if err != nil {
 				return nil, fmt.Errorf("creating Azure provider for subscription %s: %w", sub, err)
 			}
