@@ -13,9 +13,12 @@ var _ unused.Provider = &provider{}
 
 type provider struct {
 	client compute.DisksClient
+	meta   unused.Meta
 }
 
 func (p *provider) Name() string { return "Azure" }
+
+func (p *provider) Meta() unused.Meta { return p.meta }
 
 type OptionFunc func(c *compute.DisksClient)
 

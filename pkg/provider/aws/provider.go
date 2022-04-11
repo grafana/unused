@@ -15,9 +15,12 @@ var _ unused.Provider = &provider{}
 
 type provider struct {
 	client *ec2.Client
+	meta   unused.Meta
 }
 
 func (p *provider) Name() string { return "AWS" }
+
+func (p *provider) Meta() unused.Meta { return p.meta }
 
 func NewProvider(ctx context.Context, optFns ...func(*config.LoadOptions) error) (unused.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, optFns...)

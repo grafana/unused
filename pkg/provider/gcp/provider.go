@@ -17,9 +17,12 @@ var _ unused.Provider = &provider{}
 type provider struct {
 	project string
 	svc     *compute.DisksService
+	meta    unused.Meta
 }
 
 func (p *provider) Name() string { return "GCP" }
+
+func (p *provider) Meta() unused.Meta { return p.meta }
 
 func NewProvider(ctx context.Context, project string, opts ...option.ClientOption) (unused.Provider, error) {
 	if project == "" {
