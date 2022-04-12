@@ -19,10 +19,12 @@ func (l logger) Log(msg string, labels ...interface{}) {
 	for i, j := 0, (len(labels)/2)*2; i < j; i += 2 {
 		fmt.Fprintf(w, " %s=", labels[i])
 		switch v := labels[i+1].(type) {
-		case string, fmt.Stringer:
-			fmt.Fprintf(w, "%q", v)
+		case time.Time:
+			fmt.Fprintf(w, "%q", v.Format(time.RFC3339))
 		case error:
 			fmt.Fprintf(w, "%q", v.Error())
+		case string, fmt.Stringer:
+			fmt.Fprintf(w, "%q", v)
 		default:
 			fmt.Fprint(w, v)
 		}
