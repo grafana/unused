@@ -24,7 +24,7 @@ func New(out io.Writer, verbose bool) table {
 func (t table) Display(ctx context.Context, disks unused.Disks) error {
 	w := tabwriter.NewWriter(t.out, 8, 4, 2, ' ', 0)
 
-	fmt.Fprintln(w, "PROVIDER\tNAME")
+	fmt.Fprint(w, "PROVIDER\tNAME")
 	if t.verbose {
 		fmt.Fprint(w, "\tMETADATA")
 	}
