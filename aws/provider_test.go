@@ -9,8 +9,8 @@ import (
 	awsutil "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/grafana/unused/aws"
 	"github.com/grafana/unused"
+	"github.com/grafana/unused/aws"
 	"github.com/grafana/unused/unusedtest"
 )
 

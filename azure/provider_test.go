@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused"
+	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused/unusedtest"
 )
 

@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/grafana/unused/gcp"
 	"github.com/grafana/unused"
+	"github.com/grafana/unused/gcp"
 	"github.com/grafana/unused/unusedtest"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"

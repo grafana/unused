@@ -6,10 +6,10 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/grafana/unused"
 	"github.com/grafana/unused/aws"
 	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused/gcp"
-	"github.com/grafana/unused"
 )
 
 func createProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string) ([]unused.Provider, error) {
