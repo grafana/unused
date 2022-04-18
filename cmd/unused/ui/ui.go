@@ -6,6 +6,6 @@ import (
 	"github.com/grafana/unused"
 )
 
-type Displayer interface {
+type UI interface {
 	Display(ctx context.Context, disks unused.Disks) error
 }

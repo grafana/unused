@@ -9,6 +9,7 @@ import (
 
 	"github.com/grafana/unused/cli"
 	"github.com/grafana/unused/cmd/unused/ui"
+	"github.com/grafana/unused/cmd/unused/ui/table"
 	// "github.com/mmcloughlin/profile"
 )
 
@@ -25,17 +26,17 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	var d ui.Displayer
-	d = ui.NewTable(os.Stdout)
+	var out ui.UI
+	out = table.New(os.Stdout, false)
 
-	if err := realMain(ctx, d, gcpProjects, awsProfiles, azureSubs); err != nil {
+	if err := realMain(ctx, out, gcpProjects, awsProfiles, azureSubs); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func realMain(ctx context.Context, d ui.Displayer, gcpProjects, awsProfiles, azureSubs []string) error {
+func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSubs []string) error {
 	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		return err
@@ -46,5 +47,5 @@ func realMain(ctx context.Context, d ui.Displayer, gcpProjects, awsProfiles, azu
 		return err
 	}
 
-	return d.Display(ctx, disks)
+	return out.Display(ctx, disks)
 }

@@ -1,4 +1,4 @@
-package ui
+package table
 
 import (
 	"context"
@@ -7,20 +7,21 @@ import (
 	"text/tabwriter"
 
 	"github.com/grafana/unused"
+	"github.com/grafana/unused/cmd/unused/ui"
 )
 
-var _ Displayer = Table{}
+var _ ui.UI = table{}
 
-type Table struct {
+type table struct {
 	out     io.Writer
 	verbose bool
 }
 
-func NewTable(out io.Writer, verbose bool) Table {
-	return Table{out, verbose}
+func New(out io.Writer, verbose bool) table {
+	return table{out, verbose}
 }
 
-func (t Table) Display(ctx context.Context, disks unused.Disks) error {
+func (t table) Display(ctx context.Context, disks unused.Disks) error {
 	w := tabwriter.NewWriter(t.out, 8, 4, 2, ' ', 0)
 
 	fmt.Fprintln(w, "PROVIDER\tNAME")
