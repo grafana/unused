@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"flag"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestStringSliceFlag(t *testing.T) {
-	var vs stringSlice
+	var vs StringSliceFlag
 
 	fs := flag.NewFlagSet("test", flag.ContinueOnError)
 	fs.Var(&vs, "ss", "test")
@@ -22,7 +22,7 @@ func TestStringSliceFlag(t *testing.T) {
 }
 
 func TestStringSliceSet(t *testing.T) {
-	ss := &stringSlice{}
+	ss := &StringSliceFlag{}
 
 	for _, v := range []string{"foo", "bar"} {
 		if err := ss.Set(v); err != nil {

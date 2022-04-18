@@ -14,7 +14,7 @@ import (
 func main() {
 	// defer profile.Start(profile.CPUProfile, profile.MemProfile).Stop()
 
-	var gcpProjects, awsProfiles, azureSubs stringSlice
+	var gcpProjects, awsProfiles, azureSubs cli.StringSliceFlag
 	flag.Var(&gcpProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
 	flag.Var(&awsProfiles, "aws.profile", "AWS profile (can be specified multiple times)")
 	flag.Var(&azureSubs, "azure.sub", "Azure subscription (can be specified multiple times)")
