@@ -1,4 +1,4 @@
-module github.com/grafana/unused-pds
+module github.com/grafana/unused
 
 go 1.18
 
