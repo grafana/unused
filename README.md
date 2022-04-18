@@ -8,16 +8,16 @@ This library and its companion tools should help you out to identify these resou
 
 This repository provides the following:
 
-- Go module `github.com/grafana/unused-pds/pkg/unused`
+- Go module `github.com/grafana/unused`
   This module exports some interfaces and implementations to easily list all your unsed persistent disks in GCP, AWS, and Azure.
 
-- `unused-pds` tool
+- `unused` tool
   This CLI tool will query all given providers and list them as a neat table.
 ```
-go install github.com/grafana/unused-pds/cmd/unused-pds@latest
+go install github.com/grafana/unused/cmd/unused@latest
 ```
 
-- `unused-pds-exporter` Prometheus exporter
+- `unused-exporter` Prometheus exporter
   This tool will run a web server exposing Prometheus metrics about each providers count of unused disks.
   The exposed metrics currently are:
 
@@ -32,5 +32,5 @@ go install github.com/grafana/unused-pds/cmd/unused-pds@latest
   We might revise this in the future, but having the information as a log stream is useful if these are forwarded to Loki.
 
 ```
-go install github.com/grafana/unused-pds/cmd/unused-pds-exporter@latest
+go install github.com/grafana/unused/cmd/unused-exporter@latest
 ```
