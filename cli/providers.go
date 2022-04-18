@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/unused/gcp"
 )
 
-func createProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string) ([]unused.Provider, error) {
+func CreateProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string) ([]unused.Provider, error) {
 	providers := make([]unused.Provider, 0, len(gcpProjects)+len(awsProfiles)+len(azureSubs))
 
 	for _, projectID := range gcpProjects {

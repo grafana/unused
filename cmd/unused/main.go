@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/grafana/unused/cli"
 	"github.com/grafana/unused/cmd/unused/ui"
 	// "github.com/mmcloughlin/profile"
 )
@@ -32,7 +33,7 @@ func main() {
 }
 
 func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string) error {
-	providers, err := createProviders(ctx, gcpProjects, awsProfiles, azureSubs)
+	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		return err
 	}
