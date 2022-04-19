@@ -108,7 +108,7 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		h := msg.Height - lipgloss.Height(ui.tabs.View()) - 2
 		w := (msg.Width / 2)
 		ui.lbox.Width(w)
-		ui.list.SetHeight(h)
+		ui.list.SetSize(w, h)
 		ui.sidebar.SetSize(w, h)
 	}
 
