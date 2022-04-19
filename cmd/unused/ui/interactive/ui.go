@@ -22,7 +22,7 @@ type ui struct {
 	tabs    *Tabs
 	sidebar *Sidebar
 
-	selected map[int]struct{}
+	selected map[string]map[int]struct{}
 	disks    map[string]unused.Disks
 	verbose  bool
 }
@@ -34,7 +34,7 @@ func New(verbose bool) unusedui.UI {
 }
 
 func (ui *ui) Display(ctx context.Context, disks unused.Disks) error {
-	ui.selected = make(map[int]struct{})
+	ui.selected = make(map[string]map[int]struct{})
 	ui.list = list.New(nil, ui.listDelegate(), 0, 0)
 	ui.list.SetShowTitle(false)
 	ui.list.DisableQuitKeybindings()
@@ -51,6 +51,7 @@ func (ui *ui) Display(ctx context.Context, disks unused.Disks) error {
 	}
 	titles := make([]string, 0, len(ui.disks))
 	for p := range ui.disks {
+		ui.selected[p] = make(map[int]struct{})
 		titles = append(titles, p)
 	}
 	sort.Strings(titles)
@@ -71,8 +72,10 @@ func (ui *ui) Init() tea.Cmd {
 func (ui *ui) refresh(reset bool) {
 	disks := ui.disks[ui.tabs.Selected()]
 	items := make([]list.Item, len(disks))
+	selected := ui.selected[ui.tabs.Selected()]
 	for i, d := range disks {
-		items[i] = item{d, ui.verbose}
+		_, marked := selected[i]
+		items[i] = item{d, ui.verbose, marked}
 	}
 	ui.list.SetItems(items)
 
@@ -99,6 +102,17 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ui.tabs.Prev()
 			ui.refresh(true)
 			return ui, nil
+
+		case "m", "sp":
+			selected := ui.selected[ui.tabs.Selected()]
+			idx := ui.list.Index()
+			if _, marked := selected[idx]; marked {
+				delete(selected, idx)
+			} else {
+				selected[idx] = struct{}{}
+			}
+			ui.refresh(false)
+			ui.list.CursorDown()
 
 		case "v":
 			ui.verbose = !ui.verbose

@@ -3,15 +3,24 @@ package interactive
 import (
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
 )
 
 type item struct {
 	disk    unused.Disk
 	verbose bool
+	marked  bool
 }
 
-func (i item) Title() string { return i.disk.Name() }
+var marked = lipgloss.NewStyle().Strikethrough(true)
+
+func (i item) Title() string {
+	if i.marked {
+		return marked.Render(i.disk.Name())
+	}
+	return i.disk.Name()
+}
 
 func (i item) FilterValue() string {
 	// TODO this doesn't looks right when filtering
