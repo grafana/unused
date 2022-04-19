@@ -162,10 +162,10 @@ func (ui *ui) refreshSidebar(disk unused.Disk) {
 }
 
 func (ui *ui) itemUpdateFunc(msg tea.Msg, list *list.Model) tea.Cmd {
-	idx := list.Index()
-	disk := ui.disks[ui.tabs.Selected()][idx]
-
-	ui.refreshSidebar(disk)
+	item, ok := list.SelectedItem().(item)
+	if ok { // this should always happen
+		ui.refreshSidebar(item.disk)
+	}
 
 	return nil
 }
