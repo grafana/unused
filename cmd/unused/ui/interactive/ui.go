@@ -35,9 +35,7 @@ func New(verbose bool) unusedui.UI {
 
 func (ui *ui) Display(ctx context.Context, disks unused.Disks) error {
 	ui.selected = make(map[int]struct{})
-	d := list.NewDefaultDelegate()
-	d.UpdateFunc = ui.itemUpdateFunc
-	ui.list = list.New(nil, d, 0, 0)
+	ui.list = list.New(nil, ui.listDelegate(), 0, 0)
 	ui.list.SetShowTitle(false)
 	ui.list.DisableQuitKeybindings()
 
@@ -58,7 +56,7 @@ func (ui *ui) Display(ctx context.Context, disks unused.Disks) error {
 	sort.Strings(titles)
 	ui.tabs = &Tabs{Titles: titles}
 
-	ui.refresh()
+	ui.refresh(true)
 
 	if err := tea.NewProgram(ui).Start(); err != nil {
 		return fmt.Errorf("cannot start interactive UI: %w", err)
@@ -70,15 +68,18 @@ func (ui *ui) Init() tea.Cmd {
 	return tea.EnterAltScreen
 }
 
-func (ui *ui) refresh() {
+func (ui *ui) refresh(reset bool) {
 	disks := ui.disks[ui.tabs.Selected()]
 	items := make([]list.Item, len(disks))
 	for i, d := range disks {
 		items[i] = item{d, ui.verbose}
 	}
 	ui.list.SetItems(items)
-	ui.list.ResetSelected()
-	ui.refreshSidebar(disks[0])
+
+	if reset {
+		ui.list.ResetSelected()
+		ui.refreshSidebar(disks[0])
+	}
 }
 
 func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -91,17 +92,18 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "right":
 			ui.tabs.Next()
-			ui.refresh()
+			ui.refresh(true)
 			return ui, nil
 
 		case "left":
 			ui.tabs.Prev()
-			ui.refresh()
+			ui.refresh(true)
 			return ui, nil
 
 		case "v":
 			ui.verbose = !ui.verbose
-			ui.refresh()
+			ui.list.SetDelegate(ui.listDelegate())
+			ui.refresh(false)
 		}
 
 	case tea.WindowSizeMsg:
@@ -161,13 +163,18 @@ func (ui *ui) refreshSidebar(disk unused.Disk) {
 	printMeta(disk.Provider().Meta())
 }
 
-func (ui *ui) itemUpdateFunc(msg tea.Msg, list *list.Model) tea.Cmd {
-	item, ok := list.SelectedItem().(item)
-	if ok { // this should always happen
-		ui.refreshSidebar(item.disk)
-	}
+func (ui *ui) listDelegate() list.DefaultDelegate {
+	d := list.NewDefaultDelegate()
+	d.ShowDescription = ui.verbose
+	d.UpdateFunc = func(msg tea.Msg, list *list.Model) tea.Cmd {
+		item, ok := list.SelectedItem().(item)
+		if ok { // this should always happen
+			ui.refreshSidebar(item.disk)
+		}
 
-	return nil
+		return nil
+	}
+	return d
 }
 
 func age(date time.Time) string {
