@@ -2,7 +2,6 @@ package interactive
 
 import (
 	"strings"
-	"time"
 
 	"github.com/grafana/unused"
 )
@@ -29,7 +28,7 @@ func (i item) Description() string {
 
 	s.WriteRune(' ')
 	s.WriteString("age=")
-	s.WriteString(time.Since(i.disk.CreatedAt()).Round(time.Minute).String())
+	s.WriteString(age(i.disk.CreatedAt()))
 
 	if i.verbose {
 		s.WriteRune(' ')

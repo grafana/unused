@@ -3,9 +3,13 @@ package interactive
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
 	unusedui "github.com/grafana/unused/cmd/unused/ui"
 )
@@ -13,10 +17,13 @@ import (
 var _ unusedui.UI = &ui{}
 
 type ui struct {
-	list list.Model
+	list    list.Model
+	lbox    lipgloss.Style
+	tabs    *Tabs
+	sidebar *Sidebar
 
 	selected map[int]struct{}
-	disks    unused.Disks
+	disks    map[string]unused.Disks
 	verbose  bool
 }
 
@@ -27,10 +34,29 @@ func New(verbose bool) unusedui.UI {
 }
 
 func (ui *ui) Display(ctx context.Context, disks unused.Disks) error {
-	ui.disks = disks
+	ui.selected = make(map[int]struct{})
+	d := list.NewDefaultDelegate()
+	d.UpdateFunc = ui.itemUpdateFunc
+	ui.list = list.New(nil, d, 0, 0)
+	ui.list.SetShowTitle(false)
+	ui.list.DisableQuitKeybindings()
 
-	ui.list = list.New(nil, list.NewDefaultDelegate(), 0, 0)
-	ui.list.Title = "Cloud Providers Unused Disks"
+	ui.lbox = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, true, true, false)
+
+	ui.sidebar = NewSidebar()
+	ui.sidebar.Style = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false, true, true)
+
+	ui.disks = make(map[string]unused.Disks)
+	for _, d := range disks {
+		p := d.Provider().Name()
+		ui.disks[p] = append(ui.disks[p], d)
+	}
+	titles := make([]string, 0, len(ui.disks))
+	for p := range ui.disks {
+		titles = append(titles, p)
+	}
+	sort.Strings(titles)
+	ui.tabs = &Tabs{Titles: titles}
 
 	ui.refresh()
 
@@ -45,12 +71,14 @@ func (ui *ui) Init() tea.Cmd {
 }
 
 func (ui *ui) refresh() {
-	items := make([]list.Item, len(ui.disks))
-	for i, d := range ui.disks {
+	disks := ui.disks[ui.tabs.Selected()]
+	items := make([]list.Item, len(disks))
+	for i, d := range disks {
 		items[i] = item{d, ui.verbose}
 	}
-
 	ui.list.SetItems(items)
+	ui.list.ResetSelected()
+	ui.refreshSidebar(disks[0])
 }
 
 func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -61,14 +89,27 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q":
 			return ui, tea.Quit
 
+		case "right":
+			ui.tabs.Next()
+			ui.refresh()
+			return ui, nil
+
+		case "left":
+			ui.tabs.Prev()
+			ui.refresh()
+			return ui, nil
+
 		case "v":
 			ui.verbose = !ui.verbose
 			ui.refresh()
 		}
 
 	case tea.WindowSizeMsg:
-		w, h := 0, 0
-		ui.list.SetSize(msg.Width-w, msg.Height-h)
+		h := msg.Height - lipgloss.Height(ui.tabs.View()) - 2
+		w := (msg.Width / 2)
+		ui.lbox.Width(w)
+		ui.list.SetHeight(h)
+		ui.sidebar.SetSize(w, h)
 	}
 
 	// pass update msg to the rest of the components
@@ -79,19 +120,68 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (ui *ui) View() string {
-	return ui.list.View()
+	var out strings.Builder
+
+	out.WriteString(ui.tabs.View())
+	out.WriteRune('\n')
+
+	content := lipgloss.JoinHorizontal(lipgloss.Top,
+		ui.lbox.Render(ui.list.View()),
+		ui.sidebar.View(),
+	)
+	out.WriteString(content)
+
+	return out.String()
+}
+
+func (ui *ui) refreshSidebar(disk unused.Disk) {
+	printMeta := func(meta unused.Meta) {
+		if len(meta) == 0 {
+			return
+		}
+		ui.sidebar.WriteHeader("Metadata")
+		ui.sidebar.Println()
+		for _, k := range meta.Keys() {
+			ui.sidebar.Printf("%s: %s\n", k, meta[k])
+		}
+	}
+
+	ui.sidebar.Reset()
+
+	ui.sidebar.WriteHeader("Created: ")
+	ui.sidebar.WriteString(disk.CreatedAt().Format(time.RFC3339))
+	ui.sidebar.Printf(" (%s)", age(disk.CreatedAt()))
+	ui.sidebar.Println()
+
+	printMeta(disk.Meta())
+	ui.sidebar.Println()
+
+	ui.sidebar.WriteHeader("Provider: ")
+	ui.sidebar.Println(disk.Provider().Name())
+	printMeta(disk.Provider().Meta())
 }
 
 func (ui *ui) itemUpdateFunc(msg tea.Msg, list *list.Model) tea.Cmd {
 	idx := list.Index()
-	_, unmark := ui.selected[idx]
-	if unmark {
-		delete(ui.selected, idx)
-	} else {
-		ui.selected[idx] = struct{}{}
-	}
+	disk := ui.disks[ui.tabs.Selected()][idx]
 
-	fmt.Println(ui.selected)
+	ui.refreshSidebar(disk)
 
 	return nil
+}
+
+func age(date time.Time) string {
+	d := time.Since(date)
+
+	if d <= time.Minute {
+		return "1m"
+	} else if d < time.Hour {
+		return fmt.Sprintf("%dm", d/time.Minute)
+	} else if d < 24*time.Hour {
+		return fmt.Sprintf("%dh", d/time.Hour)
+	} else if d < 365*24*time.Hour {
+		return fmt.Sprintf("%dd", d/(24*time.Hour))
+	} else {
+		return fmt.Sprintf("%dy", d/(365*24*time.Hour))
+	}
 }
