@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -16,11 +16,28 @@ import (
 
 var _ unusedui.UI = &ui{}
 
+var listKeyMap = struct {
+	Mark, Exec, Quit, Up, Down, PageUp, PageDown, Right, Left, Verbose key.Binding
+}{
+	Mark:     key.NewBinding(key.WithKeys("m", " "), key.WithHelp("m", "toggle mark")),
+	Exec:     key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "delete")),
+	Quit:     key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
+	Up:       key.NewBinding(key.WithKeys("up"), key.WithHelp("up", "move up one line")),
+	Down:     key.NewBinding(key.WithKeys("down"), key.WithHelp("down", "move down one line")),
+	Right:    key.NewBinding(key.WithKeys("right"), key.WithHelp("→", "next provider")),
+	Left:     key.NewBinding(key.WithKeys("left"), key.WithHelp("←", "previous provider")),
+	Verbose:  key.NewBinding(key.WithKeys("v"), key.WithHelp("v", "toggle verbose mode")),
+	PageUp:   key.NewBinding(key.WithKeys("pgup"), key.WithHelp("page up", "move up one page")),
+	PageDown: key.NewBinding(key.WithKeys("pgdown"), key.WithHelp("page down", "move down one page")),
+}
+
 type ui struct {
 	list    list.Model
 	lbox    lipgloss.Style
 	tabs    *Tabs
 	sidebar *Sidebar
+	output  *output
+	help    helpview
 
 	selected map[string]map[int]struct{}
 	disks    map[string]unused.Disks
@@ -30,6 +47,7 @@ type ui struct {
 func New(verbose bool) unusedui.UI {
 	return &ui{
 		verbose: verbose,
+		help:    NewHelp(listKeyMap.Mark, listKeyMap.Exec, listKeyMap.Quit, listKeyMap.Up, listKeyMap.Down, listKeyMap.PageUp, listKeyMap.PageDown, listKeyMap.Left, listKeyMap.Right, listKeyMap.Verbose),
 	}
 }
 
@@ -58,6 +76,8 @@ func (ui *ui) Display(ctx context.Context, disks unused.Disks) error {
 	ui.tabs = &Tabs{Titles: titles}
 
 	ui.refresh(true)
+
+	ui.output = NewOutput()
 
 	if err := tea.NewProgram(ui).Start(); err != nil {
 		return fmt.Errorf("cannot start interactive UI: %w", err)
@@ -89,21 +109,21 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q":
+		switch {
+		case key.Matches(msg, listKeyMap.Quit):
 			return ui, tea.Quit
 
-		case "right":
+		case key.Matches(msg, listKeyMap.Right):
 			ui.tabs.Next()
 			ui.refresh(true)
 			return ui, nil
 
-		case "left":
+		case key.Matches(msg, listKeyMap.Left):
 			ui.tabs.Prev()
 			ui.refresh(true)
 			return ui, nil
 
-		case "m", "sp":
+		case key.Matches(msg, listKeyMap.Mark):
 			selected := ui.selected[ui.tabs.Selected()]
 			idx := ui.list.Index()
 			if _, marked := selected[idx]; marked {
@@ -114,40 +134,49 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ui.refresh(false)
 			ui.list.CursorDown()
 
-		case "v":
+		case key.Matches(msg, listKeyMap.Exec):
+			var disks unused.Disks
+			for p, sel := range ui.selected {
+				for idx := range sel {
+					disks = append(disks, ui.disks[p][idx])
+				}
+			}
+			disks.Sort(unused.ByName)
+			ui.output.disks = disks
+			return ui.output, nil
+
+		case key.Matches(msg, listKeyMap.Verbose):
 			ui.verbose = !ui.verbose
 			ui.list.SetDelegate(ui.listDelegate())
 			ui.refresh(false)
+
+		case key.Matches(msg, listKeyMap.Up, listKeyMap.Down, listKeyMap.PageUp, listKeyMap.PageDown):
+			var cmd tea.Cmd
+			ui.list, cmd = ui.list.Update(msg)
+			return ui, cmd
 		}
 
 	case tea.WindowSizeMsg:
-		h := msg.Height - lipgloss.Height(ui.tabs.View()) - 2
+		h := msg.Height - lipgloss.Height(ui.tabs.View()) - lipgloss.Height(ui.help.View()) - 2
 		w := (msg.Width / 2)
 		ui.lbox.Width(w)
 		ui.list.SetSize(w, h)
 		ui.sidebar.SetSize(w, h)
+		ui.output.SetSize(msg.Width, msg.Height)
 	}
 
-	// pass update msg to the rest of the components
-	list, cmd := ui.list.Update(msg)
-	ui.list = list
-
-	return ui, cmd
+	return ui, nil
 }
 
 func (ui *ui) View() string {
-	var out strings.Builder
-
-	out.WriteString(ui.tabs.View())
-	out.WriteRune('\n')
-
-	content := lipgloss.JoinHorizontal(lipgloss.Top,
-		ui.lbox.Render(ui.list.View()),
-		ui.sidebar.View(),
+	return lipgloss.JoinVertical(lipgloss.Left,
+		ui.tabs.View(),
+		lipgloss.JoinHorizontal(lipgloss.Top,
+			ui.lbox.Render(ui.list.View()),
+			ui.sidebar.View(),
+		),
+		ui.help.View(),
 	)
-	out.WriteString(content)
-
-	return out.String()
 }
 
 func (ui *ui) refreshSidebar(disk unused.Disk) {
