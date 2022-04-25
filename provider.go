@@ -12,4 +12,7 @@ type Provider interface {
 
 	// Meta returns the provider metadata
 	Meta() Meta
+
+	// Delete deletes a disk from the provider
+	Delete(ctx context.Context, disk Disk) error
 }

@@ -90,3 +90,11 @@ func diskMetadata(d *compute.Disk) (unused.Meta, error) {
 
 	return m, nil
 }
+
+func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+	_, err := p.svc.Delete(p.project, disk.Meta()["zone"], disk.Name()).Do()
+	if err != nil {
+		return fmt.Errorf("cannot delete GCP disk: %w", err)
+	}
+	return nil
+}

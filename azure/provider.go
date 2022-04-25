@@ -88,3 +88,11 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 
 	return upds, nil
 }
+
+func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+	_, err := p.client.Delete(ctx, disk.Meta()[ResourceGroupMetaKey], disk.Name())
+	if err != nil {
+		return fmt.Errorf("cannot delete Azure disk: %w", err)
+	}
+	return nil
+}

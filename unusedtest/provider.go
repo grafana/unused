@@ -30,6 +30,17 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	return p.disks, nil
 }
 
+func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+	for i := range p.disks {
+		if disk.Name() == p.disks[i].Name() {
+			p.disks = append(p.disks[:i], p.disks[i+1:]...)
+			return nil
+		}
+	}
+
+	return nil
+}
+
 func TestProviderMeta(t *testing.T, newProvider func(meta unused.Meta) (unused.Provider, error)) {
 	t.Helper()
 
