@@ -41,7 +41,7 @@ func TestListUnusedDisks(t *testing.T) {
       "kubernetes.io-created-for-pv-name": "pvc-prometheus-1",
       "kubernetes.io-created-for-pvc-name": "prometheus-1",
       "kubernetes.io-created-for-pvc-namespace": "monitoring"
-  }},
+  },"id":"/subscriptions/my-subscription/resourceGroups/RGNAME/providers/Microsoft.Compute/disks/disk-2"},
   {"name":"disk-3","managedBy":"grafana"}
 ]
 }`))
@@ -74,5 +74,6 @@ func TestListUnusedDisks(t *testing.T) {
 		"kubernetes.io-created-for-pv-name":       "pvc-prometheus-1",
 		"kubernetes.io-created-for-pvc-name":      "prometheus-1",
 		"kubernetes.io-created-for-pvc-namespace": "monitoring",
+		azure.ResourceGroupMetaKey:                "RGNAME",
 	}, disks[0].Meta())
 }

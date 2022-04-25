@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest"
@@ -10,6 +11,8 @@ import (
 )
 
 var _ unused.Provider = &provider{}
+
+const ResourceGroupMetaKey = "resource-group"
 
 type provider struct {
 	client compute.DisksClient
@@ -55,6 +58,8 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 		return nil, fmt.Errorf("listing Azure disks: %w", err)
 	}
 
+	prefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/", p.client.SubscriptionID)
+
 	for res.NotDone() {
 		for _, d := range res.Values() {
 			if d.ManagedBy != nil {
@@ -66,6 +71,11 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 			for k, v := range d.Tags {
 				m[k] = *v
 			}
+
+			// Azure doesn't return the resource group directly
+			// "/subscriptions/$subscription-id/resourceGroups/$resource-group-name/providers/Microsoft.Compute/disks/$disk-name"
+			rg := strings.TrimPrefix(*d.ID, prefix)
+			m[ResourceGroupMetaKey] = rg[:strings.IndexRune(rg, '/')]
 
 			upds = append(upds, &disk{d, p, m})
 		}
