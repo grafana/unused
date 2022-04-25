@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/grafana/unused"
 	"google.golang.org/api/compute/v1"
@@ -84,7 +85,8 @@ func diskMetadata(d *compute.Disk) (unused.Meta, error) {
 		}
 	}
 
-	m["zone"] = d.Zone
+	// Zone is returned as a URL, remove all but the zone name
+	m["zone"] = d.Zone[strings.LastIndexByte(d.Zone, '/')+1:]
 
 	return m, nil
 }
