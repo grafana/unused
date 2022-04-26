@@ -46,7 +46,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 			Items: map[string]compute.DisksScopedList{
 				"foo": {
 					Disks: []*compute.Disk{
-						{Name: "disk-1", Zone: "us-central1-a"},
+						{Name: "disk-1", Zone: "https://www.googleapis.com/compute/v1/projects/ops-tools-1203/zones/us-central1-a"},
 						{Name: "with-users", Users: []string{"inkel"}},
 						{Name: "disk-2", Zone: "eu-west2-b", Description: `{"kubernetes.io-created-for-pv-name":"pvc-prometheus-1","kubernetes.io-created-for-pvc-name":"prometheus-1","kubernetes.io-created-for-pvc-namespace":"monitoring"}`},
 					},

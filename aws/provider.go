@@ -77,3 +77,13 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 
 	return upds, nil
 }
+
+func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+	_, err := p.client.DeleteVolume(ctx, &ec2.DeleteVolumeInput{
+		VolumeId: aws.String(disk.Name()),
+	})
+	if err != nil {
+		return fmt.Errorf("cannot delete AWS disk: %w", err)
+	}
+	return nil
+}

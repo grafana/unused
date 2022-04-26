@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/grafana/unused"
 	"google.golang.org/api/compute/v1"
@@ -84,7 +85,16 @@ func diskMetadata(d *compute.Disk) (unused.Meta, error) {
 		}
 	}
 
-	m["zone"] = d.Zone
+	// Zone is returned as a URL, remove all but the zone name
+	m["zone"] = d.Zone[strings.LastIndexByte(d.Zone, '/')+1:]
 
 	return m, nil
+}
+
+func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+	_, err := p.svc.Delete(p.project, disk.Meta()["zone"], disk.Name()).Do()
+	if err != nil {
+		return fmt.Errorf("cannot delete GCP disk: %w", err)
+	}
+	return nil
 }

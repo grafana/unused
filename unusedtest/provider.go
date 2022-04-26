@@ -2,6 +2,7 @@ package unusedtest
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/grafana/unused"
@@ -28,6 +29,19 @@ func (p *provider) Meta() unused.Meta { return p.meta }
 
 func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	return p.disks, nil
+}
+
+var ErrDiskNotFound = errors.New("disk not found")
+
+func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+	for i := range p.disks {
+		if disk.Name() == p.disks[i].Name() {
+			p.disks = append(p.disks[:i], p.disks[i+1:]...)
+			return nil
+		}
+	}
+
+	return ErrDiskNotFound
 }
 
 func TestProviderMeta(t *testing.T, newProvider func(meta unused.Meta) (unused.Provider, error)) {
