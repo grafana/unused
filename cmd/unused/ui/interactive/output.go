@@ -1,6 +1,7 @@
 package interactive
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -16,7 +17,7 @@ import (
 )
 
 var outputKeyMap = struct {
-	Exec, Quit, Up, Down, PageUp, PageDown key.Binding
+	Exec, Quit, Up, Down, PageUp, PageDown, Cancel key.Binding
 }{
 	Exec:     key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "delete")),
 	Quit:     key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
@@ -24,6 +25,7 @@ var outputKeyMap = struct {
 	Down:     key.NewBinding(key.WithKeys("down"), key.WithHelp("↓", "move down one line")),
 	PageUp:   key.NewBinding(key.WithKeys("pgup"), key.WithHelp("page up", "move up one page")),
 	PageDown: key.NewBinding(key.WithKeys("pgdown"), key.WithHelp("page down", "move down one page")),
+	Cancel:   key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("C-c", "cancel")),
 }
 
 type output struct {
@@ -35,6 +37,9 @@ type output struct {
 	delstatus map[int]error
 	spinner   spinner.Model
 	help      helpview
+
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func NewOutput() *output {
@@ -65,6 +70,14 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, outputKeyMap.Quit):
 			return o, tea.Quit
 
+		case key.Matches(msg, outputKeyMap.Cancel):
+			if o.delete {
+				o.cancel()
+				o.delete = false
+			}
+
+			return o, nil
+
 		case key.Matches(msg, outputKeyMap.Up, outputKeyMap.Down, outputKeyMap.PageUp, outputKeyMap.PageDown):
 			o.viewport, cmd = o.viewport.Update(msg)
 			return o, cmd
@@ -72,20 +85,33 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, outputKeyMap.Exec):
 			o.delete = true
 			outputKeyMap.Quit.SetEnabled(false)
+			o.ctx, o.cancel = context.WithCancel(context.Background())
 
 			// TODO extract this to a method, and implement real deletion
 			go func() {
+				defer outputKeyMap.Quit.SetEnabled(true)
+				defer o.cancel()
+
 				for i := range o.disks {
-					o.deletidx = i
-					time.Sleep(time.Duration(rand.Intn(2000)) * time.Millisecond)
-					if rand.Intn(100)%3 == 0 {
-						o.delstatus[i] = errors.New("something went wrong")
-					} else {
-						o.delstatus[i] = nil
+					_, ok := o.delstatus[i]
+					if ok {
+						// disk was already processed
+						continue
+					}
+
+					select {
+					case <-o.ctx.Done():
+						return
+					default:
+						o.deletidx = i
+						time.Sleep(time.Duration(rand.Intn(2000)) * time.Millisecond)
+						if rand.Intn(100)%3 == 0 {
+							o.delstatus[i] = errors.New("something went wrong")
+						} else {
+							o.delstatus[i] = nil
+						}
 					}
 				}
-
-				outputKeyMap.Quit.SetEnabled(true)
 			}()
 
 			return o, o.spinner.Tick
@@ -131,15 +157,14 @@ func (o *output) View() string {
 		ds.Reset()
 
 		fmt.Fprintf(&ds, "* %s (%s %s) ", d.Name(), d.Provider().Name(), d.Provider().Meta())
-		if o.delete {
-			if err, ok := o.delstatus[i]; err != nil {
-				fmt.Fprintf(&ds, "ERROR\n")
-				fmt.Fprintf(&ds, errStyle.Render(err.Error()))
-			} else if ok {
-				fmt.Fprintf(&ds, "DONE")
-			} else if o.deletidx == i {
-				fmt.Fprintf(&ds, o.spinner.View())
-			}
+
+		if err, ok := o.delstatus[i]; err != nil {
+			fmt.Fprintf(&ds, "ERROR\n")
+			fmt.Fprintf(&ds, errStyle.Render(err.Error()))
+		} else if ok {
+			fmt.Fprintf(&ds, "DONE")
+		} else if o.deletidx == i {
+			fmt.Fprintf(&ds, o.spinner.View())
 		}
 
 		return ds.String()
