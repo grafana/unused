@@ -20,8 +20,8 @@ var outputKeyMap = struct {
 }{
 	Exec:     key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "delete")),
 	Quit:     key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
-	Up:       key.NewBinding(key.WithKeys("↑"), key.WithHelp("up", "move up one line")),
-	Down:     key.NewBinding(key.WithKeys("↓"), key.WithHelp("down", "move down one line")),
+	Up:       key.NewBinding(key.WithKeys("up"), key.WithHelp("↑", "move up one line")),
+	Down:     key.NewBinding(key.WithKeys("down"), key.WithHelp("↓", "move down one line")),
 	PageUp:   key.NewBinding(key.WithKeys("pgup"), key.WithHelp("page up", "move up one page")),
 	PageDown: key.NewBinding(key.WithKeys("pgdown"), key.WithHelp("page down", "move down one page")),
 }
