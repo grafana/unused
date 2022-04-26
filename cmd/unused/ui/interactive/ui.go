@@ -133,6 +133,7 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			ui.refresh(false)
 			ui.list.CursorDown()
+			ui.refreshSidebar(ui.disks[ui.tabs.Selected()][idx])
 
 		case key.Matches(msg, listKeyMap.Exec):
 			var disks unused.Disks
