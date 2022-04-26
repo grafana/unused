@@ -141,9 +141,14 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					disks = append(disks, ui.disks[p][idx])
 				}
 			}
-			disks.Sort(unused.ByName)
-			ui.output.disks = disks
-			return ui.output, nil
+
+			if len(disks) > 0 {
+				disks.Sort(unused.ByName)
+				ui.output.disks = disks
+				return ui.output, nil
+			}
+
+			return ui, nil
 
 		case key.Matches(msg, listKeyMap.Verbose):
 			ui.verbose = !ui.verbose
