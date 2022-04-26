@@ -71,6 +71,7 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, outputKeyMap.Exec):
 			o.delete = true
+			outputKeyMap.Quit.SetEnabled(false)
 
 			// TODO extract this to a method, and implement real deletion
 			go func() {
@@ -83,6 +84,8 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						o.delstatus[i] = nil
 					}
 				}
+
+				outputKeyMap.Quit.SetEnabled(true)
 			}()
 
 			return o, o.spinner.Tick
