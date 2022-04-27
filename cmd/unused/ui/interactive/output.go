@@ -75,10 +75,11 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return o.updateKeyMsg(msg)
 
 	case stopExecMsg:
-		if o.delete {
+		o.delete = false
+		outputKeyMap.Quit.SetEnabled(true)
+
+		if o.cancel != nil {
 			o.cancel()
-			outputKeyMap.Quit.SetEnabled(true)
-			o.delete = false
 		}
 
 	case resumeExecMsg:
