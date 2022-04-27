@@ -197,3 +197,9 @@ func refreshList(reset bool) tea.Cmd {
 		}
 	}
 }
+
+func displayDiskDetails(disk unused.Disk) tea.Cmd {
+	return func() tea.Msg {
+		return disk
+	}
+}

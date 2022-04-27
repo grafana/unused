@@ -4,14 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"time"
-
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/grafana/unused"
 )
-
-func displayDiskDetails(disk unused.Disk) tea.Cmd {
-	return func() tea.Msg { return disk }
-}
 
 func age(date time.Time) string {
 	d := time.Since(date)
