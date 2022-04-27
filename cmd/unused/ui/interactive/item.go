@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
 )
 
@@ -15,11 +14,9 @@ type item struct {
 	marked  bool
 }
 
-var marked = lipgloss.NewStyle().Strikethrough(true)
-
 func (i item) Title() string {
 	if i.marked {
-		return marked.Render(i.disk.Name())
+		return markedStyle.Render(i.disk.Name())
 	}
 	return i.disk.Name()
 }
