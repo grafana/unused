@@ -3,6 +3,8 @@ package interactive
 import (
 	"strings"
 
+	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
 )
@@ -45,4 +47,17 @@ func (i item) Description() string {
 	}
 
 	return s.String()
+}
+
+func listDelegate(verbose bool) list.DefaultDelegate {
+	d := list.NewDefaultDelegate()
+	d.ShowDescription = verbose
+	d.UpdateFunc = func(msg tea.Msg, list *list.Model) tea.Cmd {
+		item, ok := list.SelectedItem().(item)
+		if ok { // this should always happen
+			return displayDiskDetails(item.disk)
+		}
+		return nil
+	}
+	return d
 }

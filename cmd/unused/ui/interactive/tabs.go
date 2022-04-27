@@ -2,11 +2,6 @@ package interactive
 
 import "github.com/charmbracelet/lipgloss"
 
-var (
-	tab       = lipgloss.NewStyle().Faint(true).Padding(0, 2).BorderStyle(lipgloss.NormalBorder())
-	activeTab = tab.Copy().Faint(false).Bold(true).BorderStyle(lipgloss.RoundedBorder())
-)
-
 type Tabs struct {
 	Titles []string
 	cur    int
