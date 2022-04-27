@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
@@ -31,11 +33,13 @@ var listKeyMap = struct {
 	PageDown: key.NewBinding(key.WithKeys("pgdown"), key.WithHelp("page down", "move down one page")),
 }
 
+var headerStyle = lipgloss.NewStyle().Bold(true)
+
 type ui struct {
 	list    list.Model
 	lbox    lipgloss.Style
 	tabs    *Tabs
-	sidebar *Sidebar
+	sidebar viewport.Model
 	output  *output
 	help    helpview
 
@@ -58,8 +62,6 @@ func (ui *ui) Display(ctx context.Context, disks unused.Disks) error {
 	ui.list.DisableQuitKeybindings()
 
 	ui.lbox = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, true, true, false)
-
-	ui.sidebar = NewSidebar()
 	ui.sidebar.Style = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false, true, true)
 
 	ui.disks = make(map[string]unused.Disks)
@@ -86,7 +88,15 @@ func (ui *ui) Display(ctx context.Context, disks unused.Disks) error {
 }
 
 func (ui *ui) Init() tea.Cmd {
-	return tea.EnterAltScreen
+	cmds := []tea.Cmd{tea.EnterAltScreen}
+
+	var disk unused.Disk
+	if disks := ui.disks[ui.tabs.Selected()]; len(disks) > 0 {
+		disk = disks[0]
+		cmds = append(cmds, displayDiskDetails(disk))
+	}
+
+	return tea.Batch(cmds...)
 }
 
 func (ui *ui) refresh(reset bool) {
@@ -101,8 +111,11 @@ func (ui *ui) refresh(reset bool) {
 
 	if reset {
 		ui.list.ResetSelected()
-		ui.refreshSidebar(disks[0])
 	}
+}
+
+func displayDiskDetails(disk unused.Disk) tea.Cmd {
+	return func() tea.Msg { return disk }
 }
 
 func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -133,7 +146,7 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			ui.refresh(false)
 			ui.list.CursorDown()
-			ui.refreshSidebar(ui.disks[ui.tabs.Selected()][idx])
+			return ui, displayDiskDetails(ui.disks[ui.tabs.Selected()][idx])
 
 		case key.Matches(msg, listKeyMap.Exec):
 			var disks unused.Disks
@@ -162,12 +175,24 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return ui, cmd
 		}
 
+	case unused.Disk:
+		w := ui.sidebar.Width
+		if w < 0 {
+			w = 0
+		}
+		ui.sidebar.SetContent(lipgloss.JoinVertical(
+			lipgloss.Left,
+			diskView(msg),
+			strings.Repeat(" ", w),
+		))
+
 	case tea.WindowSizeMsg:
 		h := msg.Height - lipgloss.Height(ui.tabs.View()) - lipgloss.Height(ui.help.View()) - 2
 		w := (msg.Width / 2)
 		ui.lbox.Width(w)
 		ui.list.SetSize(w, h)
-		ui.sidebar.SetSize(w, h)
+		ui.sidebar.Width = w - 2
+		ui.sidebar.Height = h
 		ui.output.SetSize(msg.Width, msg.Height)
 	}
 
@@ -185,31 +210,36 @@ func (ui *ui) View() string {
 	)
 }
 
-func (ui *ui) refreshSidebar(disk unused.Disk) {
+func diskView(disk unused.Disk) string {
+	s := &strings.Builder{}
+
 	printMeta := func(meta unused.Meta) {
 		if len(meta) == 0 {
 			return
 		}
-		ui.sidebar.WriteHeader("Metadata")
-		ui.sidebar.Println()
+		s.WriteString(headerStyle.Render("Metadata"))
+		s.WriteRune('\n')
 		for _, k := range meta.Keys() {
-			ui.sidebar.Printf("%s: %s\n", k, meta[k])
+			fmt.Fprintf(s, "%s: %s\n", k, meta[k])
 		}
 	}
 
-	ui.sidebar.Reset()
-
-	ui.sidebar.WriteHeader("Created: ")
-	ui.sidebar.WriteString(disk.CreatedAt().Format(time.RFC3339))
-	ui.sidebar.Printf(" (%s)", age(disk.CreatedAt()))
-	ui.sidebar.Println()
+	s.WriteString(headerStyle.Render(disk.Name()))
+	s.WriteString("\n\n")
+	s.WriteString(headerStyle.Render("Created: "))
+	s.WriteString(disk.CreatedAt().Format(time.RFC3339))
+	fmt.Fprintf(s, " (%s)", age(disk.CreatedAt()))
+	s.WriteRune('\n')
 
 	printMeta(disk.Meta())
-	ui.sidebar.Println()
+	s.WriteRune('\n')
 
-	ui.sidebar.WriteHeader("Provider: ")
-	ui.sidebar.Println(disk.Provider().Name())
+	s.WriteString(headerStyle.Render("Provider: "))
+	s.WriteString(disk.Provider().Name())
+	s.WriteRune('\n')
 	printMeta(disk.Provider().Meta())
+
+	return s.String()
 }
 
 func (ui *ui) listDelegate() list.DefaultDelegate {
@@ -218,9 +248,8 @@ func (ui *ui) listDelegate() list.DefaultDelegate {
 	d.UpdateFunc = func(msg tea.Msg, list *list.Model) tea.Cmd {
 		item, ok := list.SelectedItem().(item)
 		if ok { // this should always happen
-			ui.refreshSidebar(item.disk)
+			return displayDiskDetails(item.disk)
 		}
-
 		return nil
 	}
 	return d
