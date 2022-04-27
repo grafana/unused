@@ -39,12 +39,11 @@ func NewOutput() *output {
 		spinner:   spinner.New(),
 	}
 	o.viewport.Style = o.viewport.Style.Border(lipgloss.RoundedBorder())
-	o.spinner.Spinner = spinner.Points
+	o.spinner.Spinner = spinner.Dot
 
 	o.tpl = template.Must(template.New("").
 		Funcs(template.FuncMap{
 			"error": errStyle.Render,
-			"spin":  o.spinner.View,
 		}).
 		Parse(outputTpl))
 
@@ -61,17 +60,15 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		o.SetSize(msg.Width, msg.Height)
-		return o, nil
 
 	case tea.KeyMsg:
 		return o.updateKeyMsg(msg)
-
-	default:
-		var cmds [2]tea.Cmd
-		o.viewport, cmds[0] = o.viewport.Update(msg)
-		o.spinner, cmds[1] = o.spinner.Update(msg)
-		return o, tea.Batch(cmds[0], cmds[1])
 	}
+
+	var cmd [2]tea.Cmd
+	o.viewport, cmd[0] = o.viewport.Update(msg)
+	o.spinner, cmd[1] = o.spinner.Update(msg)
+	return o, tea.Batch(cmd[0], cmd[1])
 }
 
 func (o *output) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -167,7 +164,7 @@ func (o *output) View() string {
 	} else {
 		o.viewport.SetContent(errStyle.Render(err.Error()))
 	}
-	title = o.spinner.View()
+
 	help = centerStyle.Copy().Width(o.w).Render(help)
 
 	return lipgloss.JoinVertical(lipgloss.Left, title, o.viewport.View(), help)
