@@ -17,26 +17,29 @@ import (
 	"github.com/grafana/unused"
 )
 
-type output struct {
-	disks     unused.Disks
-	viewport  viewport.Model
-	w, h      int
-	delete    bool
-	deletidx  int
-	delstatus map[int]error
-	spinner   spinner.Model
-	help      helpview
-	tpl       *template.Template
+type diskStatus struct {
+	Disk     unused.Disk
+	Done     bool
+	Error    error
+	Deleting bool
+}
 
-	ctx    context.Context
-	cancel context.CancelFunc
+type output struct {
+	viewport viewport.Model
+	w, h     int
+	delete   bool
+	spinner  spinner.Model
+	help     helpview
+	tpl      *template.Template
+	status   []*diskStatus
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 func NewOutput() *output {
 	o := &output{
-		delstatus: make(map[int]error),
-		help:      NewHelp(outputKeyMap.Exec, outputKeyMap.Quit, outputKeyMap.Up, outputKeyMap.Down, outputKeyMap.PageUp, outputKeyMap.PageDown),
-		spinner:   spinner.New(),
+		help:    NewHelp(outputKeyMap.Exec, outputKeyMap.Quit, outputKeyMap.Up, outputKeyMap.Down, outputKeyMap.PageUp, outputKeyMap.PageDown),
+		spinner: spinner.New(),
 	}
 	o.viewport.Style = o.viewport.Style.Border(lipgloss.RoundedBorder())
 	o.spinner.Spinner = spinner.Dot
@@ -48,6 +51,13 @@ func NewOutput() *output {
 		Parse(outputTpl))
 
 	return o
+}
+
+func (o *output) SetDisks(disks unused.Disks) {
+	o.status = make([]*diskStatus, len(disks))
+	for i, d := range disks {
+		o.status[i] = &diskStatus{Disk: d}
+	}
 }
 
 func (o *output) SetSize(w, h int) {
@@ -99,9 +109,8 @@ func (o *output) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			defer outputKeyMap.Quit.SetEnabled(true)
 			defer o.cancel()
 
-			for i := range o.disks {
-				_, ok := o.delstatus[i]
-				if ok {
+			for _, s := range o.status {
+				if s.Done {
 					// disk was already processed
 					continue
 				}
@@ -110,12 +119,12 @@ func (o *output) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				case <-o.ctx.Done():
 					return
 				default:
-					o.deletidx = i
+					s.Deleting = true
 					time.Sleep(time.Duration(rand.Intn(2000)) * time.Millisecond)
+					s.Done = true
+					s.Deleting = false
 					if rand.Intn(100)%3 == 0 {
-						o.delstatus[i] = errors.New("something went wrong")
-					} else {
-						o.delstatus[i] = nil
+						s.Error = errors.New("something went wrong")
 					}
 				}
 			}
@@ -137,7 +146,7 @@ type templateData struct {
 
 func (o *output) View() string {
 	var (
-		count = fmt.Sprintf("%d disks marked for deletion", len(o.disks))
+		count = fmt.Sprintf("%d disks marked for deletion", len(o.status))
 		fill  = strings.Repeat(" ", o.w-lipgloss.Width(count)-2)
 		title = titleStyle.Render(lipgloss.JoinHorizontal(lipgloss.Top, count, fill))
 		help  = o.help.View()
@@ -145,18 +154,8 @@ func (o *output) View() string {
 
 	o.viewport.Height = o.h - lipgloss.Height(title) - lipgloss.Height(help) - 2
 
-	data := make([]templateData, len(o.disks))
-	for i, d := range o.disks {
-		d := templateData{
-			Disk:     d,
-			Deleting: o.delete && i == o.deletidx,
-		}
-		d.Error, d.Done = o.delstatus[i]
-		data[i] = d
-	}
-
 	var s strings.Builder
-	err := o.tpl.Execute(&s, data)
+	err := o.tpl.Execute(&s, o.status)
 	if err == nil {
 		// fill
 		s.WriteString(strings.Repeat(" ", o.w-2))

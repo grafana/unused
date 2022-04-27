@@ -164,7 +164,7 @@ func (m *model) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 		if len(disks) > 0 {
 			disks.Sort(unused.ByName)
-			m.output.disks = disks
+			m.output.SetDisks(disks)
 			return m.output, nil
 		}
 
