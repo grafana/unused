@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -176,14 +177,14 @@ func (ui *ui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case unused.Disk:
-		w := ui.sidebar.Width
-		if w < 0 {
-			w = 0
-		}
+		var s strings.Builder
+
+		diskDetails.ExecuteTemplate(&s, "disk", msg) // TODO don't ignore error
+
 		ui.sidebar.SetContent(lipgloss.JoinVertical(
 			lipgloss.Left,
-			diskView(msg),
-			strings.Repeat(" ", w),
+			s.String(),
+			strings.Repeat(" ", ui.sidebar.Width),
 		))
 
 	case tea.WindowSizeMsg:
@@ -208,38 +209,6 @@ func (ui *ui) View() string {
 		),
 		ui.help.View(),
 	)
-}
-
-func diskView(disk unused.Disk) string {
-	s := &strings.Builder{}
-
-	printMeta := func(meta unused.Meta) {
-		if len(meta) == 0 {
-			return
-		}
-		s.WriteString(headerStyle.Render("Metadata"))
-		s.WriteRune('\n')
-		for _, k := range meta.Keys() {
-			fmt.Fprintf(s, "%s: %s\n", k, meta[k])
-		}
-	}
-
-	s.WriteString(headerStyle.Render(disk.Name()))
-	s.WriteString("\n\n")
-	s.WriteString(headerStyle.Render("Created: "))
-	s.WriteString(disk.CreatedAt().Format(time.RFC3339))
-	fmt.Fprintf(s, " (%s)", age(disk.CreatedAt()))
-	s.WriteRune('\n')
-
-	printMeta(disk.Meta())
-	s.WriteRune('\n')
-
-	s.WriteString(headerStyle.Render("Provider: "))
-	s.WriteString(disk.Provider().Name())
-	s.WriteRune('\n')
-	printMeta(disk.Provider().Meta())
-
-	return s.String()
 }
 
 func (ui *ui) listDelegate() list.DefaultDelegate {
@@ -270,3 +239,28 @@ func age(date time.Time) string {
 		return fmt.Sprintf("%dy", d/(365*24*time.Hour))
 	}
 }
+
+var diskDetails = template.Must(template.New("").
+	Funcs(template.FuncMap{
+		"header":  headerStyle.Render,
+		"age":     age,
+		"rfc3339": func(t time.Time) string { return t.Format(time.RFC3339) },
+	}).
+	Parse(
+		`{{ block "disk" . }}
+{{ .Name | header }}
+
+{{ header "Created:" }} {{.CreatedAt | rfc3339 }} ({{ .CreatedAt | age }})
+
+{{- block "meta" .Meta }}
+{{ header "Metadata" }}
+{{ range $k, $v := . }}{{ $k }}: {{ $v }}
+{{ end }}
+{{ end -}}
+
+{{- with .Provider }}
+{{ header "Provider:" }} {{ .Name }}
+{{ template "meta" .Meta }}
+{{ end -}}
+{{ end}}
+`))
