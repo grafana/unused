@@ -61,15 +61,13 @@ func NewModel(verbose bool, disks unused.Disks) *model {
 	sort.Strings(titles)
 	m.tabs = &Tabs{Titles: titles}
 
-	m.refresh(true)
-
 	m.output = NewOutput()
 
 	return m
 }
 
 func (m *model) Init() tea.Cmd {
-	cmds := []tea.Cmd{tea.EnterAltScreen}
+	cmds := []tea.Cmd{tea.EnterAltScreen, refreshList(true)}
 
 	var disk unused.Disk
 	if disks := m.disks[m.tabs.Selected()]; len(disks) > 0 {
@@ -90,13 +88,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, listKeyMap.Right):
 			m.tabs.Next()
-			m.refresh(true)
-			return m, nil
+			return m, refreshList(true)
 
 		case key.Matches(msg, listKeyMap.Left):
 			m.tabs.Prev()
-			m.refresh(true)
-			return m, nil
+			return m, refreshList(true)
 
 		case key.Matches(msg, listKeyMap.Mark):
 			selected := m.selected[m.tabs.Selected()]
@@ -106,9 +102,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				selected[idx] = struct{}{}
 			}
-			m.refresh(false)
+
 			m.list.CursorDown()
-			return m, displayDiskDetails(m.disks[m.tabs.Selected()][idx])
+
+			cmds := []tea.Cmd{
+				displayDiskDetails(m.disks[m.tabs.Selected()][idx]),
+				refreshList(false),
+			}
+			return m, tea.Batch(cmds...)
 
 		case key.Matches(msg, listKeyMap.Exec):
 			var disks unused.Disks
@@ -128,8 +129,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, listKeyMap.Verbose):
 			m.verbose = !m.verbose
-			m.list.SetDelegate(listDelegate(m.verbose))
-			m.refresh(false)
+			return m, refreshList(false)
 
 		case key.Matches(msg, listKeyMap.Up, listKeyMap.Down, listKeyMap.PageUp, listKeyMap.PageDown):
 			var cmd tea.Cmd
@@ -147,6 +147,21 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.String(),
 			strings.Repeat(" ", m.sidebar.Width),
 		))
+
+	case refreshListMsg:
+		m.list.SetDelegate(listDelegate(m.verbose))
+		disks := m.disks[m.tabs.Selected()]
+		items := make([]list.Item, len(disks))
+		selected := m.selected[m.tabs.Selected()]
+		for i, d := range disks {
+			_, marked := selected[i]
+			items[i] = item{d, m.verbose, marked}
+		}
+		m.list.SetItems(items)
+
+		if msg.resetSelected {
+			m.list.ResetSelected()
+		}
 
 	case tea.WindowSizeMsg:
 		m.sidebar.Width = msg.Width - 2
@@ -171,17 +186,14 @@ func (m *model) View() string {
 	)
 }
 
-func (m *model) refresh(reset bool) {
-	disks := m.disks[m.tabs.Selected()]
-	items := make([]list.Item, len(disks))
-	selected := m.selected[m.tabs.Selected()]
-	for i, d := range disks {
-		_, marked := selected[i]
-		items[i] = item{d, m.verbose, marked}
-	}
-	m.list.SetItems(items)
+type refreshListMsg struct {
+	resetSelected bool
+}
 
-	if reset {
-		m.list.ResetSelected()
+func refreshList(reset bool) tea.Cmd {
+	return func() tea.Msg {
+		return refreshListMsg{
+			resetSelected: reset,
+		}
 	}
 }
