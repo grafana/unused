@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -25,6 +26,7 @@ type output struct {
 	delstatus map[int]error
 	spinner   spinner.Model
 	help      helpview
+	tpl       *template.Template
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -34,9 +36,18 @@ func NewOutput() *output {
 	o := &output{
 		delstatus: make(map[int]error),
 		help:      NewHelp(outputKeyMap.Exec, outputKeyMap.Quit, outputKeyMap.Up, outputKeyMap.Down, outputKeyMap.PageUp, outputKeyMap.PageDown),
+		spinner:   spinner.New(),
 	}
 	o.viewport.Style = o.viewport.Style.Border(lipgloss.RoundedBorder())
 	o.spinner.Spinner = spinner.Points
+
+	o.tpl = template.Must(template.New("").
+		Funcs(template.FuncMap{
+			"error": errStyle.Render,
+			"spin":  o.spinner.View,
+		}).
+		Parse(outputTpl))
+
 	return o
 }
 
@@ -52,6 +63,7 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		o.SetSize(msg.Width, msg.Height)
+		return o, nil
 
 	case tea.KeyMsg:
 		switch {
@@ -103,18 +115,26 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}()
 
 			return o, o.spinner.Tick
+
+		default:
+			return o, nil
 		}
 
-	case spinner.TickMsg:
-		o.spinner, cmd = o.spinner.Update(msg)
-		return o, cmd
-
 	default:
+		var cmds []tea.Cmd
 		o.viewport, cmd = o.viewport.Update(msg)
-		return o, cmd
+		cmds = append(cmds, cmd)
+		o.spinner, cmd = o.spinner.Update(msg)
+		cmds = append(cmds, cmd)
+		return o, tea.Batch(cmds...)
 	}
+}
 
-	return o, nil
+type templateData struct {
+	Disk     unused.Disk
+	Done     bool
+	Error    error
+	Deleting bool
 }
 
 func (o *output) View() string {
@@ -127,33 +147,26 @@ func (o *output) View() string {
 
 	o.viewport.Height = o.h - lipgloss.Height(title) - lipgloss.Height(help) - 2
 
-	var ds strings.Builder
-	renderDisk := func(i int, d unused.Disk) string {
-		ds.Reset()
-
-		fmt.Fprintf(&ds, "* %s (%s %s) ", d.Name(), d.Provider().Name(), d.Provider().Meta())
-
-		if err, ok := o.delstatus[i]; err != nil {
-			fmt.Fprintf(&ds, "ERROR\n")
-			fmt.Fprintf(&ds, errStyle.Render(err.Error()))
-		} else if ok {
-			fmt.Fprintf(&ds, "DONE")
-		} else if o.deletidx == i {
-			fmt.Fprintf(&ds, o.spinner.View())
+	data := make([]templateData, len(o.disks))
+	for i, d := range o.disks {
+		d := templateData{
+			Disk:     d,
+			Deleting: o.delete && i == o.deletidx,
 		}
-
-		return ds.String()
+		d.Error, d.Done = o.delstatus[i]
+		data[i] = d
 	}
 
 	var s strings.Builder
-	for i, d := range o.disks {
-		disk := renderDisk(i, d)
-		fill = strings.Repeat(" ", o.w-lipgloss.Width(disk)-2)
-		s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, disk, fill))
-		s.WriteRune('\n')
+	err := o.tpl.Execute(&s, data)
+	if err == nil {
+		// fill
+		s.WriteString(strings.Repeat(" ", o.w-2))
+		o.viewport.SetContent(s.String())
+	} else {
+		o.viewport.SetContent(errStyle.Render(err.Error()))
 	}
-	o.viewport.SetContent(s.String())
-
+	title = o.spinner.View()
 	help = centerStyle.Copy().Width(o.w).Render(help)
 
 	return lipgloss.JoinVertical(lipgloss.Left, title, o.viewport.View(), help)

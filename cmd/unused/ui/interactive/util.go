@@ -46,3 +46,13 @@ var diskDetails = template.Must(template.New("").
 {{ end -}}
 {{ end}}
 `))
+
+const outputTpl = `{{ range . }}
+{{ if .Error }}{{ "𐄂" | error -}}
+{{ else if .Done }}✔
+{{- else if .Deleting }}#
+{{- end -}}
+  {{ .Disk.Name }} ({{ .Disk.Provider.Name }} {{ .Disk.Provider.Meta }}) {{ if .Error }}
+{{ .Error.Error | error }}{{ end -}}
+{{ end }}
+`
