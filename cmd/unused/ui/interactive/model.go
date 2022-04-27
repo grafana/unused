@@ -154,7 +154,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		h := msg.Height - lipgloss.Height(m.tabs.View()) - lipgloss.Height(m.help.View()) - lipgloss.Height(m.sidebar.View()) - 2
 		m.lbox.Width(msg.Width - 2)
-		m.list.SetHeight(h)
+		m.list.SetSize(msg.Width-2, h)
 
 		m.output.SetSize(msg.Width, msg.Height)
 	}
