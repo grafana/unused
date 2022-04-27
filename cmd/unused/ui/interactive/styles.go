@@ -17,4 +17,8 @@ var (
 	// list item when marked
 	markedColor = lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"}
 	markedStyle = lipgloss.NewStyle().Strikethrough(true).Foreground(markedColor)
+
+	// output styles
+	titleStyle = lipgloss.NewStyle().Bold(true).Border(lipgloss.RoundedBorder())
+	errStyle   = lipgloss.NewStyle().Foreground(markedColor)
 )

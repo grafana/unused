@@ -117,11 +117,6 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return o, nil
 }
 
-var (
-	titleStyle = lipgloss.NewStyle().Bold(true).Border(lipgloss.RoundedBorder())
-	errStyle   = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#990000", Dark: "#ff0000"})
-)
-
 func (o *output) View() string {
 	var (
 		count = fmt.Sprintf("%d disks marked for deletion", len(o.disks))
