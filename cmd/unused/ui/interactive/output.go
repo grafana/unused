@@ -122,14 +122,6 @@ var (
 	errStyle   = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#990000", Dark: "#ff0000"})
 )
 
-func (o *output) renderTitle() string {
-	var (
-		count = fmt.Sprintf("%d disks marked for deletion", len(o.disks))
-		fill  = strings.Repeat(" ", o.w-lipgloss.Width(count)-2)
-	)
-	return titleStyle.Render(lipgloss.JoinHorizontal(lipgloss.Top, count, fill))
-}
-
 func (o *output) View() string {
 	var (
 		count = fmt.Sprintf("%d disks marked for deletion", len(o.disks))
