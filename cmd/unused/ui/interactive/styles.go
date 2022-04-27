@@ -21,4 +21,7 @@ var (
 	// output styles
 	titleStyle = lipgloss.NewStyle().Bold(true).Border(lipgloss.RoundedBorder())
 	errStyle   = lipgloss.NewStyle().Foreground(markedColor)
+
+	// align things to center
+	centerStyle = lipgloss.NewStyle().Align(lipgloss.Center)
 )

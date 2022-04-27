@@ -154,8 +154,7 @@ func (o *output) View() string {
 	}
 	o.viewport.SetContent(s.String())
 
-	fill = strings.Repeat(" ", (o.w-lipgloss.Width(help))/2)
-	help = lipgloss.JoinHorizontal(lipgloss.Top, fill, help, fill)
+	help = centerStyle.Copy().Width(o.w).Render(help)
 
 	return lipgloss.JoinVertical(lipgloss.Left, title, o.viewport.View(), help)
 }

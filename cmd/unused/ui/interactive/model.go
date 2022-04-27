@@ -189,7 +189,7 @@ func (m *model) View() string {
 		m.tabs.View(),
 		m.lbox.Render(m.list.View()),
 		m.sidebar.View(),
-		m.help.View(),
+		centerStyle.Copy().Width(m.lbox.GetWidth()).Render(m.help.View()),
 	)
 }
 
