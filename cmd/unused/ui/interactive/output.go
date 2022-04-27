@@ -58,75 +58,76 @@ func (o *output) SetSize(w, h int) {
 func (o *output) Init() tea.Cmd { return nil }
 
 func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		o.SetSize(msg.Width, msg.Height)
 		return o, nil
 
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, outputKeyMap.Quit):
-			return o, tea.Quit
-
-		case key.Matches(msg, outputKeyMap.Cancel):
-			if o.delete {
-				o.cancel()
-				o.delete = false
-			}
-
-			return o, nil
-
-		case key.Matches(msg, outputKeyMap.Up, outputKeyMap.Down, outputKeyMap.PageUp, outputKeyMap.PageDown):
-			o.viewport, cmd = o.viewport.Update(msg)
-			return o, cmd
-
-		case key.Matches(msg, outputKeyMap.Exec):
-			o.delete = true
-			outputKeyMap.Quit.SetEnabled(false)
-			o.ctx, o.cancel = context.WithCancel(context.Background())
-
-			// TODO extract this to a method, and implement real deletion
-			go func() {
-				defer outputKeyMap.Quit.SetEnabled(true)
-				defer o.cancel()
-
-				for i := range o.disks {
-					_, ok := o.delstatus[i]
-					if ok {
-						// disk was already processed
-						continue
-					}
-
-					select {
-					case <-o.ctx.Done():
-						return
-					default:
-						o.deletidx = i
-						time.Sleep(time.Duration(rand.Intn(2000)) * time.Millisecond)
-						if rand.Intn(100)%3 == 0 {
-							o.delstatus[i] = errors.New("something went wrong")
-						} else {
-							o.delstatus[i] = nil
-						}
-					}
-				}
-			}()
-
-			return o, o.spinner.Tick
-
-		default:
-			return o, nil
-		}
+		return o.updateKeyMsg(msg)
 
 	default:
-		var cmds []tea.Cmd
+		var cmds [2]tea.Cmd
+		o.viewport, cmds[0] = o.viewport.Update(msg)
+		o.spinner, cmds[1] = o.spinner.Update(msg)
+		return o, tea.Batch(cmds[0], cmds[1])
+	}
+}
+
+func (o *output) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, outputKeyMap.Quit):
+		return o, tea.Quit
+
+	case key.Matches(msg, outputKeyMap.Cancel):
+		if o.delete {
+			o.cancel()
+			o.delete = false
+		}
+
+		return o, nil
+
+	case key.Matches(msg, outputKeyMap.Up, outputKeyMap.Down, outputKeyMap.PageUp, outputKeyMap.PageDown):
+		var cmd tea.Cmd
 		o.viewport, cmd = o.viewport.Update(msg)
-		cmds = append(cmds, cmd)
-		o.spinner, cmd = o.spinner.Update(msg)
-		cmds = append(cmds, cmd)
-		return o, tea.Batch(cmds...)
+		return o, cmd
+
+	case key.Matches(msg, outputKeyMap.Exec):
+		o.delete = true
+		outputKeyMap.Quit.SetEnabled(false)
+		o.ctx, o.cancel = context.WithCancel(context.Background())
+
+		// TODO extract this to a method, and implement real deletion
+		go func() {
+			defer outputKeyMap.Quit.SetEnabled(true)
+			defer o.cancel()
+
+			for i := range o.disks {
+				_, ok := o.delstatus[i]
+				if ok {
+					// disk was already processed
+					continue
+				}
+
+				select {
+				case <-o.ctx.Done():
+					return
+				default:
+					o.deletidx = i
+					time.Sleep(time.Duration(rand.Intn(2000)) * time.Millisecond)
+					if rand.Intn(100)%3 == 0 {
+						o.delstatus[i] = errors.New("something went wrong")
+					} else {
+						o.delstatus[i] = nil
+					}
+				}
+			}
+		}()
+
+		return o, o.spinner.Tick
+
+	default:
+		return o, nil
 	}
 }
 
