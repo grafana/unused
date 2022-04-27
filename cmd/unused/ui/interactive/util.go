@@ -30,7 +30,7 @@ var diskDetails = template.Must(template.New("").
 	}).
 	Parse(
 		`{{ block "disk" . }}
-{{ .Name | header }}
+{{- .Name | header }}
 
 {{ header "Created:" }} {{.CreatedAt | rfc3339 }} ({{ .CreatedAt | age }})
 
@@ -42,7 +42,7 @@ var diskDetails = template.Must(template.New("").
 
 {{- with .Provider }}
 {{ header "Provider:" }} {{ .Name }}
-{{ template "meta" .Meta }}
+{{- template "meta" .Meta }}
 {{ end -}}
 {{ end}}
 `))
