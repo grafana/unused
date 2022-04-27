@@ -42,6 +42,9 @@ func NewModel(verbose bool, disks unused.Disks) *model {
 	}
 
 	m.list.SetShowTitle(false)
+	m.list.SetShowHelp(false)
+	m.list.SetShowStatusBar(true)
+	m.list.SetShowFilter(false)
 	m.list.DisableQuitKeybindings()
 
 	m.sidebar.Style = sectionStyle
