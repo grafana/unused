@@ -32,8 +32,9 @@ func NewModel(verbose bool, disks unused.Disks) *model {
 		verbose:  verbose,
 		selected: make(map[string]map[int]struct{}),
 		list:     list.New(nil, listDelegate(verbose), 0, 0),
-		lbox:     lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, true, true, false),
+		lbox:     activeSectionStyle,
 		disks:    make(map[string]unused.Disks),
+		sidebar:  viewport.New(0, 15),
 
 		help: NewHelp(listKeyMap.Mark, listKeyMap.Exec, listKeyMap.Quit,
 			listKeyMap.Up, listKeyMap.Down, listKeyMap.PageUp, listKeyMap.PageDown,
@@ -43,7 +44,7 @@ func NewModel(verbose bool, disks unused.Disks) *model {
 	m.list.SetShowTitle(false)
 	m.list.DisableQuitKeybindings()
 
-	m.sidebar.Style = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false, true, true)
+	m.sidebar.Style = sectionStyle
 
 	for _, d := range disks {
 		p := d.Provider().Name()
@@ -145,12 +146,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		))
 
 	case tea.WindowSizeMsg:
-		h := msg.Height - lipgloss.Height(m.tabs.View()) - lipgloss.Height(m.help.View()) - 2
-		w := (msg.Width / 2)
-		m.lbox.Width(w)
-		m.list.SetSize(w, h)
-		m.sidebar.Width = w - 2
-		m.sidebar.Height = h
+		m.sidebar.Width = msg.Width - 2
+		m.sidebar.SetContent(strings.Repeat(" ", m.sidebar.Width))
+
+		h := msg.Height - lipgloss.Height(m.tabs.View()) - lipgloss.Height(m.help.View()) - lipgloss.Height(m.sidebar.View()) - 2
+		m.lbox.Width(msg.Width - 2)
+		m.list.SetHeight(h)
+
 		m.output.SetSize(msg.Width, msg.Height)
 	}
 
@@ -160,10 +162,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left,
 		m.tabs.View(),
-		lipgloss.JoinHorizontal(lipgloss.Top,
-			m.lbox.Render(m.list.View()),
-			m.sidebar.View(),
-		),
+		m.lbox.Render(m.list.View()),
+		m.sidebar.View(),
 		m.help.View(),
 	)
 }
