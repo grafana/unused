@@ -6,9 +6,8 @@ import (
 )
 
 type helpview struct {
-	model         help.Model
-	keys          []key.Binding
-	width, height int
+	model help.Model
+	keys  []key.Binding
 }
 
 func NewHelp(keys ...key.Binding) helpview {
