@@ -52,6 +52,7 @@ func (i item) Description() string {
 func listDelegate(verbose bool) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 	d.ShowDescription = verbose
+	d.SetSpacing(0)
 	d.UpdateFunc = func(msg tea.Msg, list *list.Model) tea.Cmd {
 		item, ok := list.SelectedItem().(item)
 		if ok { // this should always happen
