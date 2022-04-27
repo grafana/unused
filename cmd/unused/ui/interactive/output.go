@@ -73,33 +73,15 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		return o.updateKeyMsg(msg)
-	}
 
-	var cmd [2]tea.Cmd
-	o.viewport, cmd[0] = o.viewport.Update(msg)
-	o.spinner, cmd[1] = o.spinner.Update(msg)
-	return o, tea.Batch(cmd[0], cmd[1])
-}
-
-func (o *output) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch {
-	case key.Matches(msg, outputKeyMap.Quit):
-		return o, tea.Quit
-
-	case key.Matches(msg, outputKeyMap.Cancel):
+	case stopExecMsg:
 		if o.delete {
 			o.cancel()
+			outputKeyMap.Quit.SetEnabled(true)
 			o.delete = false
 		}
 
-		return o, nil
-
-	case key.Matches(msg, outputKeyMap.Up, outputKeyMap.Down, outputKeyMap.PageUp, outputKeyMap.PageDown):
-		var cmd tea.Cmd
-		o.viewport, cmd = o.viewport.Update(msg)
-		return o, cmd
-
-	case key.Matches(msg, outputKeyMap.Exec):
+	case resumeExecMsg:
 		o.delete = true
 		outputKeyMap.Quit.SetEnabled(false)
 		o.ctx, o.cancel = context.WithCancel(context.Background())
@@ -129,8 +111,29 @@ func (o *output) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}()
+	}
 
-		return o, o.spinner.Tick
+	var cmd [2]tea.Cmd
+	o.viewport, cmd[0] = o.viewport.Update(msg)
+	o.spinner, cmd[1] = o.spinner.Update(msg)
+	return o, tea.Batch(cmd[0], cmd[1])
+}
+
+func (o *output) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, outputKeyMap.Quit):
+		return o, tea.Quit
+
+	case key.Matches(msg, outputKeyMap.Cancel):
+		return o, stopExec
+
+	case key.Matches(msg, outputKeyMap.Up, outputKeyMap.Down, outputKeyMap.PageUp, outputKeyMap.PageDown):
+		var cmd tea.Cmd
+		o.viewport, cmd = o.viewport.Update(msg)
+		return o, cmd
+
+	case key.Matches(msg, outputKeyMap.Exec):
+		return o, tea.Batch(o.spinner.Tick, resumeExec)
 
 	default:
 		return o, nil
@@ -168,3 +171,11 @@ func (o *output) View() string {
 
 	return lipgloss.JoinVertical(lipgloss.Left, title, o.viewport.View(), help)
 }
+
+type resumeExecMsg struct{}
+
+func resumeExec() tea.Msg { return resumeExecMsg{} }
+
+type stopExecMsg struct{}
+
+func stopExec() tea.Msg { return stopExecMsg{} }
