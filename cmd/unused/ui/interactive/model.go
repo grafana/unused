@@ -82,60 +82,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, listKeyMap.Quit):
-			return m, tea.Quit
-
-		case key.Matches(msg, listKeyMap.Right):
-			m.tabs.Next()
-			return m, refreshList(true)
-
-		case key.Matches(msg, listKeyMap.Left):
-			m.tabs.Prev()
-			return m, refreshList(true)
-
-		case key.Matches(msg, listKeyMap.Mark):
-			selected := m.selected[m.tabs.Selected()]
-			idx := m.list.Index()
-			if _, marked := selected[idx]; marked {
-				delete(selected, idx)
-			} else {
-				selected[idx] = struct{}{}
-			}
-
-			m.list.CursorDown()
-
-			cmds := []tea.Cmd{
-				displayDiskDetails(m.disks[m.tabs.Selected()][idx]),
-				refreshList(false),
-			}
-			return m, tea.Batch(cmds...)
-
-		case key.Matches(msg, listKeyMap.Exec):
-			var disks unused.Disks
-			for p, sel := range m.selected {
-				for idx := range sel {
-					disks = append(disks, m.disks[p][idx])
-				}
-			}
-
-			if len(disks) > 0 {
-				disks.Sort(unused.ByName)
-				m.output.disks = disks
-				return m.output, nil
-			}
-
-			return m, nil
-
-		case key.Matches(msg, listKeyMap.Verbose):
-			m.verbose = !m.verbose
-			return m, refreshList(false)
-
-		case key.Matches(msg, listKeyMap.Up, listKeyMap.Down, listKeyMap.PageUp, listKeyMap.PageDown):
-			var cmd tea.Cmd
-			m.list, cmd = m.list.Update(msg)
-			return m, cmd
-		}
+		return m.updateKeyMsg(msg)
 
 	case unused.Disk:
 		var s strings.Builder
@@ -175,6 +122,66 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func (m *model) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, listKeyMap.Quit):
+		return m, tea.Quit
+
+	case key.Matches(msg, listKeyMap.Right):
+		m.tabs.Next()
+		return m, refreshList(true)
+
+	case key.Matches(msg, listKeyMap.Left):
+		m.tabs.Prev()
+		return m, refreshList(true)
+
+	case key.Matches(msg, listKeyMap.Mark):
+		selected := m.selected[m.tabs.Selected()]
+		idx := m.list.Index()
+		if _, marked := selected[idx]; marked {
+			delete(selected, idx)
+		} else {
+			selected[idx] = struct{}{}
+		}
+
+		m.list.CursorDown()
+
+		cmds := []tea.Cmd{
+			displayDiskDetails(m.disks[m.tabs.Selected()][idx]),
+			refreshList(false),
+		}
+		return m, tea.Batch(cmds...)
+
+	case key.Matches(msg, listKeyMap.Exec):
+		var disks unused.Disks
+		for p, sel := range m.selected {
+			for idx := range sel {
+				disks = append(disks, m.disks[p][idx])
+			}
+		}
+
+		if len(disks) > 0 {
+			disks.Sort(unused.ByName)
+			m.output.disks = disks
+			return m.output, nil
+		}
+
+		return m, nil
+
+	case key.Matches(msg, listKeyMap.Verbose):
+		m.verbose = !m.verbose
+		return m, refreshList(false)
+
+	case key.Matches(msg, listKeyMap.Up, listKeyMap.Down, listKeyMap.PageUp, listKeyMap.PageDown):
+		var cmd tea.Cmd
+		m.list, cmd = m.list.Update(msg)
+		return m, cmd
+
+	default:
+		return m, nil
+	}
 }
 
 func (m *model) View() string {
