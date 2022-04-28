@@ -156,11 +156,29 @@ type templateData struct {
 	Deleting bool
 }
 
+func (o *output) progressView() string {
+	total := len(o.status)
+	var deleted int
+	for _, s := range o.status {
+		if s.Done {
+			deleted++
+		}
+	}
+
+	var progress, spinner, fill string
+
+	progress = fmt.Sprintf("%d/%d disks deleted ", deleted, total) // leave the space for the spinner
+	if o.delete {
+		spinner = o.spinner.View()
+	}
+	fill = strings.Repeat(" ", o.w-lipgloss.Width(progress)-lipgloss.Width(spinner)-2)
+
+	return titleStyle.Render(lipgloss.JoinHorizontal(lipgloss.Top, progress, spinner, fill))
+}
+
 func (o *output) View() string {
 	var (
-		count = fmt.Sprintf("%d disks marked for deletion", len(o.status))
-		fill  = strings.Repeat(" ", o.w-lipgloss.Width(count)-2)
-		title = titleStyle.Render(lipgloss.JoinHorizontal(lipgloss.Top, count, fill))
+		title = o.progressView()
 		help  = o.help.View()
 	)
 
