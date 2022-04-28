@@ -87,31 +87,39 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		outputKeyMap.Quit.SetEnabled(false)
 		o.ctx, o.cancel = context.WithCancel(context.Background())
 
-		// TODO extract this to a method, and implement real deletion
-		go func() {
-			defer outputKeyMap.Quit.SetEnabled(true)
-			defer o.cancel()
+		return o, deleteNextDisk
 
-			for _, s := range o.status {
-				if s.Done {
-					// disk was already processed
-					continue
+	case deleteNextDiskMsg:
+		for _, s := range o.status {
+			if s.Done {
+				// disk was already processed
+				continue
+			}
+
+			select {
+			case <-o.ctx.Done():
+				return o, nil
+			default:
+				if s.Deleting {
+					// disk is being processed
+					return o, tea.Tick(50*time.Millisecond, deleteNextDiskTick)
 				}
 
-				select {
-				case <-o.ctx.Done():
-					return
-				default:
-					s.Deleting = true
+				s.Deleting = true
+				go func() {
 					time.Sleep(time.Duration(rand.Intn(2000)) * time.Millisecond)
 					s.Done = true
 					s.Deleting = false
 					if rand.Intn(100)%3 == 0 {
 						s.Error = errors.New("something went wrong")
 					}
-				}
+				}()
+
+				return o, tea.Tick(50*time.Millisecond, deleteNextDiskTick)
 			}
-		}()
+		}
+
+		return o, stopExec
 	}
 
 	var cmd [2]tea.Cmd
@@ -180,3 +188,8 @@ func resumeExec() tea.Msg { return resumeExecMsg{} }
 type stopExecMsg struct{}
 
 func stopExec() tea.Msg { return stopExecMsg{} }
+
+type deleteNextDiskMsg struct{}
+
+func deleteNextDisk() tea.Msg              { return deleteNextDiskMsg{} }
+func deleteNextDiskTick(time.Time) tea.Msg { return deleteNextDisk() }
