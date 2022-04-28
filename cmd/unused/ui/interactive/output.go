@@ -100,20 +100,20 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case <-o.ctx.Done():
 				return o, nil
 			default:
-				if s.Deleting {
-					// disk is being processed
-					return o, tea.Tick(50*time.Millisecond, deleteNextDiskTick)
-				}
+				if !s.Deleting {
+					s.Deleting = true
 
-				s.Deleting = true
-				go func() {
-					time.Sleep(time.Duration(rand.Intn(2000)) * time.Millisecond)
-					s.Done = true
-					s.Deleting = false
-					if rand.Intn(100)%3 == 0 {
-						s.Error = errors.New("something went wrong")
-					}
-				}()
+					go func() {
+						// TODO this should be replaces by calling s.Disk.Provider().Delete(s.Disk)
+						time.Sleep(time.Duration(rand.Intn(2000)) * time.Millisecond)
+						if rand.Intn(100)%3 == 0 {
+							s.Error = errors.New("something went wrong")
+						}
+
+						s.Done = true
+						s.Deleting = false
+					}()
+				}
 
 				return o, tea.Tick(50*time.Millisecond, deleteNextDiskTick)
 			}
