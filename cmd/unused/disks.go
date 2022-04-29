@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/grafana/unused"
@@ -18,13 +17,19 @@ func listUnusedDisks(ctx context.Context, providers []unused.Provider) (unused.D
 
 	wg.Add(len(providers))
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	errCh := make(chan error, len(providers))
+
 	for _, p := range providers {
 		go func(p unused.Provider) {
 			defer wg.Done()
 
 			disks, err := p.ListUnusedDisks(ctx)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s %s failed: %v\n", p.Name(), p.Meta(), err)
+				cancel()
+				errCh <- fmt.Errorf("%s %s: %w", p.Name(), p.Meta(), err)
 				return
 			}
 
@@ -35,6 +40,12 @@ func listUnusedDisks(ctx context.Context, providers []unused.Provider) (unused.D
 	}
 
 	wg.Wait()
+
+	select {
+	case err := <-errCh:
+		return nil, err
+	default:
+	}
 
 	return total, nil
 }
