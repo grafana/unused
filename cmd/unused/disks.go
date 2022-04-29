@@ -24,7 +24,7 @@ func listUnusedDisks(ctx context.Context, providers []unused.Provider) (unused.D
 
 			disks, err := p.ListUnusedDisks(ctx)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "listing unused disks for %s: %v\n:", p, err)
+				fmt.Fprintf(os.Stderr, "%s %s failed: %v\n", p.Name(), p.Meta(), err)
 				return
 			}
 
