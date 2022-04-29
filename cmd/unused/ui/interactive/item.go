@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/grafana/unused"
+	"github.com/grafana/unused/cli"
 )
 
 type item struct {
@@ -36,7 +37,7 @@ func (i item) Description() string {
 
 	s.WriteRune(' ')
 	s.WriteString("age=")
-	s.WriteString(age(i.disk.CreatedAt()))
+	s.WriteString(cli.Age(i.disk.CreatedAt()))
 
 	if i.verbose {
 		s.WriteRune(' ')
