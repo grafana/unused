@@ -28,3 +28,7 @@ func (m Meta) String() string {
 	}
 	return s.String()
 }
+
+func (m Meta) Matches(key, val string) bool {
+	return m[key] == val
+}

@@ -33,3 +33,21 @@ func TestMeta(t *testing.T) {
 		}
 	})
 }
+
+func TestMetaMatches(t *testing.T) {
+	m := &unused.Meta{
+		"def": "123",
+		"ghi": "456",
+		"abc": "789",
+	}
+
+	if ok := m.Matches("ghi", "456"); !ok {
+		t.Error("expecting match")
+	}
+	if ok := m.Matches("zyx", "123"); ok {
+		t.Error("expecting no match for unrecognized key")
+	}
+	if ok := m.Matches("def", "789"); ok {
+		t.Error("expecting no match for different value")
+	}
+}
