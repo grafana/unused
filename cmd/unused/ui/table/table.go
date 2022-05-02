@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/grafana/unused"
+	"github.com/grafana/unused/cli"
 	"github.com/grafana/unused/cmd/unused/ui"
 )
 
@@ -24,19 +26,22 @@ func New(out io.Writer, verbose bool) table {
 func (t table) Display(ctx context.Context, disks unused.Disks) error {
 	w := tabwriter.NewWriter(t.out, 8, 4, 2, ' ', 0)
 
-	fmt.Fprint(w, "PROVIDER\tNAME")
+	headers := []string{"PROVIDER", "DISK", "AGE"}
 	if t.verbose {
-		fmt.Fprint(w, "\tMETADATA")
+		headers = append(headers, "PROVIDER_META", "DISK_META")
 	}
-	fmt.Fprintln(w)
+
+	fmt.Println(w, strings.Join(headers, "\t"))
 
 	for _, d := range disks {
 		p := d.Provider()
+
+		row := []string{p.Name(), d.Name(), cli.Age(d.CreatedAt())}
 		if t.verbose {
-			fmt.Fprintf(w, "%s{%s}\t%s\t%s\n", p.Name(), p.Meta(), d.Name(), d.Meta())
-		} else {
-			fmt.Fprintf(w, "%s\t%s\n", p.Name(), d.Name())
+			row = append(row, p.Meta().String(), d.Meta().String())
 		}
+
+		fmt.Fprintln(w, strings.Join(row, "\t"))
 	}
 
 	if err := w.Flush(); err != nil {
