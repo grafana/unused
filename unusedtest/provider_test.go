@@ -2,6 +2,7 @@ package unusedtest_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -46,12 +47,6 @@ func TestNewProvider(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestProviderMeta(t *testing.T) {
-	unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
-		return unusedtest.NewProvider("my-provider", meta, nil), nil
-	})
 }
 
 func TestProviderDelete(t *testing.T) {
@@ -109,5 +104,73 @@ func TestProviderDelete(t *testing.T) {
 	t.Run("random", func(t *testing.T) {
 		p, disks := setup()
 		run(t, p, disks, rand.Intn(len(disks)))
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		p, _ := setup()
+
+		if err := p.Delete(ctx, unusedtest.NewDisk("foo-bar-baz", p, time.Now())); !errors.Is(err, unusedtest.ErrDiskNotFound) {
+			t.Fatalf("expecting error %v, got %v", unusedtest.ErrDiskNotFound, err)
+		}
+	})
+}
+
+func TestTestProviderMeta(t *testing.T) {
+	t.Run("fail to create provider", func(t *testing.T) {
+		err := unusedtest.TestProviderMeta(func(unused.Meta) (unused.Provider, error) {
+			return nil, errors.New("foo")
+		})
+		if err == nil {
+			t.Fatal("expecting error")
+		}
+	})
+
+	t.Run("returns nil metadata", func(t *testing.T) {
+		err := unusedtest.TestProviderMeta(func(unused.Meta) (unused.Provider, error) {
+			p := unusedtest.NewProvider("my-provider", nil)
+			p.SetMeta(nil)
+			return p, nil
+		})
+		if err == nil {
+			t.Fatal("expecting error")
+		}
+	})
+
+	t.Run("returns different metadata length", func(t *testing.T) {
+		err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
+			// ensure we are always sending at least twice the length
+			newMeta := make(unused.Meta)
+			for k, v := range meta {
+				newMeta[k] = v
+				newMeta[v] = k
+			}
+			return unusedtest.NewProvider("my-provider", newMeta), nil
+		})
+		if err == nil {
+			t.Fatal("expecting error")
+		}
+	})
+
+	t.Run("metadata is unchanged", func(t *testing.T) {
+		err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
+			// ensure we are always sending at least twice the length
+			newMeta := make(unused.Meta)
+			for k := range meta {
+				newMeta[k] = k
+			}
+			return unusedtest.NewProvider("my-provider", newMeta), nil
+		})
+		if err == nil {
+			t.Fatal("expecting error")
+		}
+	})
+
+	t.Run("passes all testes", func(t *testing.T) {
+		err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
+			return unusedtest.NewProvider("my-provider", meta), nil
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	})
 }

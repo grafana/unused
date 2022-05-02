@@ -27,9 +27,12 @@ func TestNewProvider(t *testing.T) {
 	})
 
 	t.Run("metadata", func(t *testing.T) {
-		unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+		err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
 			return gcp.NewProvider(context.Background(), "my-provider", meta)
 		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	})
 }
 

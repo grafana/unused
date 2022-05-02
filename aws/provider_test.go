@@ -28,9 +28,12 @@ func TestNewProvider(t *testing.T) {
 }
 
 func TestProviderMeta(t *testing.T) {
-	unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+	err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
 		return aws.NewProvider(context.Background(), meta)
 	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
 
 func TestListUnusedDisks(t *testing.T) {
