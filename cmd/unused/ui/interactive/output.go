@@ -149,13 +149,6 @@ func (o *output) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
-type templateData struct {
-	Disk     unused.Disk
-	Done     bool
-	Error    error
-	Deleting bool
-}
-
 func (o *output) progressView() string {
 	total := len(o.status)
 	var deleted int
