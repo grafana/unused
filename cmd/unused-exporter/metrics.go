@@ -119,6 +119,5 @@ func (m metrics) collect(ctx context.Context, p unused.Provider) {
 			lbls = append(lbls, k, meta[k])
 		}
 		m.logger.Log("unused disk found", lbls...)
-		break
 	}
 }
