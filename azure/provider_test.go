@@ -24,9 +24,12 @@ func TestNewProvider(t *testing.T) {
 }
 
 func TestProviderMeta(t *testing.T) {
-	unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+	err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
 		return azure.NewProvider("my-subscription", meta)
 	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
 
 func TestListUnusedDisks(t *testing.T) {
@@ -68,7 +71,7 @@ func TestListUnusedDisks(t *testing.T) {
 		t.Errorf("expecting %d disks, got %d", exp, got)
 	}
 
-	unusedtest.AssertEqualMeta(t, unused.Meta{
+	err = unusedtest.AssertEqualMeta(unused.Meta{
 		"location":                                "germanywestcentral",
 		"created-by":                              "kubernetes-azure-dd",
 		"kubernetes.io-created-for-pv-name":       "pvc-prometheus-1",
@@ -76,4 +79,7 @@ func TestListUnusedDisks(t *testing.T) {
 		"kubernetes.io-created-for-pvc-namespace": "monitoring",
 		azure.ResourceGroupMetaKey:                "RGNAME",
 	}, disks[0].Meta())
+	if err != nil {
+		t.Fatalf("metadata doesn't match: %v", err)
+	}
 }

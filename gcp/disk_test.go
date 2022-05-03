@@ -33,5 +33,8 @@ func TestDisk(t *testing.T) {
 		t.Errorf("expecting CreatedAt() %v, got %v", createdAt, d.CreatedAt())
 	}
 
-	unusedtest.AssertEqualMeta(t, unused.Meta{"foo": "bar"}, d.Meta())
+	err := unusedtest.AssertEqualMeta(unused.Meta{"foo": "bar"}, d.Meta())
+	if err != nil {
+		t.Fatalf("metadata doesn't match: %v", err)
+	}
 }

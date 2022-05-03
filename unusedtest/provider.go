@@ -3,7 +3,7 @@ package unusedtest
 import (
 	"context"
 	"errors"
-	"testing"
+	"fmt"
 
 	"github.com/grafana/unused"
 )
@@ -27,6 +27,8 @@ func (p *provider) Name() string { return p.name }
 
 func (p *provider) Meta() unused.Meta { return p.meta }
 
+func (p *provider) SetMeta(meta unused.Meta) { p.meta = meta }
+
 func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	return p.disks, nil
 }
@@ -44,36 +46,35 @@ func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
 	return ErrDiskNotFound
 }
 
-func TestProviderMeta(t *testing.T, newProvider func(meta unused.Meta) (unused.Provider, error)) {
-	t.Helper()
-
+func TestProviderMeta(newProvider func(meta unused.Meta) (unused.Provider, error)) error {
 	tests := map[string]unused.Meta{
-		"empty": nil,
+		"nil":   nil,
+		"empty": map[string]string{},
 		"respect values": map[string]string{
 			"foo": "bar",
 		},
 	}
 
 	for name, expMeta := range tests {
-		t.Run(name, func(t *testing.T) {
-			p, err := newProvider(expMeta)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+		p, err := newProvider(expMeta)
+		if err != nil {
+			return fmt.Errorf("%s: unexpected error: %v", name, err)
+		}
 
-			meta := p.Meta()
-			if meta == nil {
-				t.Error("expecting metadata, got nil")
-			}
+		meta := p.Meta()
+		if meta == nil {
+			return fmt.Errorf("%s: expecting metadata, got nil", name)
+		}
 
-			if exp, got := len(expMeta), len(meta); exp != got {
-				t.Errorf("expecting %d metadata value, got %d", exp, got)
+		if exp, got := len(expMeta), len(meta); exp != got {
+			return fmt.Errorf("%s: expecting %d metadata value, got %d", name, exp, got)
+		}
+		for k, v := range expMeta {
+			if exp, got := v, meta[k]; exp != got {
+				return fmt.Errorf("%s: expecting metadata %q with value %q, got %q", name, k, exp, got)
 			}
-			for k, v := range expMeta {
-				if exp, got := v, meta[k]; exp != got {
-					t.Errorf("expecting metadata %q with value %q, got %q", k, exp, got)
-				}
-			}
-		})
+		}
 	}
+
+	return nil
 }

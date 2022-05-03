@@ -27,9 +27,12 @@ func TestNewProvider(t *testing.T) {
 	})
 
 	t.Run("metadata", func(t *testing.T) {
-		unusedtest.TestProviderMeta(t, func(meta unused.Meta) (unused.Provider, error) {
+		err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
 			return gcp.NewProvider(context.Background(), "my-provider", meta)
 		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	})
 }
 
@@ -73,11 +76,17 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		t.Errorf("expecting %d disks, got %d", exp, got)
 	}
 
-	unusedtest.AssertEqualMeta(t, unused.Meta{"zone": "us-central1-a"}, disks[0].Meta())
-	unusedtest.AssertEqualMeta(t, unused.Meta{
+	err = unusedtest.AssertEqualMeta(unused.Meta{"zone": "us-central1-a"}, disks[0].Meta())
+	if err != nil {
+		t.Fatalf("metadata doesn't match: %v", err)
+	}
+	err = unusedtest.AssertEqualMeta(unused.Meta{
 		"zone":                                    "eu-west2-b",
 		"kubernetes.io-created-for-pv-name":       "pvc-prometheus-1",
 		"kubernetes.io-created-for-pvc-name":      "prometheus-1",
 		"kubernetes.io-created-for-pvc-namespace": "monitoring",
 	}, disks[1].Meta())
+	if err != nil {
+		t.Fatalf("metadata doesn't match: %v", err)
+	}
 }
