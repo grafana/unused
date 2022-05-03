@@ -102,8 +102,8 @@ func TestListUnusedDisks(t *testing.T) {
 				Source:          "example hard coded credentials",
 			},
 		}),
-		config.WithEndpointResolver(awsutil.EndpointResolverFunc(
-			func(svc, reg string) (awsutil.Endpoint, error) {
+		config.WithEndpointResolverWithOptions(awsutil.EndpointResolverWithOptionsFunc(
+			func(svc, reg string, opt ...interface{}) (awsutil.Endpoint, error) {
 				return awsutil.Endpoint{URL: ts.URL}, nil
 			})))
 	if err != nil {
