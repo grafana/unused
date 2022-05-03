@@ -62,7 +62,7 @@ func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string,
 			case <-ctx.Done():
 				t.Stop()
 				l.Log("stopping collection loop")
-				break
+				return
 			case <-t.C:
 				continue // unnecessary but expressive
 			}
