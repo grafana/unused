@@ -27,6 +27,9 @@ func (t table) Display(ctx context.Context, disks unused.Disks, extraColumns []s
 	w := tabwriter.NewWriter(t.out, 8, 4, 2, ' ', 0)
 
 	headers := []string{"PROVIDER", "DISK", "AGE"}
+	for _, c := range extraColumns {
+		headers = append(headers, "META:"+c)
+	}
 	if t.verbose {
 		headers = append(headers, "PROVIDER_META", "DISK_META")
 	}
@@ -37,6 +40,9 @@ func (t table) Display(ctx context.Context, disks unused.Disks, extraColumns []s
 		p := d.Provider()
 
 		row := []string{p.Name(), d.Name(), cli.Age(d.CreatedAt())}
+		for _, c := range extraColumns {
+			row = append(row, d.Meta()[c])
+		}
 		if t.verbose {
 			row = append(row, p.Meta().String(), d.Meta().String())
 		}
