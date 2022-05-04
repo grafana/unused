@@ -31,7 +31,7 @@ func (t table) Display(ctx context.Context, disks unused.Disks) error {
 		headers = append(headers, "PROVIDER_META", "DISK_META")
 	}
 
-	fmt.Println(w, strings.Join(headers, "\t"))
+	fmt.Fprintln(w, strings.Join(headers, "\t"))
 
 	for _, d := range disks {
 		p := d.Provider()
