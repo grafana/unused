@@ -21,7 +21,7 @@ func New(verbose bool) ui.UI {
 	}
 }
 
-func (ui *interactive) Display(ctx context.Context, disks unused.Disks) error {
+func (ui *interactive) Display(ctx context.Context, disks unused.Disks, extraColumns []string) error {
 	m := NewModel(ui.verbose, disks)
 
 	if err := tea.NewProgram(m).Start(); err != nil {

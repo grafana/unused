@@ -23,7 +23,7 @@ func New(out io.Writer, verbose bool) table {
 	return table{out, verbose}
 }
 
-func (t table) Display(ctx context.Context, disks unused.Disks) error {
+func (t table) Display(ctx context.Context, disks unused.Disks, extraColumns []string) error {
 	w := tabwriter.NewWriter(t.out, 8, 4, 2, ' ', 0)
 
 	headers := []string{"PROVIDER", "DISK", "AGE"}

@@ -7,5 +7,5 @@ import (
 )
 
 type UI interface {
-	Display(ctx context.Context, disks unused.Disks) error
+	Display(ctx context.Context, disks unused.Disks, extraColumns []string) error
 }
