@@ -15,6 +15,8 @@ type disk struct {
 	meta     unused.Meta
 }
 
+func (d *disk) ID() string { return *d.Disk.ID }
+
 func (d *disk) Provider() unused.Provider { return d.provider }
 
 func (d *disk) Name() string { return *d.Disk.Name }

@@ -12,6 +12,9 @@ func TestDisk(t *testing.T) {
 	createdAt := time.Now().Round(0)
 	d := unusedtest.NewDisk("my-disk", p, createdAt)
 
+	if exp, got := "my-disk", d.ID(); exp != got {
+		t.Errorf("expecting ID() %q, got %q", exp, got)
+	}
 	if d.Name() != "my-disk" {
 		t.Errorf("expecting Name() my-disk, got %s", d.Name())
 	}

@@ -1,6 +1,7 @@
 package gcp
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/grafana/unused"
@@ -15,6 +16,8 @@ type disk struct {
 	provider *provider
 	meta     unused.Meta
 }
+
+func (d *disk) ID() string { return fmt.Sprintf("gcp-disk-%d", d.Disk.Id) }
 
 func (d *disk) Provider() unused.Provider { return d.provider }
 

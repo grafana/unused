@@ -12,9 +12,11 @@ import (
 func TestDisk(t *testing.T) {
 	createdAt := time.Date(2021, 7, 16, 5, 55, 00, 0, time.UTC)
 	name := "my-disk"
+	id := "my-disk-id"
 
 	var d unused.Disk = &disk{
 		compute.Disk{
+			ID:   &id,
 			Name: &name,
 			DiskProperties: &compute.DiskProperties{
 				TimeCreated: &date.Time{Time: createdAt},
@@ -22,6 +24,10 @@ func TestDisk(t *testing.T) {
 		},
 		&provider{},
 		nil,
+	}
+
+	if exp, got := "my-disk-id", d.ID(); exp != got {
+		t.Errorf("expecting ID() %q, got %q", exp, got)
 	}
 
 	if exp, got := "Azure", d.Provider().Name(); exp != got {

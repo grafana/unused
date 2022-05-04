@@ -9,16 +9,17 @@ import (
 var _ unused.Disk = disk{}
 
 type disk struct {
-	name      string
+	id, name  string
 	provider  unused.Provider
 	createdAt time.Time
 	meta      unused.Meta
 }
 
 func NewDisk(name string, provider unused.Provider, createdAt time.Time) disk {
-	return disk{name, provider, createdAt, nil}
+	return disk{name, name, provider, createdAt, nil}
 }
 
+func (d disk) ID() string                { return d.name }
 func (d disk) Provider() unused.Provider { return d.provider }
 func (d disk) Name() string              { return d.name }
 func (d disk) CreatedAt() time.Time      { return d.createdAt }

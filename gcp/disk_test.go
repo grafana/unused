@@ -14,11 +14,16 @@ func TestDisk(t *testing.T) {
 
 	var d unused.Disk = &disk{
 		&compute.Disk{
+			Id:                1234,
 			Name:              "my-disk",
 			CreationTimestamp: createdAt.Format(time.RFC3339),
 		},
 		&provider{},
 		unused.Meta{"foo": "bar"},
+	}
+
+	if exp, got := "gcp-disk-1234", d.ID(); exp != got {
+		t.Errorf("expecting ID() %q, got %q", exp, got)
 	}
 
 	if exp, got := "GCP", d.Provider().Name(); exp != got {

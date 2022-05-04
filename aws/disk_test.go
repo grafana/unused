@@ -16,6 +16,7 @@ func TestDisk(t *testing.T) {
 		t.Run(keyName, func(t *testing.T) {
 			var d unused.Disk = &disk{
 				types.Volume{
+					VolumeId:   aws.String("my-disk-id"),
 					CreateTime: &createdAt,
 					Tags: []types.Tag{
 						{
@@ -26,6 +27,10 @@ func TestDisk(t *testing.T) {
 				},
 				&provider{},
 				nil,
+			}
+
+			if exp, got := "my-disk-id", d.ID(); exp != got {
+				t.Errorf("expecting ID() %q, got %q", exp, got)
 			}
 
 			if exp, got := "AWS", d.Provider().Name(); exp != got {
