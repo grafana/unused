@@ -22,7 +22,7 @@ func New(verbose bool) ui.UI {
 }
 
 func (ui *interactive) Display(ctx context.Context, disks unused.Disks, extraColumns []string) error {
-	m := NewModel(ui.verbose, disks)
+	m := NewModel(ui.verbose, disks, extraColumns)
 
 	if err := tea.NewProgram(m).Start(); err != nil {
 		return fmt.Errorf("cannot start interactive UI: %w", err)
