@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/grafana/unused"
 	"github.com/grafana/unused/cli"
 	"github.com/grafana/unused/cmd/unused/ui"
 	"github.com/grafana/unused/cmd/unused/ui/interactive"
@@ -17,15 +18,22 @@ import (
 func main() {
 	// defer profile.Start(profile.CPUProfile, profile.MemProfile).Stop()
 
-	var gcpProjects, awsProfiles, azureSubs cli.StringSliceFlag
+	var (
+		gcpProjects, awsProfiles, azureSubs cli.StringSliceFlag
+
+		interactiveMode, verbose bool
+
+		filter cli.FilterFlag
+	)
+
 	flag.Var(&gcpProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
 	flag.Var(&awsProfiles, "aws.profile", "AWS profile (can be specified multiple times)")
 	flag.Var(&azureSubs, "azure.sub", "Azure subscription (can be specified multiple times)")
 
-	var interactiveMode, verbose bool
-
 	flag.BoolVar(&interactiveMode, "i", false, "Interactive UI mode")
 	flag.BoolVar(&verbose, "v", false, "Verbose mode")
+
+	flag.Var(&filter, "filter", "Filter by disk metadata")
 
 	flag.Parse()
 
@@ -39,14 +47,14 @@ func main() {
 		out = table.New(os.Stdout, verbose)
 	}
 
-	if err := realMain(ctx, out, gcpProjects, awsProfiles, azureSubs); err != nil {
+	if err := realMain(ctx, out, gcpProjects, awsProfiles, azureSubs, filter); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSubs []string) error {
+func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSubs []string, filter cli.FilterFlag) error {
 	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		return err
@@ -55,6 +63,16 @@ func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSub
 	disks, err := listUnusedDisks(ctx, providers)
 	if err != nil {
 		return err
+	}
+
+	if filter.Key != "" {
+		filtered := make(unused.Disks, 0, len(disks))
+		for _, d := range disks {
+			if d.Meta().Matches(filter.Key, filter.Value) {
+				filtered = append(filtered, d)
+			}
+		}
+		disks = filtered
 	}
 
 	return out.Display(ctx, disks)
