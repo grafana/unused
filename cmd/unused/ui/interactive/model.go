@@ -138,14 +138,6 @@ func (m *model) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, listKeyMap.Quit):
 		return m, tea.Quit
 
-	case key.Matches(msg, listKeyMap.Right):
-		m.tabs.Next()
-		return m, refreshList(true)
-
-	case key.Matches(msg, listKeyMap.Left):
-		m.tabs.Prev()
-		return m, refreshList(true)
-
 	case key.Matches(msg, listKeyMap.Mark):
 		selected := m.selected[m.tabs.Selected().Title()]
 		idx := m.list.Index()
