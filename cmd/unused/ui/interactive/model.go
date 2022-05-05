@@ -83,7 +83,7 @@ func NewModel(verbose bool, disks unused.Disks, extraColumns []string) *model {
 }
 
 func (m *model) Init() tea.Cmd {
-	cmds := []tea.Cmd{tea.EnterAltScreen, refreshList(true)}
+	cmds := []tea.Cmd{tea.EnterAltScreen, m.tabs.TabSelected(), refreshList(true)}
 
 	var disk unused.Disk
 	if disks := m.tabs.Selected().Data().(unused.Disks); len(disks) > 0 {
