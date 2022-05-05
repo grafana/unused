@@ -25,7 +25,7 @@ type model struct {
 
 	extraCols []string
 
-	selected map[string]map[int]struct{}
+	selected map[string]unused.Disk
 	disks    map[string]unused.Disks
 	verbose  bool
 }
@@ -33,7 +33,7 @@ type model struct {
 func NewModel(verbose bool, disks unused.Disks, extraColumns []string) *model {
 	m := &model{
 		verbose:  verbose,
-		selected: make(map[string]map[int]struct{}),
+		selected: make(map[string]unused.Disk, len(disks)),
 		list:     list.New(nil, listDelegate(verbose), 0, 0),
 		lbox:     activeSectionStyle,
 		disks:    make(map[string]unused.Disks),
@@ -61,7 +61,6 @@ func NewModel(verbose bool, disks unused.Disks, extraColumns []string) *model {
 
 	providerTabs := make([]tabs.Tab, 0, len(m.disks))
 	for p, ds := range m.disks {
-		m.selected[p] = make(map[int]struct{})
 		providerTabs = append(providerTabs, disksTab{p, ds})
 	}
 	sort.Slice(providerTabs, func(i, j int) bool { return providerTabs[i].Title() < providerTabs[j].Title() })
@@ -105,9 +104,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetDelegate(listDelegate(m.verbose))
 		disks := m.tabs.Selected().Data().(unused.Disks)
 		items := make([]list.Item, len(disks))
-		selected := m.selected[m.tabs.Selected().Title()]
 		for i, d := range disks {
-			_, marked := selected[i]
+			_, marked := m.selected[d.ID()]
 			items[i] = item{d, m.verbose, marked, m.extraCols}
 		}
 		m.list.SetItems(items)
@@ -139,28 +137,26 @@ func (m *model) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case key.Matches(msg, listKeyMap.Mark):
-		selected := m.selected[m.tabs.Selected().Title()]
-		idx := m.list.Index()
-		if _, marked := selected[idx]; marked {
-			delete(selected, idx)
+		disk := m.list.SelectedItem().(item).disk
+		idx := disk.ID()
+		if _, marked := m.selected[idx]; marked {
+			delete(m.selected, idx)
 		} else {
-			selected[idx] = struct{}{}
+			m.selected[idx] = disk
 		}
 
 		m.list.CursorDown()
 
 		cmds := []tea.Cmd{
-			displayDiskDetails(m.disks[m.tabs.Selected().Title()][idx]),
+			displayDiskDetails(disk),
 			refreshList(false),
 		}
 		return m, tea.Batch(cmds...)
 
 	case key.Matches(msg, listKeyMap.Exec):
-		var disks unused.Disks
-		for p, sel := range m.selected {
-			for idx := range sel {
-				disks = append(disks, m.disks[p][idx])
-			}
+		disks := make(unused.Disks, 0, len(m.selected))
+		for _, d := range m.selected {
+			disks = append(disks, d)
 		}
 
 		if len(disks) > 0 {
