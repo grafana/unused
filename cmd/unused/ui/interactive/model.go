@@ -15,6 +15,14 @@ import (
 
 var _ tea.Model = &model{}
 
+type providerTab struct {
+	provider unused.Provider
+	disks    unused.Disks
+}
+
+func (t providerTab) Title() string     { return t.provider.Name() }
+func (t providerTab) Data() interface{} { return t.disks }
+
 type model struct {
 	list    list.Model
 	lbox    lipgloss.Style
@@ -31,6 +39,22 @@ type model struct {
 }
 
 func NewModel(verbose bool, disks unused.Disks, extraColumns []string) *model {
+	byProvider := make(map[string]*providerTab)
+	var providerTabs []tabs.Tab
+
+	for _, disk := range disks {
+		p := disk.Provider()
+		t, ok := byProvider[p.Name()]
+		if !ok {
+			t = &providerTab{provider: p}
+			byProvider[p.Name()] = t
+			providerTabs = append(providerTabs, t)
+		}
+		t.disks = append(t.disks, disk)
+	}
+
+	sort.Slice(providerTabs, func(i, j int) bool { return providerTabs[i].Title() < providerTabs[j].Title() })
+
 	m := &model{
 		verbose:  verbose,
 		selected: make(map[string]unused.Disk, len(disks)),
@@ -38,6 +62,7 @@ func NewModel(verbose bool, disks unused.Disks, extraColumns []string) *model {
 		lbox:     activeSectionStyle,
 		disks:    make(map[string]unused.Disks),
 		sidebar:  viewport.New(0, 15),
+		tabs:     tabs.New(providerTabs...),
 
 		extraCols: extraColumns,
 
@@ -53,18 +78,6 @@ func NewModel(verbose bool, disks unused.Disks, extraColumns []string) *model {
 	m.list.DisableQuitKeybindings()
 
 	m.sidebar.Style = sectionStyle
-
-	for _, d := range disks {
-		p := d.Provider().Name()
-		m.disks[p] = append(m.disks[p], d)
-	}
-
-	providerTabs := make([]tabs.Tab, 0, len(m.disks))
-	for p, ds := range m.disks {
-		providerTabs = append(providerTabs, disksTab{p, ds})
-	}
-	sort.Slice(providerTabs, func(i, j int) bool { return providerTabs[i].Title() < providerTabs[j].Title() })
-	m.tabs = tabs.New(providerTabs...)
 
 	m.output = NewOutput()
 
@@ -209,11 +222,3 @@ func displayDiskDetails(disk unused.Disk) tea.Cmd {
 		return disk
 	}
 }
-
-type disksTab struct {
-	title string
-	disks unused.Disks
-}
-
-func (t disksTab) Title() string     { return t.title }
-func (t disksTab) Data() interface{} { return t.disks }
