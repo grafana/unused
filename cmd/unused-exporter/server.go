@@ -22,7 +22,7 @@ func runWebServer(ctx context.Context, logger logger, addr, metricsPath string) 
 	})
 
 	srv := &http.Server{
-		Addr:    ":19099",
+		Addr:    addr,
 		Handler: mux,
 	}
 
