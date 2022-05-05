@@ -22,12 +22,14 @@ type model struct {
 	output  *output
 	help    helpview
 
+	extraCols []string
+
 	selected map[string]map[int]struct{}
 	disks    map[string]unused.Disks
 	verbose  bool
 }
 
-func NewModel(verbose bool, disks unused.Disks) *model {
+func NewModel(verbose bool, disks unused.Disks, extraColumns []string) *model {
 	m := &model{
 		verbose:  verbose,
 		selected: make(map[string]map[int]struct{}),
@@ -35,6 +37,8 @@ func NewModel(verbose bool, disks unused.Disks) *model {
 		lbox:     activeSectionStyle,
 		disks:    make(map[string]unused.Disks),
 		sidebar:  viewport.New(0, 15),
+
+		extraCols: extraColumns,
 
 		help: NewHelp(listKeyMap.Mark, listKeyMap.Exec, listKeyMap.Quit,
 			listKeyMap.Up, listKeyMap.Down, listKeyMap.PageUp, listKeyMap.PageDown,
@@ -102,7 +106,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		selected := m.selected[m.tabs.Selected()]
 		for i, d := range disks {
 			_, marked := selected[i]
-			items[i] = item{d, m.verbose, marked}
+			items[i] = item{d, m.verbose, marked, m.extraCols}
 		}
 		m.list.SetItems(items)
 

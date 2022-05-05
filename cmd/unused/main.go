@@ -24,6 +24,8 @@ func main() {
 		interactiveMode, verbose bool
 
 		filter cli.FilterFlag
+
+		extraColumns cli.StringSliceFlag
 	)
 
 	flag.Var(&gcpProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
@@ -34,6 +36,8 @@ func main() {
 	flag.BoolVar(&verbose, "v", false, "Verbose mode")
 
 	flag.Var(&filter, "filter", "Filter by disk metadata")
+
+	flag.Var(&extraColumns, "add-column", "Display additional column with metadata")
 
 	flag.Parse()
 
@@ -47,14 +51,14 @@ func main() {
 		out = table.New(os.Stdout, verbose)
 	}
 
-	if err := realMain(ctx, out, gcpProjects, awsProfiles, azureSubs, filter); err != nil {
+	if err := realMain(ctx, out, gcpProjects, awsProfiles, azureSubs, filter, extraColumns); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSubs []string, filter cli.FilterFlag) error {
+func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSubs []string, filter cli.FilterFlag, extraColumns []string) error {
 	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		return err
@@ -75,5 +79,5 @@ func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSub
 		disks = filtered
 	}
 
-	return out.Display(ctx, disks)
+	return out.Display(ctx, disks, extraColumns)
 }

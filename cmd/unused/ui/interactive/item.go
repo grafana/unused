@@ -13,13 +13,27 @@ type item struct {
 	disk    unused.Disk
 	verbose bool
 	marked  bool
+
+	extraCols []string
 }
 
 func (i item) Title() string {
-	if i.marked {
-		return markedStyle.Render(i.disk.Name())
+	var s strings.Builder
+	s.WriteString(i.disk.Name())
+
+	for _, c := range i.extraCols {
+		s.WriteRune(' ')
+		s.WriteString(c)
+		s.WriteRune('=')
+		s.WriteString(i.disk.Meta()[c])
 	}
-	return i.disk.Name()
+
+	n := s.String()
+
+	if i.marked {
+		return markedStyle.Render(n)
+	}
+	return n
 }
 
 func (i item) FilterValue() string {
