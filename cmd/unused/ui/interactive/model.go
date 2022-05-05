@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
+	"github.com/inkel/gotui/tabs"
 )
 
 var _ tea.Model = &model{}
@@ -17,7 +18,7 @@ var _ tea.Model = &model{}
 type model struct {
 	list    list.Model
 	lbox    lipgloss.Style
-	tabs    *Tabs
+	tabs    tabs.Model
 	sidebar viewport.Model
 	output  *output
 	help    helpview
@@ -57,13 +58,14 @@ func NewModel(verbose bool, disks unused.Disks, extraColumns []string) *model {
 		p := d.Provider().Name()
 		m.disks[p] = append(m.disks[p], d)
 	}
-	titles := make([]string, 0, len(m.disks))
-	for p := range m.disks {
+
+	providerTabs := make([]tabs.Tab, 0, len(m.disks))
+	for p, ds := range m.disks {
 		m.selected[p] = make(map[int]struct{})
-		titles = append(titles, p)
+		providerTabs = append(providerTabs, disksTab{p, ds})
 	}
-	sort.Strings(titles)
-	m.tabs = &Tabs{Titles: titles}
+	sort.Slice(providerTabs, func(i, j int) bool { return providerTabs[i].Title() < providerTabs[j].Title() })
+	m.tabs = tabs.New(providerTabs...)
 
 	m.output = NewOutput()
 
@@ -74,7 +76,7 @@ func (m *model) Init() tea.Cmd {
 	cmds := []tea.Cmd{tea.EnterAltScreen, refreshList(true)}
 
 	var disk unused.Disk
-	if disks := m.disks[m.tabs.Selected()]; len(disks) > 0 {
+	if disks := m.tabs.Selected().Data().(unused.Disks); len(disks) > 0 {
 		disk = disks[0]
 		cmds = append(cmds, displayDiskDetails(disk))
 	}
@@ -101,9 +103,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case refreshListMsg:
 		m.list.SetDelegate(listDelegate(m.verbose))
-		disks := m.disks[m.tabs.Selected()]
+		disks := m.tabs.Selected().Data().(unused.Disks)
 		items := make([]list.Item, len(disks))
-		selected := m.selected[m.tabs.Selected()]
+		selected := m.selected[m.tabs.Selected().Title()]
 		for i, d := range disks {
 			_, marked := selected[i]
 			items[i] = item{d, m.verbose, marked, m.extraCols}
@@ -123,6 +125,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetSize(msg.Width-2, h)
 
 		m.output.SetSize(msg.Width, msg.Height)
+
+	case tabs.TabSelectedMsg:
+		return m, refreshList(true)
 	}
 
 	return m, nil
@@ -142,7 +147,7 @@ func (m *model) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, refreshList(true)
 
 	case key.Matches(msg, listKeyMap.Mark):
-		selected := m.selected[m.tabs.Selected()]
+		selected := m.selected[m.tabs.Selected().Title()]
 		idx := m.list.Index()
 		if _, marked := selected[idx]; marked {
 			delete(selected, idx)
@@ -153,7 +158,7 @@ func (m *model) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.list.CursorDown()
 
 		cmds := []tea.Cmd{
-			displayDiskDetails(m.disks[m.tabs.Selected()][idx]),
+			displayDiskDetails(m.disks[m.tabs.Selected().Title()][idx]),
 			refreshList(false),
 		}
 		return m, tea.Batch(cmds...)
@@ -184,7 +189,9 @@ func (m *model) updateKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	default:
-		return m, nil
+		var cmd tea.Cmd
+		m.tabs, cmd = m.tabs.Update(msg)
+		return m, cmd
 	}
 }
 
@@ -214,3 +221,11 @@ func displayDiskDetails(disk unused.Disk) tea.Cmd {
 		return disk
 	}
 }
+
+type disksTab struct {
+	title string
+	disks unused.Disks
+}
+
+func (t disksTab) Title() string     { return t.title }
+func (t disksTab) Data() interface{} { return t.disks }
