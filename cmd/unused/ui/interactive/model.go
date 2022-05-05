@@ -34,7 +34,6 @@ type model struct {
 	extraCols []string
 
 	selected map[string]unused.Disk
-	disks    map[string]unused.Disks
 	verbose  bool
 }
 
@@ -60,7 +59,6 @@ func NewModel(verbose bool, disks unused.Disks, extraColumns []string) *model {
 		selected: make(map[string]unused.Disk, len(disks)),
 		list:     list.New(nil, listDelegate(verbose), 0, 0),
 		lbox:     activeSectionStyle,
-		disks:    make(map[string]unused.Disks),
 		sidebar:  viewport.New(0, 15),
 		tabs:     tabs.New(providerTabs...),
 
