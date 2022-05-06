@@ -121,7 +121,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.list.SetItems(items)
 
-		if msg.resetSelected {
+		if msg {
 			m.list.ResetSelected()
 		}
 
@@ -203,15 +203,11 @@ func (m *model) View() string {
 	)
 }
 
-type refreshListMsg struct {
-	resetSelected bool
-}
+type refreshListMsg bool
 
 func refreshList(reset bool) tea.Cmd {
 	return func() tea.Msg {
-		return refreshListMsg{
-			resetSelected: reset,
-		}
+		return refreshListMsg(reset)
 	}
 }
 
