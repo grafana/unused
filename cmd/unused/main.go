@@ -79,5 +79,10 @@ func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSub
 		disks = filtered
 	}
 
+	if len(disks) == 0 {
+		fmt.Println("No disks found")
+		return nil
+	}
+
 	return out.Display(ctx, disks, extraColumns)
 }
