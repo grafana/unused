@@ -2,9 +2,7 @@ package interactive
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"math/rand"
 	"strings"
 	"text/template"
 	"time"
@@ -104,12 +102,7 @@ func (o *output) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					s.Deleting = true
 
 					go func() {
-						// TODO this should be replaces by calling s.Disk.Provider().Delete(s.Disk)
-						time.Sleep(time.Duration(rand.Intn(2000)) * time.Millisecond)
-						if rand.Intn(100)%3 == 0 {
-							s.Error = errors.New("something went wrong")
-						}
-
+						s.Error = s.Disk.Provider().Delete(o.ctx, s.Disk)
 						s.Done = true
 						s.Deleting = false
 					}()
