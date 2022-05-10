@@ -38,6 +38,6 @@ const outputTpl = `{{ range . }}
 {{- else if .Deleting }}#
 {{- end -}}
   {{ .Disk.Name }} ({{ .Disk.Provider.Name }} {{ .Disk.Provider.Meta }}) {{ if .Error }}
-{{ .Error.Error | error }}{{ end -}}
+{{ .Error.Error | wrap | error }}{{ end -}}
 {{ end }}
 `

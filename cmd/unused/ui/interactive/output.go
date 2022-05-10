@@ -13,6 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
+	"github.com/mitchellh/go-wordwrap"
 )
 
 type diskStatus struct {
@@ -45,6 +46,7 @@ func NewOutput() *output {
 	o.tpl = template.Must(template.New("").
 		Funcs(template.FuncMap{
 			"error": errStyle.Render,
+			"wrap":  func(s string) string { return wordwrap.WrapString(s, uint(o.w)) },
 		}).
 		Parse(outputTpl))
 
