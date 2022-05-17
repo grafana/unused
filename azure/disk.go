@@ -24,3 +24,5 @@ func (d *disk) Name() string { return *d.Disk.Name }
 func (d *disk) CreatedAt() time.Time { return d.Disk.TimeCreated.ToTime() }
 
 func (d *disk) Meta() unused.Meta { return d.meta }
+
+func (d *disk) LastUsedAt() time.Time { return time.Time{} }

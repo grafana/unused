@@ -31,3 +31,5 @@ func (d *disk) Name() string {
 func (d *disk) CreatedAt() time.Time { return *d.Volume.CreateTime }
 
 func (d *disk) Meta() unused.Meta { return d.meta }
+
+func (d *disk) LastUsedAt() time.Time { return time.Time{} }

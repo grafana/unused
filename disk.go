@@ -16,6 +16,11 @@ type Disk interface {
 	// CreatedAt returns the time.Time when the disk was created
 	CreatedAt() time.Time
 
+	// LastUsedAt returns the date when the disk was last mounted, or
+	// time.Zero if this information isn't available (i.e. limited in
+	// AWS and non-existing in Azure)
+	LastUsedAt() time.Time
+
 	// Meta returns the disk metadata
 	Meta() Meta
 }
