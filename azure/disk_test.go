@@ -41,4 +41,8 @@ func TestDisk(t *testing.T) {
 	if !createdAt.Equal(d.CreatedAt()) {
 		t.Errorf("expecting CreatedAt() %v, got %v", createdAt, d.CreatedAt())
 	}
+
+	if !d.LastUsedAt().IsZero() {
+		t.Errorf("Azure doesn't provide a last usage timestamp for disks, got %v", d.LastUsedAt())
+	}
 }
