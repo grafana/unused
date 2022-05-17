@@ -24,4 +24,4 @@ func (d disk) Provider() unused.Provider { return d.provider }
 func (d disk) Name() string              { return d.name }
 func (d disk) CreatedAt() time.Time      { return d.createdAt }
 func (d disk) Meta() unused.Meta         { return d.meta }
-func (d disk) LastUsedAt() time.Time     { return time.Time{} }
+func (d disk) LastUsedAt() time.Time     { return d.createdAt.Add(1 * time.Minute) }
