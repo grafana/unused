@@ -14,19 +14,19 @@ import (
 
 var ErrMissingProject = errors.New("missing project id")
 
-var _ unused.Provider = &provider{}
+var _ unused.Provider = &Provider{}
 
-type provider struct {
+type Provider struct {
 	project string
 	svc     *compute.DisksService
 	meta    unused.Meta
 }
 
-func (p *provider) Name() string { return "GCP" }
+func (p *Provider) Name() string { return "GCP" }
 
-func (p *provider) Meta() unused.Meta { return p.meta }
+func (p *Provider) Meta() unused.Meta { return p.meta }
 
-func NewProvider(ctx context.Context, project string, meta unused.Meta, opts ...option.ClientOption) (unused.Provider, error) {
+func NewProvider(ctx context.Context, project string, meta unused.Meta, opts ...option.ClientOption) (*Provider, error) {
 	if project == "" {
 		return nil, ErrMissingProject
 	}
@@ -40,14 +40,14 @@ func NewProvider(ctx context.Context, project string, meta unused.Meta, opts ...
 		meta = make(unused.Meta)
 	}
 
-	return &provider{
+	return &Provider{
 		project: project,
 		svc:     compute.NewDisksService(svc),
 		meta:    meta,
 	}, nil
 }
 
-func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
+func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	var disks unused.Disks
 
 	err := p.svc.AggregatedList(p.project).Filter("").Pages(ctx,
@@ -62,7 +62,7 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 					if err != nil {
 						// TODO do something with this error
 					}
-					disks = append(disks, &disk{d, p, m})
+					disks = append(disks, &Disk{d, p, m})
 				}
 			}
 			return nil
@@ -91,7 +91,7 @@ func diskMetadata(d *compute.Disk) (unused.Meta, error) {
 	return m, nil
 }
 
-func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
 	_, err := p.svc.Delete(p.project, disk.Meta()["zone"], disk.Name()).Do()
 	if err != nil {
 		return fmt.Errorf("cannot delete GCP disk: %w", err)

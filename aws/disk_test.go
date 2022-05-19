@@ -14,7 +14,7 @@ func TestDisk(t *testing.T) {
 
 	for _, keyName := range []string{"Name", "CSIVolumeName"} {
 		t.Run(keyName, func(t *testing.T) {
-			var d unused.Disk = &disk{
+			var d unused.Disk = &Disk{
 				types.Volume{
 					VolumeId:   aws.String("my-disk-id"),
 					CreateTime: &createdAt,
@@ -25,7 +25,7 @@ func TestDisk(t *testing.T) {
 						},
 					},
 				},
-				&provider{},
+				&Provider{},
 				nil,
 			}
 

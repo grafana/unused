@@ -8,34 +8,34 @@ import (
 	"github.com/grafana/unused"
 )
 
-var _ unused.Provider = &provider{}
+var _ unused.Provider = &Provider{}
 
-type provider struct {
+type Provider struct {
 	name  string
 	disks unused.Disks
 	meta  unused.Meta
 }
 
-func NewProvider(name string, meta unused.Meta, disks ...unused.Disk) *provider {
+func NewProvider(name string, meta unused.Meta, disks ...unused.Disk) *Provider {
 	if meta == nil {
 		meta = make(unused.Meta)
 	}
-	return &provider{name, disks, meta}
+	return &Provider{name, disks, meta}
 }
 
-func (p *provider) Name() string { return p.name }
+func (p *Provider) Name() string { return p.name }
 
-func (p *provider) Meta() unused.Meta { return p.meta }
+func (p *Provider) Meta() unused.Meta { return p.meta }
 
-func (p *provider) SetMeta(meta unused.Meta) { p.meta = meta }
+func (p *Provider) SetMeta(meta unused.Meta) { p.meta = meta }
 
-func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
+func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	return p.disks, nil
 }
 
 var ErrDiskNotFound = errors.New("disk not found")
 
-func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
 	for i := range p.disks {
 		if disk.Name() == p.disks[i].Name() {
 			p.disks = append(p.disks[:i], p.disks[i+1:]...)

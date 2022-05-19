@@ -11,18 +11,18 @@ import (
 	"github.com/grafana/unused"
 )
 
-var _ unused.Provider = &provider{}
+var _ unused.Provider = &Provider{}
 
-type provider struct {
+type Provider struct {
 	client *ec2.Client
 	meta   unused.Meta
 }
 
-func (p *provider) Name() string { return "AWS" }
+func (p *Provider) Name() string { return "AWS" }
 
-func (p *provider) Meta() unused.Meta { return p.meta }
+func (p *Provider) Meta() unused.Meta { return p.meta }
 
-func NewProvider(ctx context.Context, meta unused.Meta, optFns ...func(*config.LoadOptions) error) (unused.Provider, error) {
+func NewProvider(ctx context.Context, meta unused.Meta, optFns ...func(*config.LoadOptions) error) (*Provider, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot load AWS config: %w", err)
@@ -32,13 +32,13 @@ func NewProvider(ctx context.Context, meta unused.Meta, optFns ...func(*config.L
 		meta = make(unused.Meta)
 	}
 
-	return &provider{
+	return &Provider{
 		client: ec2.NewFromConfig(cfg),
 		meta:   meta,
 	}, nil
 }
 
-func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
+func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	params := &ec2.DescribeVolumesInput{
 		Filters: []types.Filter{
 			{
@@ -71,14 +71,14 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 				m[k] = *t.Value
 			}
 
-			upds = append(upds, &disk{v, p, m})
+			upds = append(upds, &Disk{v, p, m})
 		}
 	}
 
 	return upds, nil
 }
 
-func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
 	_, err := p.client.DeleteVolume(ctx, &ec2.DeleteVolumeInput{
 		VolumeId: aws.String(disk.ID()),
 	})

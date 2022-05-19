@@ -10,18 +10,18 @@ import (
 	"github.com/grafana/unused"
 )
 
-var _ unused.Provider = &provider{}
+var _ unused.Provider = &Provider{}
 
 const ResourceGroupMetaKey = "resource-group"
 
-type provider struct {
+type Provider struct {
 	client compute.DisksClient
 	meta   unused.Meta
 }
 
-func (p *provider) Name() string { return "Azure" }
+func (p *Provider) Name() string { return "Azure" }
 
-func (p *provider) Meta() unused.Meta { return p.meta }
+func (p *Provider) Meta() unused.Meta { return p.meta }
 
 type OptionFunc func(c *compute.DisksClient)
 
@@ -37,7 +37,7 @@ func WithAuthorizer(authorizer autorest.Authorizer) OptionFunc {
 	}
 }
 
-func NewProvider(subID string, meta unused.Meta, opts ...OptionFunc) (unused.Provider, error) {
+func NewProvider(subID string, meta unused.Meta, opts ...OptionFunc) (*Provider, error) {
 	c := compute.NewDisksClient(subID)
 	for _, o := range opts {
 		o(&c)
@@ -47,10 +47,10 @@ func NewProvider(subID string, meta unused.Meta, opts ...OptionFunc) (unused.Pro
 		meta = make(unused.Meta)
 	}
 
-	return &provider{client: c, meta: meta}, nil
+	return &Provider{client: c, meta: meta}, nil
 }
 
-func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
+func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	var upds unused.Disks
 
 	res, err := p.client.List(ctx)
@@ -77,7 +77,7 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 			rg := strings.TrimPrefix(*d.ID, prefix)
 			m[ResourceGroupMetaKey] = rg[:strings.IndexRune(rg, '/')]
 
-			upds = append(upds, &disk{d, p, m})
+			upds = append(upds, &Disk{d, p, m})
 		}
 
 		err := res.NextWithContext(ctx)
@@ -89,7 +89,7 @@ func (p *provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	return upds, nil
 }
 
-func (p *provider) Delete(ctx context.Context, disk unused.Disk) error {
+func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
 	_, err := p.client.Delete(ctx, disk.Meta()[ResourceGroupMetaKey], disk.Name())
 	if err != nil {
 		return fmt.Errorf("cannot delete Azure disk: %w", err)
