@@ -14,7 +14,7 @@ func TestDisk(t *testing.T) {
 	name := "my-disk"
 	id := "my-disk-id"
 
-	var d unused.Disk = &disk{
+	var d unused.Disk = &Disk{
 		compute.Disk{
 			ID:   &id,
 			Name: &name,
@@ -22,7 +22,7 @@ func TestDisk(t *testing.T) {
 				TimeCreated: &date.Time{Time: createdAt},
 			},
 		},
-		&provider{},
+		&Provider{},
 		nil,
 	}
 

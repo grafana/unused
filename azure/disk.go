@@ -7,22 +7,22 @@ import (
 	"github.com/grafana/unused"
 )
 
-var _ unused.Disk = &disk{}
+var _ unused.Disk = &Disk{}
 
-type disk struct {
+type Disk struct {
 	compute.Disk
-	provider *provider
+	provider *Provider
 	meta     unused.Meta
 }
 
-func (d *disk) ID() string { return *d.Disk.ID }
+func (d *Disk) ID() string { return *d.Disk.ID }
 
-func (d *disk) Provider() unused.Provider { return d.provider }
+func (d *Disk) Provider() unused.Provider { return d.provider }
 
-func (d *disk) Name() string { return *d.Disk.Name }
+func (d *Disk) Name() string { return *d.Disk.Name }
 
-func (d *disk) CreatedAt() time.Time { return d.Disk.TimeCreated.ToTime() }
+func (d *Disk) CreatedAt() time.Time { return d.Disk.TimeCreated.ToTime() }
 
-func (d *disk) Meta() unused.Meta { return d.meta }
+func (d *Disk) Meta() unused.Meta { return d.meta }
 
-func (d *disk) LastUsedAt() time.Time { return time.Time{} }
+func (d *Disk) LastUsedAt() time.Time { return time.Time{} }
