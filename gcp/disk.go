@@ -31,3 +31,9 @@ func (d *disk) CreatedAt() time.Time {
 }
 
 func (d *disk) Meta() unused.Meta { return d.meta }
+
+func (d *disk) LastUsedAt() time.Time {
+	// it's safe to assume GCP will send a valid timestamp
+	t, _ := time.Parse(time.RFC3339, d.Disk.LastDetachTimestamp)
+	return t
+}

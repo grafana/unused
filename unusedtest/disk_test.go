@@ -24,4 +24,7 @@ func TestDisk(t *testing.T) {
 	if got := d.Provider(); got != p {
 		t.Errorf("expecting Provider() %v, got %v", p, got)
 	}
+	if got, exp := d.LastUsedAt(), d.CreatedAt().Add(time.Minute); !got.Equal(exp) {
+		t.Errorf("expecting LastUsedAt() %v, got %v", exp, got)
+	}
 }
