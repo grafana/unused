@@ -7,19 +7,19 @@ import (
 	"github.com/grafana/unused"
 )
 
-var _ unused.Disk = &disk{}
+var _ unused.Disk = &Disk{}
 
-type disk struct {
+type Disk struct {
 	types.Volume
-	provider *provider
+	provider *Provider
 	meta     unused.Meta
 }
 
-func (d *disk) ID() string { return *d.Volume.VolumeId }
+func (d *Disk) ID() string { return *d.Volume.VolumeId }
 
-func (d *disk) Provider() unused.Provider { return d.provider }
+func (d *Disk) Provider() unused.Provider { return d.provider }
 
-func (d *disk) Name() string {
+func (d *Disk) Name() string {
 	for _, t := range d.Volume.Tags {
 		if *t.Key == "Name" || *t.Key == "CSIVolumeName" {
 			return *t.Value
@@ -28,8 +28,8 @@ func (d *disk) Name() string {
 	return ""
 }
 
-func (d *disk) CreatedAt() time.Time { return *d.Volume.CreateTime }
+func (d *Disk) CreatedAt() time.Time { return *d.Volume.CreateTime }
 
-func (d *disk) Meta() unused.Meta { return d.meta }
+func (d *Disk) Meta() unused.Meta { return d.meta }
 
-func (d *disk) LastUsedAt() time.Time { return time.Time{} }
+func (d *Disk) LastUsedAt() time.Time { return time.Time{} }
