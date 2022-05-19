@@ -13,14 +13,14 @@ func TestDisk(t *testing.T) {
 	createdAt := time.Date(2021, 7, 16, 5, 55, 00, 0, time.UTC)
 	detachedAt := createdAt.Add(1 * time.Hour)
 
-	var d unused.Disk = &disk{
+	var d unused.Disk = &Disk{
 		&compute.Disk{
 			Id:                  1234,
 			Name:                "my-disk",
 			CreationTimestamp:   createdAt.Format(time.RFC3339),
 			LastDetachTimestamp: detachedAt.Format(time.RFC3339),
 		},
-		&provider{},
+		&Provider{},
 		unused.Meta{"foo": "bar"},
 	}
 

@@ -9,30 +9,30 @@ import (
 )
 
 // ensure we are properly defining the interface
-var _ unused.Disk = &disk{}
+var _ unused.Disk = &Disk{}
 
-type disk struct {
+type Disk struct {
 	*compute.Disk
-	provider *provider
+	provider *Provider
 	meta     unused.Meta
 }
 
-func (d *disk) ID() string { return fmt.Sprintf("gcp-disk-%d", d.Disk.Id) }
+func (d *Disk) ID() string { return fmt.Sprintf("gcp-disk-%d", d.Disk.Id) }
 
-func (d *disk) Provider() unused.Provider { return d.provider }
+func (d *Disk) Provider() unused.Provider { return d.provider }
 
-func (d *disk) Name() string { return d.Disk.Name }
+func (d *Disk) Name() string { return d.Disk.Name }
 
-func (d *disk) CreatedAt() time.Time {
+func (d *Disk) CreatedAt() time.Time {
 	// it's safe to assume GCP will send a valid timestamp
 	c, _ := time.Parse(time.RFC3339, d.Disk.CreationTimestamp)
 
 	return c
 }
 
-func (d *disk) Meta() unused.Meta { return d.meta }
+func (d *Disk) Meta() unused.Meta { return d.meta }
 
-func (d *disk) LastUsedAt() time.Time {
+func (d *Disk) LastUsedAt() time.Time {
 	// it's safe to assume GCP will send a valid timestamp
 	t, _ := time.Parse(time.RFC3339, d.Disk.LastDetachTimestamp)
 	return t
