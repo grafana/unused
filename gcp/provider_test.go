@@ -28,7 +28,7 @@ func TestNewProvider(t *testing.T) {
 
 	t.Run("metadata", func(t *testing.T) {
 		err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
-			return gcp.NewProvider(context.Background(), "my-provider", meta)
+			return gcp.NewProvider(context.Background(), "my-provider", meta, option.WithAPIKey("123abc"))
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -62,7 +62,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	p, err := gcp.NewProvider(ctx, "my-project", nil, option.WithEndpoint(ts.URL))
+	p, err := gcp.NewProvider(ctx, "my-project", nil, option.WithEndpoint(ts.URL), option.WithAPIKey("123abc"))
 	if err != nil {
 		t.Fatal("unexpected error creating provider:", err)
 	}
