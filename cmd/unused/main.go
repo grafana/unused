@@ -43,6 +43,23 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
+	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
+	if err != nil {
+		cancel()
+		fmt.Fprintln(os.Stderr, "creating providers:", err)
+		os.Exit(1)
+	}
+
+	opts := ui.Options{
+		Providers:    providers,
+		ExtraColumns: extraColumns,
+		Verbose:      verbose,
+		Filter: ui.Filter{
+			Key:   filter.Key,
+			Value: filter.Value,
+		},
+	}
+
 	var out ui.UI
 	if interactiveMode {
 		out = interactive.New(verbose)
@@ -50,27 +67,9 @@ func main() {
 		out = table.New(os.Stdout, verbose)
 	}
 
-	if err := realMain(ctx, out, gcpProjects, awsProfiles, azureSubs, filter, extraColumns); err != nil {
+	if err := out.Display(ctx, opts); err != nil {
 		cancel() // cleanup resources
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, "displaying output:", err)
 		os.Exit(1)
 	}
-}
-
-func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSubs []string, filter cli.FilterFlag, extraColumns []string) error {
-	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
-	if err != nil {
-		return err
-	}
-
-	opts := ui.Options{
-		Providers:    providers,
-		ExtraColumns: extraColumns,
-		Filter: ui.Filter{
-			Key:   filter.Key,
-			Value: filter.Value,
-		},
-	}
-
-	return out.Display(ctx, opts)
 }
