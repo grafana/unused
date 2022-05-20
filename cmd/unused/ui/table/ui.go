@@ -13,11 +13,11 @@ import (
 	"github.com/grafana/unused/cmd/unused/ui"
 )
 
-var _ ui.UI = Table{}
+var _ ui.UI = UI{}
 
-type Table struct{}
+type UI struct{}
 
-func (t Table) Display(ctx context.Context, options ui.Options) error {
+func (t UI) Display(ctx context.Context, options ui.Options) error {
 	disks, err := listUnusedDisks(ctx, options.Providers)
 	if err != nil {
 		return err

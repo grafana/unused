@@ -62,9 +62,9 @@ func main() {
 
 	var out ui.UI
 	if interactiveMode {
-		out = &interactive.Interactive{}
+		out = interactive.UI{}
 	} else {
-		out = table.Table{}
+		out = table.UI{}
 	}
 
 	if err := out.Display(ctx, opts); err != nil {
