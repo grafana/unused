@@ -14,6 +14,7 @@ type Options struct {
 	Providers    []unused.Provider
 	ExtraColumns []string
 	Filter       Filter
+	Verbose      bool
 }
 
 type UI interface {
