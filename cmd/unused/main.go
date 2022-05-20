@@ -62,7 +62,7 @@ func main() {
 
 	var out ui.UI
 	if interactiveMode {
-		out = interactive.New(verbose)
+		out = &interactive.Interactive{}
 	} else {
 		out = table.Table{}
 	}

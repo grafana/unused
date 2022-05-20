@@ -10,19 +10,11 @@ import (
 	"github.com/grafana/unused/cmd/unused/ui"
 )
 
-var _ ui.UI = &interactive{}
+var _ ui.UI = Interactive{}
 
-type interactive struct {
-	verbose bool
-}
+type Interactive struct{}
 
-func New(verbose bool) ui.UI {
-	return &interactive{
-		verbose: verbose,
-	}
-}
-
-func (ui *interactive) Display(ctx context.Context, options ui.Options) error {
+func (ui Interactive) Display(ctx context.Context, options ui.Options) error {
 	disks, err := listUnusedDisks(ctx, options.Providers)
 	if err != nil {
 		return err
@@ -43,7 +35,7 @@ func (ui *interactive) Display(ctx context.Context, options ui.Options) error {
 		return nil
 	}
 
-	m := NewModel(ui.verbose, disks, options.ExtraColumns)
+	m := NewModel(options.Verbose, disks, options.ExtraColumns)
 
 	if err := tea.NewProgram(m).Start(); err != nil {
 		return fmt.Errorf("cannot start interactive UI: %w", err)
