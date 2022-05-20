@@ -3,7 +3,7 @@ package table
 import (
 	"context"
 	"fmt"
-	"io"
+	"os"
 	"strings"
 	"sync"
 	"text/tabwriter"
@@ -13,18 +13,11 @@ import (
 	"github.com/grafana/unused/cmd/unused/ui"
 )
 
-var _ ui.UI = table{}
+var _ ui.UI = Table{}
 
-type table struct {
-	out     io.Writer
-	verbose bool
-}
+type Table struct{}
 
-func New(out io.Writer, verbose bool) table {
-	return table{out, verbose}
-}
-
-func (t table) Display(ctx context.Context, options ui.Options) error {
+func (t Table) Display(ctx context.Context, options ui.Options) error {
 	disks, err := listUnusedDisks(ctx, options.Providers)
 	if err != nil {
 		return err
@@ -45,13 +38,13 @@ func (t table) Display(ctx context.Context, options ui.Options) error {
 		return nil
 	}
 
-	w := tabwriter.NewWriter(t.out, 8, 4, 2, ' ', 0)
+	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
 
 	headers := []string{"PROVIDER", "DISK", "AGE", "UNUSED"}
 	for _, c := range options.ExtraColumns {
 		headers = append(headers, "META:"+c)
 	}
-	if t.verbose {
+	if options.Verbose {
 		headers = append(headers, "PROVIDER_META", "DISK_META")
 	}
 
@@ -64,7 +57,7 @@ func (t table) Display(ctx context.Context, options ui.Options) error {
 		for _, c := range options.ExtraColumns {
 			row = append(row, d.Meta()[c])
 		}
-		if t.verbose {
+		if options.Verbose {
 			row = append(row, p.Meta().String(), d.Meta().String())
 		}
 

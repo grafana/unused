@@ -64,7 +64,7 @@ func main() {
 	if interactiveMode {
 		out = interactive.New(verbose)
 	} else {
-		out = table.New(os.Stdout, verbose)
+		out = table.Table{}
 	}
 
 	if err := out.Display(ctx, opts); err != nil {
