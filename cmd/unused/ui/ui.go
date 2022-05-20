@@ -17,5 +17,5 @@ type Options struct {
 }
 
 type UI interface {
-	Display(ctx context.Context, disks unused.Disks, extraColumns []string) error
+	Display(ctx context.Context, options Options) error
 }

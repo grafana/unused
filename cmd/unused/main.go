@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/grafana/unused"
 	"github.com/grafana/unused/cli"
 	"github.com/grafana/unused/cmd/unused/ui"
 	"github.com/grafana/unused/cmd/unused/ui/interactive"
@@ -64,25 +63,14 @@ func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSub
 		return err
 	}
 
-	disks, err := listUnusedDisks(ctx, providers)
-	if err != nil {
-		return err
+	opts := ui.Options{
+		Providers:    providers,
+		ExtraColumns: extraColumns,
+		Filter: ui.Filter{
+			Key:   filter.Key,
+			Value: filter.Value,
+		},
 	}
 
-	if filter.Key != "" {
-		filtered := make(unused.Disks, 0, len(disks))
-		for _, d := range disks {
-			if d.Meta().Matches(filter.Key, filter.Value) {
-				filtered = append(filtered, d)
-			}
-		}
-		disks = filtered
-	}
-
-	if len(disks) == 0 {
-		fmt.Println("No disks found")
-		return nil
-	}
-
-	return out.Display(ctx, disks, extraColumns)
+	return out.Display(ctx, opts)
 }
