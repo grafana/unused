@@ -26,7 +26,7 @@ func New(out io.Writer, verbose bool) table {
 func (t table) Display(ctx context.Context, disks unused.Disks, extraColumns []string) error {
 	w := tabwriter.NewWriter(t.out, 8, 4, 2, ' ', 0)
 
-	headers := []string{"PROVIDER", "DISK", "AGE"}
+	headers := []string{"PROVIDER", "DISK", "AGE", "UNUSED"}
 	for _, c := range extraColumns {
 		headers = append(headers, "META:"+c)
 	}
@@ -39,7 +39,7 @@ func (t table) Display(ctx context.Context, disks unused.Disks, extraColumns []s
 	for _, d := range disks {
 		p := d.Provider()
 
-		row := []string{p.Name(), d.Name(), cli.Age(d.CreatedAt())}
+		row := []string{p.Name(), d.Name(), cli.Age(d.CreatedAt()), cli.Age(d.LastUsedAt())}
 		for _, c := range extraColumns {
 			row = append(row, d.Meta()[c])
 		}

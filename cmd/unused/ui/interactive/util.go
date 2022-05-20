@@ -18,6 +18,7 @@ var diskDetails = template.Must(template.New("").
 {{- .Name | header }}
 
 {{ header "Created:" }} {{.CreatedAt | rfc3339 }} ({{ .CreatedAt | age }})
+{{ header "Last used:" }} {{ if .LastUsedAt.IsZero }}n/a{{ else }}{{.CreatedAt | rfc3339 }} ({{ .CreatedAt | age }}){{ end }}
 
 {{- block "meta" .Meta }}
 {{ header "Metadata" }}

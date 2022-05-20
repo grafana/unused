@@ -6,6 +6,10 @@ import (
 )
 
 func Age(date time.Time) string {
+	if date.IsZero() {
+		return "n/a"
+	}
+
 	d := time.Since(date)
 
 	if d <= time.Minute {

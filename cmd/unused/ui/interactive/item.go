@@ -53,6 +53,9 @@ func (i item) Description() string {
 	s.WriteString("age=")
 	s.WriteString(cli.Age(i.disk.CreatedAt()))
 
+	s.WriteString(" unused=")
+	s.WriteString(cli.Age(i.disk.LastUsedAt()))
+
 	if i.verbose {
 		s.WriteRune(' ')
 		s.WriteString(i.disk.Meta().String())
