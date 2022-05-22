@@ -10,6 +10,16 @@ import (
 )
 
 func Interactive(ctx context.Context, options Options) error {
+	m := interactive.Model{}
+
+	if err := tea.NewProgram(m).Start(); err != nil {
+		return fmt.Errorf("cannot start interactive UI: %w", err)
+	}
+
+	return nil
+}
+
+func oldInteractive(ctx context.Context, options Options) error {
 	disks, err := listUnusedDisks(ctx, options.Providers)
 	if err != nil {
 		return err

@@ -216,3 +216,29 @@ func displayDiskDetails(disk unused.Disk) tea.Cmd {
 		return disk
 	}
 }
+
+// NEW MODEL
+var _ tea.Model = Model{}
+
+type Model struct {
+}
+
+func (m Model) Init() tea.Cmd {
+	return tea.EnterAltScreen
+}
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case msg.String() == "q":
+			return m, tea.Quit
+		}
+	}
+
+	return m, nil
+}
+
+func (m Model) View() string {
+	return ""
+}
