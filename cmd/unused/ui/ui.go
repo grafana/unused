@@ -20,3 +20,5 @@ type Options struct {
 type UI interface {
 	Display(ctx context.Context, options Options) error
 }
+
+type DisplayFunc func(ctx context.Context, options Options) error
