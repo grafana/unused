@@ -9,8 +9,6 @@ import (
 
 	"github.com/grafana/unused/cli"
 	"github.com/grafana/unused/cmd/unused/ui"
-	"github.com/grafana/unused/cmd/unused/ui/interactive"
-	"github.com/grafana/unused/cmd/unused/ui/table"
 	// "github.com/mmcloughlin/profile"
 )
 
@@ -60,14 +58,14 @@ func main() {
 		},
 	}
 
-	var out ui.UI
+	var display ui.DisplayFunc
 	if interactiveMode {
-		out = interactive.UI{}
+		display = ui.Interactive
 	} else {
-		out = table.UI{}
+		display = ui.Table
 	}
 
-	if err := out.Display(ctx, opts); err != nil {
+	if err := display(ctx, opts); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, "displaying output:", err)
 		os.Exit(1)

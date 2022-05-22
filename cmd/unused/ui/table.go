@@ -1,20 +1,18 @@
-package interactive
+package ui
 
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
+	"text/tabwriter"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/grafana/unused"
-	"github.com/grafana/unused/cmd/unused/ui"
+	"github.com/grafana/unused/cli"
 )
 
-var _ ui.UI = UI{}
-
-type UI struct{}
-
-func (ui UI) Display(ctx context.Context, options ui.Options) error {
+func Table(ctx context.Context, options Options) error {
 	disks, err := listUnusedDisks(ctx, options.Providers)
 	if err != nil {
 		return err
@@ -35,11 +33,36 @@ func (ui UI) Display(ctx context.Context, options ui.Options) error {
 		return nil
 	}
 
-	m := NewModel(options.Verbose, disks, options.ExtraColumns)
+	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
 
-	if err := tea.NewProgram(m).Start(); err != nil {
-		return fmt.Errorf("cannot start interactive UI: %w", err)
+	headers := []string{"PROVIDER", "DISK", "AGE", "UNUSED"}
+	for _, c := range options.ExtraColumns {
+		headers = append(headers, "META:"+c)
 	}
+	if options.Verbose {
+		headers = append(headers, "PROVIDER_META", "DISK_META")
+	}
+
+	fmt.Fprintln(w, strings.Join(headers, "\t"))
+
+	for _, d := range disks {
+		p := d.Provider()
+
+		row := []string{p.Name(), d.Name(), cli.Age(d.CreatedAt()), cli.Age(d.LastUsedAt())}
+		for _, c := range options.ExtraColumns {
+			row = append(row, d.Meta()[c])
+		}
+		if options.Verbose {
+			row = append(row, p.Meta().String(), d.Meta().String())
+		}
+
+		fmt.Fprintln(w, strings.Join(row, "\t"))
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("flushing table contents: %w", err)
+	}
+
 	return nil
 }
 
