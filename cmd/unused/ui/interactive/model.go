@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
 	"github.com/inkel/gotui/tabs"
 )
@@ -218,15 +219,27 @@ func displayDiskDetails(disk unused.Disk) tea.Cmd {
 }
 
 // NEW MODEL
+type state int
+
+const (
+	stateProviderList state = iota
+	stateProviderView
+)
+
 var _ tea.Model = Model{}
 
 type Model struct {
 	providerList list.Model
+	providerView table.Model
+	provider     unused.Provider
+	state        state
 }
 
 func New(providers []unused.Provider) Model {
 	return Model{
 		providerList: newProviderList(providers),
+		providerView: newProviderView(),
+		state:        stateProviderList,
 	}
 }
 
@@ -240,17 +253,38 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case msg.String() == "q":
 			return m, tea.Quit
+
+		case msg.String() == "enter":
+			m.provider = m.providerList.SelectedItem().(providerItem).Provider
+			m.state = stateProviderView
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
 		m.providerList.SetSize(msg.Width, msg.Height)
+		m.providerView = m.providerView.WithTargetWidth(msg.Width).WithPageSize(msg.Height - 6)
 	}
 
 	var cmd tea.Cmd
-	m.providerList, cmd = m.providerList.Update(msg)
+
+	if m.state == stateProviderList {
+		m.providerList, cmd = m.providerList.Update(msg)
+	} else {
+		m.providerView, cmd = m.providerView.Update(msg)
+	}
+
 	return m, cmd
 }
 
 func (m Model) View() string {
-	return m.providerList.View()
+	switch m.state {
+	case stateProviderList:
+		return m.providerList.View()
+
+	case stateProviderView:
+		return m.providerView.View()
+
+	default:
+		return "WHAT"
+	}
 }
