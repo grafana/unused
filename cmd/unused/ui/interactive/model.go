@@ -221,6 +221,13 @@ func displayDiskDetails(disk unused.Disk) tea.Cmd {
 var _ tea.Model = Model{}
 
 type Model struct {
+	providerList list.Model
+}
+
+func New(providers []unused.Provider) Model {
+	return Model{
+		providerList: newProviderList(providers),
+	}
 }
 
 func (m Model) Init() tea.Cmd {
@@ -234,11 +241,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case msg.String() == "q":
 			return m, tea.Quit
 		}
+
+	case tea.WindowSizeMsg:
+		m.providerList.SetSize(msg.Width, msg.Height)
 	}
 
-	return m, nil
+	var cmd tea.Cmd
+	m.providerList, cmd = m.providerList.Update(msg)
+	return m, cmd
 }
 
 func (m Model) View() string {
-	return ""
+	return m.providerList.View()
 }
