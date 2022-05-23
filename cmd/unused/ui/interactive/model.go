@@ -250,11 +250,18 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch {
-		case msg.String() == "q":
+		switch msg.String() {
+		case "q":
 			return m, tea.Quit
 
-		case msg.String() == "enter":
+		case "esc":
+			if m.state == stateProviderView {
+				m.state = stateProviderList
+			}
+
+			return m, nil
+
+		case "enter":
 			m.provider = m.providerList.SelectedItem().(providerItem).Provider
 			m.state = stateProviderView
 			return m, nil
