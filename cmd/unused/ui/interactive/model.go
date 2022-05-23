@@ -241,9 +241,10 @@ type Model struct {
 	state        state
 	loadingDone  chan struct{}
 	extraCols    []string
+	key, value   string
 }
 
-func New(providers []unused.Provider, extraColumns []string) Model {
+func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
 	return Model{
 		providerList: newProviderList(providers),
 		providerView: newProviderView(extraColumns),
@@ -252,6 +253,8 @@ func New(providers []unused.Provider, extraColumns []string) Model {
 		spinner:      spinner.New(),
 		loadingDone:  make(chan struct{}),
 		extraCols:    extraColumns,
+		key:          key,
+		value:        value,
 	}
 }
 
@@ -284,6 +287,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					disks, ok := m.disks[m.provider]
 					if !ok {
 						disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
+
+						if m.key != "" {
+							filtered := make(unused.Disks, 0, len(disks))
+							for _, d := range disks {
+								if d.Meta().Matches(m.key, m.value) {
+									filtered = append(filtered, d)
+								}
+							}
+							disks = filtered
+						}
+
 						m.disks[m.provider] = disks
 					}
 
