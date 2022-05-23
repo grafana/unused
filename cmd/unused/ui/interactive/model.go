@@ -233,6 +233,7 @@ type Model struct {
 	providerList list.Model
 	providerView table.Model
 	provider     unused.Provider
+	disks        map[unused.Provider]unused.Disks
 	state        state
 }
 
@@ -240,6 +241,7 @@ func New(providers []unused.Provider) Model {
 	return Model{
 		providerList: newProviderList(providers),
 		providerView: newProviderView(),
+		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 	}
 }
@@ -263,13 +265,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "enter":
-			m.provider = m.providerList.SelectedItem().(providerItem).Provider
-			m.state = stateProviderView
+			if m.state == stateProviderList {
+				m.provider = m.providerList.SelectedItem().(providerItem).Provider
+				m.state = stateProviderView
 
-			disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
-			m.providerView = m.providerView.WithRows(disksToRows(disks))
+				disks, ok := m.disks[m.provider]
+				if !ok {
+					disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
+					m.disks[m.provider] = disks
+				}
 
-			return m, nil
+				m.providerView = m.providerView.WithRows(disksToRows(disks))
+
+				return m, nil
+			}
 		}
 
 	case tea.WindowSizeMsg:
