@@ -6,6 +6,15 @@ import (
 	"github.com/grafana/unused"
 )
 
-type UI interface {
-	Display(ctx context.Context, disks unused.Disks, extraColumns []string) error
+type Filter struct {
+	Key, Value string
 }
+
+type Options struct {
+	Providers    []unused.Provider
+	ExtraColumns []string
+	Filter       Filter
+	Verbose      bool
+}
+
+type DisplayFunc func(ctx context.Context, options Options) error

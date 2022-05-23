@@ -7,11 +7,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/grafana/unused"
 	"github.com/grafana/unused/cli"
 	"github.com/grafana/unused/cmd/unused/ui"
-	"github.com/grafana/unused/cmd/unused/ui/interactive"
-	"github.com/grafana/unused/cmd/unused/ui/table"
 	// "github.com/mmcloughlin/profile"
 )
 
@@ -44,45 +41,33 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	var out ui.UI
-	if interactiveMode {
-		out = interactive.New(verbose)
-	} else {
-		out = table.New(os.Stdout, verbose)
-	}
-
-	if err := realMain(ctx, out, gcpProjects, awsProfiles, azureSubs, filter, extraColumns); err != nil {
-		cancel() // cleanup resources
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
-
-func realMain(ctx context.Context, out ui.UI, gcpProjects, awsProfiles, azureSubs []string, filter cli.FilterFlag, extraColumns []string) error {
 	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
-		return err
+		cancel()
+		fmt.Fprintln(os.Stderr, "creating providers:", err)
+		os.Exit(1)
 	}
 
-	disks, err := listUnusedDisks(ctx, providers)
-	if err != nil {
-		return err
+	opts := ui.Options{
+		Providers:    providers,
+		ExtraColumns: extraColumns,
+		Verbose:      verbose,
+		Filter: ui.Filter{
+			Key:   filter.Key,
+			Value: filter.Value,
+		},
 	}
 
-	if filter.Key != "" {
-		filtered := make(unused.Disks, 0, len(disks))
-		for _, d := range disks {
-			if d.Meta().Matches(filter.Key, filter.Value) {
-				filtered = append(filtered, d)
-			}
-		}
-		disks = filtered
+	var display ui.DisplayFunc
+	if interactiveMode {
+		display = ui.Interactive
+	} else {
+		display = ui.Table
 	}
 
-	if len(disks) == 0 {
-		fmt.Println("No disks found")
-		return nil
+	if err := display(ctx, opts); err != nil {
+		cancel() // cleanup resources
+		fmt.Fprintln(os.Stderr, "displaying output:", err)
+		os.Exit(1)
 	}
-
-	return out.Display(ctx, disks, extraColumns)
 }
