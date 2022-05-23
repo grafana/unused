@@ -2,11 +2,13 @@ package interactive
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -225,6 +227,7 @@ type state int
 const (
 	stateProviderList state = iota
 	stateProviderView
+	stateFetchingDisks
 )
 
 var _ tea.Model = Model{}
@@ -233,8 +236,10 @@ type Model struct {
 	providerList list.Model
 	providerView table.Model
 	provider     unused.Provider
+	spinner      spinner.Model
 	disks        map[unused.Provider]unused.Disks
 	state        state
+	loadingDone  chan struct{}
 }
 
 func New(providers []unused.Provider) Model {
@@ -243,6 +248,8 @@ func New(providers []unused.Provider) Model {
 		providerView: newProviderView(),
 		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
+		spinner:      spinner.New(),
+		loadingDone:  make(chan struct{}),
 	}
 }
 
@@ -267,18 +274,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.state == stateProviderList {
 				m.provider = m.providerList.SelectedItem().(providerItem).Provider
-				m.state = stateProviderView
+				m.state = stateFetchingDisks
 
-				disks, ok := m.disks[m.provider]
-				if !ok {
-					disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
-					m.disks[m.provider] = disks
-				}
+				go func() {
+					m.state = stateProviderView
 
-				m.providerView = m.providerView.WithRows(disksToRows(disks))
+					disks, ok := m.disks[m.provider]
+					if !ok {
+						disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
+						m.disks[m.provider] = disks
+					}
 
-				return m, nil
+					m.loadingDone <- struct{}{}
+				}()
+
+				return m, spinner.Tick
 			}
+		}
+
+	case spinner.TickMsg:
+		select {
+		case <-m.loadingDone:
+			m.state = stateProviderView
+			m.providerView = m.providerView.WithRows(disksToRows(m.disks[m.provider]))
+		default:
 		}
 
 	case tea.WindowSizeMsg:
@@ -288,9 +307,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 
-	if m.state == stateProviderList {
+	switch m.state {
+	case stateFetchingDisks:
+		m.spinner, cmd = m.spinner.Update(msg)
+
+	case stateProviderList:
 		m.providerList, cmd = m.providerList.Update(msg)
-	} else {
+
+	case stateProviderView:
 		m.providerView, cmd = m.providerView.Update(msg)
 	}
 
@@ -304,6 +328,9 @@ func (m Model) View() string {
 
 	case stateProviderView:
 		return m.providerView.View()
+
+	case stateFetchingDisks:
+		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	default:
 		return "WHAT"
