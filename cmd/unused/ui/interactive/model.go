@@ -228,6 +228,7 @@ const (
 	stateProviderList state = iota
 	stateProviderView
 	stateFetchingDisks
+	stateDeletingDisks
 )
 
 var _ tea.Model = Model{}
@@ -242,6 +243,14 @@ type Model struct {
 	loadingDone  chan struct{}
 	extraCols    []string
 	key, value   string
+	output       viewport.Model
+	deleteStatus map[string]*deleteStatus
+}
+
+type deleteStatus struct {
+	cur  bool
+	done bool
+	err  error
 }
 
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
@@ -285,6 +294,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				return m, spinner.Tick
 			}
+
+		case "x":
+			if m.state == stateProviderView {
+				if rows := m.providerView.SelectedRows(); len(rows) > 0 {
+					m.state = stateDeletingDisks
+					m.deleteStatus = make(map[string]*deleteStatus, len(rows))
+
+					go m.deleteDisks()
+
+					return m, spinner.Tick
+				}
+			}
 		}
 
 	case spinner.TickMsg:
@@ -298,6 +319,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.providerList.SetSize(msg.Width, msg.Height)
 		m.providerView = m.providerView.WithTargetWidth(msg.Width).WithPageSize(msg.Height - 6)
+		m.output.Width = msg.Width
+		m.output.Height = msg.Height - 1
 	}
 
 	var cmd tea.Cmd
@@ -311,10 +334,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case stateProviderView:
 		m.providerView, cmd = m.providerView.Update(msg)
+
+	case stateDeletingDisks:
+		m.spinner, cmd = m.spinner.Update(msg)
 	}
 
 	return m, cmd
 }
+
+var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
 
 func (m Model) View() string {
 	switch m.state {
@@ -326,6 +354,32 @@ func (m Model) View() string {
 
 	case stateFetchingDisks:
 		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
+
+	case stateDeletingDisks:
+		rows := m.providerView.SelectedRows()
+		title := fmt.Sprintf("Deleting %d disks for %s %s\n", len(rows), m.provider.Name(), m.provider.Meta().String())
+
+		var sb strings.Builder
+
+		for _, r := range rows {
+			d := r.Data[columnDisk].(unused.Disk)
+			s := m.deleteStatus[d.ID()]
+			if s != nil {
+				if s.cur {
+					fmt.Fprintf(&sb, "➤ %s %s\n", d.Name(), m.spinner.View())
+				} else if s.done {
+					if s.err != nil {
+						fmt.Fprintf(&sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
+					} else {
+						fmt.Fprintf(&sb, "✓ %s\n", d.Name())
+					}
+				}
+			} else {
+				fmt.Fprintf(&sb, "  %s\n", d.Name())
+			}
+		}
+
+		return lipgloss.JoinVertical(lipgloss.Left, title, sb.String())
 
 	default:
 		return "WHAT"
@@ -353,4 +407,17 @@ func (m Model) loadDisks() {
 	}
 
 	m.loadingDone <- struct{}{}
+}
+
+func (m Model) deleteDisks() {
+	for _, r := range m.providerView.SelectedRows() {
+		d := r.Data[columnDisk].(unused.Disk)
+		s := &deleteStatus{cur: true}
+		m.deleteStatus[d.ID()] = s
+
+		s.err = d.Provider().Delete(context.TODO(), d)
+
+		s.done = true
+		s.cur = false
+	}
 }
