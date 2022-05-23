@@ -281,28 +281,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.provider = m.providerList.SelectedItem().(providerItem).Provider
 				m.state = stateFetchingDisks
 
-				go func() {
-					m.state = stateProviderView
-
-					disks, ok := m.disks[m.provider]
-					if !ok {
-						disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
-
-						if m.key != "" {
-							filtered := make(unused.Disks, 0, len(disks))
-							for _, d := range disks {
-								if d.Meta().Matches(m.key, m.value) {
-									filtered = append(filtered, d)
-								}
-							}
-							disks = filtered
-						}
-
-						m.disks[m.provider] = disks
-					}
-
-					m.loadingDone <- struct{}{}
-				}()
+				go m.loadDisks()
 
 				return m, spinner.Tick
 			}
@@ -351,4 +330,27 @@ func (m Model) View() string {
 	default:
 		return "WHAT"
 	}
+}
+
+func (m Model) loadDisks() {
+	m.state = stateProviderView
+
+	disks, ok := m.disks[m.provider]
+	if !ok {
+		disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
+
+		if m.key != "" {
+			filtered := make(unused.Disks, 0, len(disks))
+			for _, d := range disks {
+				if d.Meta().Matches(m.key, m.value) {
+					filtered = append(filtered, d)
+				}
+			}
+			disks = filtered
+		}
+
+		m.disks[m.provider] = disks
+	}
+
+	m.loadingDone <- struct{}{}
 }
