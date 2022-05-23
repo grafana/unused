@@ -20,27 +20,40 @@ var (
 	ageStyle    = lipgloss.NewStyle().Align(lipgloss.Right)
 )
 
-func newProviderView() table.Model {
-	return table.New([]table.Column{
+func newProviderView(extraColumns []string) table.Model {
+	cols := []table.Column{
 		table.NewFlexColumn(columnName, "Name", 2).WithStyle(nameStyle),
 		table.NewColumn(columnAge, "Age", 6).WithStyle(ageStyle),
 		table.NewColumn(columnUnused, "Unused", 6).WithStyle(ageStyle),
-	}).
+	}
+
+	for _, c := range extraColumns {
+		cols = append(cols, table.NewFlexColumn(c, c, 1).WithStyle(nameStyle))
+	}
+
+	return table.New(cols).
 		HeaderStyle(headerStyle).
 		Focused(true).
 		SelectableRows(true)
 }
 
-func disksToRows(disks unused.Disks) []table.Row {
+func disksToRows(disks unused.Disks, extraColumns []string) []table.Row {
 	rows := make([]table.Row, len(disks))
 
 	for i, d := range disks {
-		rows[i] = table.NewRow(table.RowData{
+		row := table.RowData{
 			columnDisk:   d,
 			columnName:   d.Name(),
 			columnAge:    cli.Age(d.CreatedAt()),
 			columnUnused: cli.Age(d.LastUsedAt()),
-		})
+		}
+
+		meta := d.Meta()
+		for _, c := range extraColumns {
+			row[c] = meta[c]
+		}
+
+		rows[i] = table.NewRow(row)
 	}
 
 	return rows

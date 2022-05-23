@@ -240,16 +240,18 @@ type Model struct {
 	disks        map[unused.Provider]unused.Disks
 	state        state
 	loadingDone  chan struct{}
+	extraCols    []string
 }
 
-func New(providers []unused.Provider) Model {
+func New(providers []unused.Provider, extraColumns []string) Model {
 	return Model{
 		providerList: newProviderList(providers),
-		providerView: newProviderView(),
+		providerView: newProviderView(extraColumns),
 		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 		spinner:      spinner.New(),
 		loadingDone:  make(chan struct{}),
+		extraCols:    extraColumns,
 	}
 }
 
@@ -296,7 +298,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		select {
 		case <-m.loadingDone:
 			m.state = stateProviderView
-			m.providerView = m.providerView.WithRows(disksToRows(m.disks[m.provider]))
+			m.providerView = m.providerView.WithRows(disksToRows(m.disks[m.provider], m.extraCols))
 		default:
 		}
 
