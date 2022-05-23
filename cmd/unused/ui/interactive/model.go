@@ -1,6 +1,7 @@
 package interactive
 
 import (
+	"context"
 	"sort"
 	"strings"
 
@@ -264,6 +265,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.provider = m.providerList.SelectedItem().(providerItem).Provider
 			m.state = stateProviderView
+
+			disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
+			m.providerView = m.providerView.WithRows(disksToRows(disks))
+
 			return m, nil
 		}
 
