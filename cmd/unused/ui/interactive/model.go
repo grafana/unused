@@ -231,6 +231,10 @@ const (
 	stateDeletingDisks
 )
 
+type stateChange struct {
+	prev, next state
+}
+
 var _ tea.Model = Model{}
 
 type Model struct {
@@ -279,40 +283,54 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "esc":
-			if m.state == stateProviderView {
-				m.state = stateProviderList
+			switch m.state {
+			case stateProviderView:
+				return m, m.changeState(stateProviderList)
+
+			case stateDeletingDisks:
+				delete(m.disks, m.provider)
+				return m, m.changeState(stateFetchingDisks)
 			}
 
 			return m, nil
 
 		case "enter":
 			if m.state == stateProviderList {
-				m.provider = m.providerList.SelectedItem().(providerItem).Provider
-				m.state = stateFetchingDisks
-
-				go m.loadDisks()
-
-				return m, spinner.Tick
+				return m, tea.Batch(spinner.Tick, m.changeState(stateFetchingDisks))
 			}
 
 		case "x":
 			if m.state == stateProviderView {
 				if rows := m.providerView.SelectedRows(); len(rows) > 0 {
-					m.state = stateDeletingDisks
 					m.deleteStatus = make(map[string]*deleteStatus, len(rows))
 
 					go m.deleteDisks()
 
-					return m, spinner.Tick
+					return m, tea.Batch(spinner.Tick, m.changeState(stateDeletingDisks))
 				}
 			}
 		}
 
+	case stateChange:
+		switch msg.next {
+		case stateFetchingDisks:
+			m.providerView = m.providerView.WithRows(nil)
+			m.provider = m.providerList.SelectedItem().(providerItem).Provider
+
+			go m.loadDisks()
+
+		case stateProviderView:
+			m.providerView = m.providerView.WithRows(disksToRows(m.disks[m.provider], m.extraCols))
+		}
+
+		m.state = msg.next
+
+		return m, nil
+
 	case spinner.TickMsg:
 		select {
 		case <-m.loadingDone:
-			m.state = stateProviderView
-			m.providerView = m.providerView.WithRows(disksToRows(m.disks[m.provider], m.extraCols))
+			return m, m.changeState(stateProviderView)
 		default:
 		}
 
@@ -387,8 +405,6 @@ func (m Model) View() string {
 }
 
 func (m Model) loadDisks() {
-	m.state = stateProviderView
-
 	disks, ok := m.disks[m.provider]
 	if !ok {
 		disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
@@ -419,5 +435,11 @@ func (m Model) deleteDisks() {
 
 		s.done = true
 		s.cur = false
+	}
+}
+
+func (m Model) changeState(next state) tea.Cmd {
+	return func() tea.Msg {
+		return stateChange{m.state, next}
 	}
 }
