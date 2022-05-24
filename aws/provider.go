@@ -15,6 +15,7 @@ var _ unused.Provider = &Provider{}
 
 type Provider struct {
 	client *ec2.Client
+	cfg    aws.Config
 	meta   unused.Meta
 }
 
@@ -34,6 +35,7 @@ func NewProvider(ctx context.Context, meta unused.Meta, optFns ...func(*config.L
 
 	return &Provider{
 		client: ec2.NewFromConfig(cfg),
+		cfg:    cfg,
 		meta:   meta,
 	}, nil
 }
