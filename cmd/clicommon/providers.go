@@ -1,7 +1,8 @@
-package cli
+package clicommon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -11,6 +12,8 @@ import (
 	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused/gcp"
 )
+
+var ErrNoProviders = errors.New("please select at least one provider")
 
 func CreateProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string) ([]unused.Provider, error) {
 	providers := make([]unused.Provider, 0, len(gcpProjects)+len(awsProfiles)+len(azureSubs))
@@ -44,6 +47,10 @@ func CreateProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 			}
 			providers = append(providers, p)
 		}
+	}
+
+	if len(providers) == 0 {
+		return nil, ErrNoProviders
 	}
 
 	return providers, nil
