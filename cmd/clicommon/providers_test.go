@@ -3,6 +3,7 @@ package clicommon_test
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/grafana/unused/aws"
@@ -22,6 +23,10 @@ func TestCreateProviders(t *testing.T) {
 			t.Fatalf("expecting nil providers, got %v", ps)
 		}
 	})
+
+	if os.Getenv("CI") == "true" {
+		t.Skip("the following tests need authentication") // TODO
+	}
 
 	t.Run("GCP", func(t *testing.T) {
 		ps, err := clicommon.CreateProviders(context.Background(), []string{"foo", "bar"}, nil, nil)
