@@ -197,9 +197,8 @@ func (m Model) View() string {
 }
 
 func (m Model) loadDisks() {
-	disks, ok := m.disks[m.provider]
-	if !ok {
-		disks, _ = m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
+	if _, ok := m.disks[m.provider]; !ok {
+		disks, _ := m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
 
 		if m.key != "" {
 			filtered := make(unused.Disks, 0, len(disks))
