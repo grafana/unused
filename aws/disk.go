@@ -13,6 +13,7 @@ type Disk struct {
 	types.Volume
 	provider *Provider
 	meta     unused.Meta
+	lastUsed time.Time
 }
 
 func (d *Disk) ID() string { return *d.Volume.VolumeId }
@@ -32,4 +33,4 @@ func (d *Disk) CreatedAt() time.Time { return *d.Volume.CreateTime }
 
 func (d *Disk) Meta() unused.Meta { return d.meta }
 
-func (d *Disk) LastUsedAt() time.Time { return time.Time{} }
+func (d *Disk) LastUsedAt() time.Time { return d.lastUsed }

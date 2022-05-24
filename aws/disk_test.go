@@ -11,11 +11,12 @@ import (
 
 func TestDisk(t *testing.T) {
 	createdAt := time.Date(2021, 7, 16, 5, 55, 00, 0, time.UTC)
+	lastUsedAt := time.Date(2021, 11, 20, 18, 00, 00, 0, time.UTC)
 
 	for _, keyName := range []string{"Name", "CSIVolumeName"} {
 		t.Run(keyName, func(t *testing.T) {
 			var d unused.Disk = &Disk{
-				types.Volume{
+				Volume: types.Volume{
 					VolumeId:   aws.String("my-disk-id"),
 					CreateTime: &createdAt,
 					Tags: []types.Tag{
@@ -25,8 +26,8 @@ func TestDisk(t *testing.T) {
 						},
 					},
 				},
-				&Provider{},
-				nil,
+				provider: &Provider{},
+				meta:     nil,
 			}
 
 			if exp, got := "my-disk-id", d.ID(); exp != got {
@@ -43,6 +44,17 @@ func TestDisk(t *testing.T) {
 
 			if !createdAt.Equal(d.CreatedAt()) {
 				t.Errorf("expecting CreatedAt() %v, got %v", createdAt, d.CreatedAt())
+			}
+
+			if !d.LastUsedAt().IsZero() {
+				t.Errorf("expecting LastUsedAt() to be time.Time zeroth value, got %v", d.LastUsedAt())
+			}
+
+			// HACK to set the last use date
+			d.(*Disk).lastUsed = lastUsedAt
+
+			if !lastUsedAt.Equal(d.LastUsedAt()) {
+				t.Errorf("expecting LastUsedAt() %v, got %v", lastUsedAt, d.LastUsedAt())
 			}
 		})
 	}

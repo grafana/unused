@@ -71,7 +71,11 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 				m[k] = *t.Value
 			}
 
-			upds = append(upds, &Disk{v, p, m})
+			upds = append(upds, &Disk{
+				Volume:   v,
+				provider: p,
+				meta:     m,
+			})
 		}
 	}
 
