@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/grafana/unused/cli"
+	"github.com/grafana/unused/cmd/clicommon"
 	"github.com/grafana/unused/cmd/unused/ui"
 	// "github.com/mmcloughlin/profile"
 )
@@ -16,13 +16,13 @@ func main() {
 	// defer profile.Start(profile.CPUProfile, profile.MemProfile).Stop()
 
 	var (
-		gcpProjects, awsProfiles, azureSubs cli.StringSliceFlag
+		gcpProjects, awsProfiles, azureSubs clicommon.StringSliceFlag
 
 		interactiveMode, verbose bool
 
-		filter cli.FilterFlag
+		filter clicommon.FilterFlag
 
-		extraColumns cli.StringSliceFlag
+		extraColumns clicommon.StringSliceFlag
 	)
 
 	flag.Var(&gcpProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
@@ -41,7 +41,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
+	providers, err := clicommon.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		cancel()
 		fmt.Fprintln(os.Stderr, "creating providers:", err)

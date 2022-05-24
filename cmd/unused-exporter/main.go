@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/grafana/unused/cli"
+	"github.com/grafana/unused/cmd/clicommon"
 )
 
 func main() {
 	// defer profile.Start(profile.CPUProfile, profile.MemProfile).Stop()
 
-	var gcpProjects, awsProfiles, azureSubs cli.StringSliceFlag
+	var gcpProjects, awsProfiles, azureSubs clicommon.StringSliceFlag
 	flag.Var(&gcpProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
 	flag.Var(&awsProfiles, "aws.profile", "AWS profile (can be specified multiple times)")
 	flag.Var(&azureSubs, "azure.sub", "Azure subscription (can be specified multiple times)")
@@ -38,7 +38,7 @@ func main() {
 }
 
 func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string, address, path string, interval time.Duration) error {
-	providers, err := cli.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
+	providers, err := clicommon.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		return err
 	}

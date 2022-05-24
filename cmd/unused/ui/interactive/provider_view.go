@@ -4,7 +4,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
-	"github.com/grafana/unused/cli"
+	"github.com/grafana/unused/cmd/clicommon"
 )
 
 const (
@@ -44,8 +44,8 @@ func disksToRows(disks unused.Disks, extraColumns []string) []table.Row {
 		row := table.RowData{
 			columnDisk:   d,
 			columnName:   d.Name(),
-			columnAge:    cli.Age(d.CreatedAt()),
-			columnUnused: cli.Age(d.LastUsedAt()),
+			columnAge:    clicommon.Age(d.CreatedAt()),
+			columnUnused: clicommon.Age(d.LastUsedAt()),
 		}
 
 		meta := d.Meta()
