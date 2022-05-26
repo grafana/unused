@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -12,6 +13,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
+	"github.com/grafana/unused/aws"
+	"github.com/grafana/unused/cmd/clicommon"
 )
 
 type state int
@@ -100,6 +103,48 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					return m, tea.Batch(spinner.Tick, m.changeState(stateDeletingDisks))
 				}
+			}
+
+		case "r":
+			if m.state == stateProviderView {
+				// which rows to refresh
+				sel := m.providerView.SelectedRows()
+				tor := make(map[string]bool, len(sel))
+				for _, r := range sel {
+					tor[r.Data[columnDisk].(unused.Disk).ID()] = true
+				}
+
+				ninetyDays := time.Now().Add(-90 * 24 * time.Hour)
+
+				rows := m.providerView.GetVisibleRows()
+				for i, r := range rows {
+					d, ok := r.Data[columnDisk].(*aws.Disk)
+					if !ok {
+						continue
+					}
+
+					if tor[d.ID()] {
+						if err := d.RefreshLastUsedAt(context.TODO()); err != nil {
+							// TODO handle error
+							rows[i].Data[columnUnused] = "ERR"
+							continue
+						}
+
+						// AWS only allows to lookup events for the
+						// past 90 days. If refreshing doesn't trigger
+						// an error and the last used date is still
+						// zero and the creation date is 90+ days it's
+						// safe to assume it has been detached for
+						// over 90 days.
+						if d.LastUsedAt().IsZero() && d.CreatedAt().Before(ninetyDays) {
+							rows[i].Data[columnUnused] = "90+d"
+						} else {
+							rows[i].Data[columnUnused] = clicommon.Age(d.LastUsedAt())
+						}
+					}
+				}
+
+				m.providerView = m.providerView.WithRows(rows)
 			}
 		}
 
