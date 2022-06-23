@@ -35,7 +35,6 @@ type Model struct {
 	extraCols    []string
 	key, value   string
 	output       viewport.Model
-	deleteStatus map[string]*deleteStatus
 	deleteOutput viewport.Model
 }
 
@@ -93,8 +92,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "x":
 			if m.state == stateProviderView {
 				if rows := m.providerView.SelectedRows(); len(rows) > 0 {
-					m.deleteStatus = make(map[string]*deleteStatus, len(rows))
-
 					s := deleteProgress{
 						disks:  make(unused.Disks, 0, len(rows)),
 						status: make([]*deleteStatus, len(rows)),
