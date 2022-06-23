@@ -140,9 +140,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(spinner.Tick, deleteCurrent(msg))
 
 	case spinner.TickMsg:
-		select {
-		default:
-		}
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 
 	case tea.WindowSizeMsg:
 		m.providerList.SetSize(msg.Width, msg.Height)
@@ -154,17 +154,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch m.state {
-	case stateFetchingDisks:
-		m.spinner, cmd = m.spinner.Update(msg)
-
 	case stateProviderList:
 		m.providerList, cmd = m.providerList.Update(msg)
 
 	case stateProviderView:
 		m.providerView, cmd = m.providerView.Update(msg)
-
-	case stateDeletingDisks:
-		m.spinner, cmd = m.spinner.Update(msg)
 	}
 
 	return m, cmd
