@@ -44,7 +44,6 @@ type Model struct {
 }
 
 type deleteStatus struct {
-	cur  bool
 	done bool
 	err  error
 }
@@ -273,19 +272,6 @@ func (m Model) deleteCurrent(s delStatus) tea.Cmd {
 	}
 
 	return func() tea.Msg { return s }
-}
-
-func (m Model) deleteDisks() {
-	for _, r := range m.providerView.SelectedRows() {
-		d := r.Data[columnDisk].(unused.Disk)
-		s := &deleteStatus{cur: true}
-		m.deleteStatus[d.ID()] = s
-
-		s.err = d.Provider().Delete(context.TODO(), d)
-
-		s.done = true
-		s.cur = false
-	}
 }
 
 func (m Model) changeState(next state) tea.Cmd {
