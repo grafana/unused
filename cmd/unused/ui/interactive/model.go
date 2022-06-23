@@ -93,7 +93,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if rows := m.providerView.SelectedRows(); len(rows) > 0 {
 					m.deleteStatus = make(map[string]*deleteStatus, len(rows))
 
-					s := delStatus{
+					s := deleteProgress{
 						disks:  make(unused.Disks, 0, len(rows)),
 						status: make([]*deleteStatus, len(rows)),
 					}
@@ -112,7 +112,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.providerView = m.providerView.WithRows(disksToRows(msg.disks, m.extraCols))
 		m.state = stateProviderView
 
-	case delStatus:
+	case deleteProgress:
 		sb := &strings.Builder{}
 
 		fmt.Fprintf(sb, "Deleting %d disks from %s %s\n\n", len(msg.disks), m.provider.Name(), m.provider.Meta().String())
@@ -232,29 +232,29 @@ type deleteStatus struct {
 	err  error
 }
 
-type delStatus struct {
+type deleteProgress struct {
 	cur    int
 	disks  unused.Disks
 	status []*deleteStatus
 }
 
-func deleteCurrent(s delStatus) tea.Cmd {
-	if s.cur == len(s.disks) {
+func deleteCurrent(p deleteProgress) tea.Cmd {
+	if p.cur == len(p.disks) {
 		return nil
 	}
 
-	if s.status[s.cur] == nil {
+	if p.status[p.cur] == nil {
 		ds := &deleteStatus{}
-		s.status[s.cur] = ds
+		p.status[p.cur] = ds
 
 		go func() {
-			d := s.disks[s.cur]
+			d := p.disks[p.cur]
 			ds.err = d.Provider().Delete(context.TODO(), d)
 			ds.done = true
 		}()
-	} else if s.status[s.cur].done {
-		s.cur++
+	} else if p.status[p.cur].done {
+		p.cur++
 	}
 
-	return func() tea.Msg { return s }
+	return func() tea.Msg { return p }
 }
