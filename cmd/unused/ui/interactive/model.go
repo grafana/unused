@@ -23,10 +23,6 @@ const (
 	stateDeletingDisks
 )
 
-type stateChange struct {
-	prev, next state
-}
-
 var _ tea.Model = Model{}
 
 type Model struct {
@@ -75,11 +71,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			switch m.state {
 			case stateProviderView:
-				return m, m.changeState(stateProviderList)
+				m.state = stateProviderList
+				return m, nil
 
 			case stateDeletingDisks:
 				delete(m.disks, m.provider)
-				return m, m.changeState(stateFetchingDisks)
+				m.state = stateFetchingDisks
+				return m, nil
 			}
 
 			return m, nil
@@ -108,21 +106,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						s.disks = append(s.disks, r.Data[columnDisk].(unused.Disk))
 					}
 
-					return m, tea.Batch(spinner.Tick, m.changeState(stateDeletingDisks), deleteCurrent(s))
+					m.state = stateDeletingDisks
+					return m, tea.Batch(spinner.Tick, deleteCurrent(s))
 				}
 			}
 		}
-
-	case stateChange:
-		switch msg.next {
-
-		case stateProviderView:
-			m.providerView = m.providerView.WithRows(disksToRows(m.disks[m.provider], m.extraCols))
-		}
-
-		m.state = msg.next
-
-		return m, nil
 
 	case loadedDisks:
 		// TODO handle error
@@ -269,10 +257,4 @@ func deleteCurrent(s delStatus) tea.Cmd {
 	}
 
 	return func() tea.Msg { return s }
-}
-
-func (m Model) changeState(next state) tea.Cmd {
-	return func() tea.Msg {
-		return stateChange{m.state, next}
-	}
 }
