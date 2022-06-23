@@ -136,23 +136,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		for i, d := range msg.disks {
 			s := msg.status[i]
-			if s == nil {
+
+			switch {
+			case s == nil:
 				fmt.Fprintf(sb, "  %s\n", d.Name())
-				continue
-			}
 
-			if msg.cur == i {
+			case msg.cur == i:
 				fmt.Fprintf(sb, "➤ %s %s\n", d.Name(), m.spinner.View())
-				continue
-			}
 
-			if !s.done {
-				continue
-			}
+			case !s.done:
 
-			if s.err != nil {
+			case s.err != nil:
 				fmt.Fprintf(sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
-			} else {
+
+			default:
 				fmt.Fprintf(sb, "✓ %s\n", d.Name())
 			}
 		}
