@@ -118,7 +118,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, nil
 
-	case LoadedDisks:
+	case loadedDisks:
 		// TODO handle error
 		m.providerView = m.providerView.WithRows(disksToRows(msg.disks, m.extraCols))
 		m.state = stateProviderView
@@ -198,7 +198,7 @@ func (m Model) View() string {
 	}
 }
 
-type LoadedDisks struct {
+type loadedDisks struct {
 	disks unused.Disks
 	err   error
 }
@@ -206,12 +206,12 @@ type LoadedDisks struct {
 func (m Model) loadDisks(provider unused.Provider) tea.Cmd {
 	return func() tea.Msg {
 		if disks, ok := m.disks[provider]; ok {
-			return LoadedDisks{disks, nil}
+			return loadedDisks{disks, nil}
 		}
 
 		disks, err := m.provider.ListUnusedDisks(context.TODO())
 		if err != nil {
-			return LoadedDisks{nil, err}
+			return loadedDisks{nil, err}
 		}
 
 		if m.key != "" {
@@ -226,7 +226,7 @@ func (m Model) loadDisks(provider unused.Provider) tea.Cmd {
 
 		m.disks[m.provider] = disks
 
-		return LoadedDisks{disks, nil}
+		return loadedDisks{disks, nil}
 	}
 }
 
