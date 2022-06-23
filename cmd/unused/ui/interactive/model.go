@@ -40,6 +40,7 @@ type Model struct {
 	key, value   string
 	output       viewport.Model
 	deleteStatus map[string]*deleteStatus
+	deleteOutput viewport.Model
 }
 
 type deleteStatus struct {
@@ -100,9 +101,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if rows := m.providerView.SelectedRows(); len(rows) > 0 {
 					m.deleteStatus = make(map[string]*deleteStatus, len(rows))
 
-					go m.deleteDisks()
+					s := delStatus{
+						disks:  make(unused.Disks, 0, len(rows)),
+						status: make([]*deleteStatus, len(rows)),
+					}
+					for _, r := range rows {
+						s.disks = append(s.disks, r.Data[columnDisk].(unused.Disk))
+					}
 
-					return m, tea.Batch(spinner.Tick, m.changeState(stateDeletingDisks))
+					return m, tea.Batch(spinner.Tick, m.changeState(stateDeletingDisks), m.deleteCurrent(s))
 				}
 			}
 		}
@@ -123,6 +130,38 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.providerView = m.providerView.WithRows(disksToRows(msg.disks, m.extraCols))
 		m.state = stateProviderView
 
+	case delStatus:
+		sb := &strings.Builder{}
+
+		fmt.Fprintf(sb, "Deleting %d disks from %s %s\n\n", len(msg.disks), m.provider.Name(), m.provider.Meta().String())
+
+		for i, d := range msg.disks {
+			s := msg.status[i]
+			if s == nil {
+				fmt.Fprintf(sb, "  %s\n", d.Name())
+				continue
+			}
+
+			if msg.cur == i {
+				fmt.Fprintf(sb, "➤ %s %s\n", d.Name(), m.spinner.View())
+				continue
+			}
+
+			if !s.done {
+				continue
+			}
+
+			if s.err != nil {
+				fmt.Fprintf(sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
+			} else {
+				fmt.Fprintf(sb, "✓ %s\n", d.Name())
+			}
+		}
+
+		m.deleteOutput.SetContent(sb.String())
+
+		return m, tea.Batch(spinner.Tick, m.deleteCurrent(msg))
+
 	case spinner.TickMsg:
 		select {
 		default:
@@ -133,6 +172,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.providerView = m.providerView.WithTargetWidth(msg.Width).WithPageSize(msg.Height - 6)
 		m.output.Width = msg.Width
 		m.output.Height = msg.Height - 1
+		m.deleteOutput.Width = msg.Width
+		m.deleteOutput.Height = msg.Height - 1
 	}
 
 	var cmd tea.Cmd
@@ -168,30 +209,7 @@ func (m Model) View() string {
 		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	case stateDeletingDisks:
-		rows := m.providerView.SelectedRows()
-		title := fmt.Sprintf("Deleting %d disks for %s %s\n", len(rows), m.provider.Name(), m.provider.Meta().String())
-
-		var sb strings.Builder
-
-		for _, r := range rows {
-			d := r.Data[columnDisk].(unused.Disk)
-			s := m.deleteStatus[d.ID()]
-			if s != nil {
-				if s.cur {
-					fmt.Fprintf(&sb, "➤ %s %s\n", d.Name(), m.spinner.View())
-				} else if s.done {
-					if s.err != nil {
-						fmt.Fprintf(&sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
-					} else {
-						fmt.Fprintf(&sb, "✓ %s\n", d.Name())
-					}
-				}
-			} else {
-				fmt.Fprintf(&sb, "  %s\n", d.Name())
-			}
-		}
-
-		return lipgloss.JoinVertical(lipgloss.Left, title, sb.String())
+		return m.deleteOutput.View()
 
 	default:
 		return "WHAT"
@@ -228,6 +246,33 @@ func (m Model) loadDisks(provider unused.Provider) tea.Cmd {
 
 		return loadedDisks{disks, nil}
 	}
+}
+
+type delStatus struct {
+	cur    int
+	disks  unused.Disks
+	status []*deleteStatus
+}
+
+func (m Model) deleteCurrent(s delStatus) tea.Cmd {
+	if s.cur == len(s.disks) {
+		return nil
+	}
+
+	if s.status[s.cur] == nil {
+		ds := &deleteStatus{}
+		s.status[s.cur] = ds
+
+		go func() {
+			d := s.disks[s.cur]
+			ds.err = d.Provider().Delete(context.TODO(), d)
+			ds.done = true
+		}()
+	} else if s.status[s.cur].done {
+		s.cur++
+	}
+
+	return func() tea.Msg { return s }
 }
 
 func (m Model) deleteDisks() {
