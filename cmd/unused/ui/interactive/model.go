@@ -108,7 +108,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						s.disks = append(s.disks, r.Data[columnDisk].(unused.Disk))
 					}
 
-					return m, tea.Batch(spinner.Tick, m.changeState(stateDeletingDisks), m.deleteCurrent(s))
+					return m, tea.Batch(spinner.Tick, m.changeState(stateDeletingDisks), deleteCurrent(s))
 				}
 			}
 		}
@@ -156,7 +156,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.deleteOutput.SetContent(sb.String())
 
-		return m, tea.Batch(spinner.Tick, m.deleteCurrent(msg))
+		return m, tea.Batch(spinner.Tick, deleteCurrent(msg))
 
 	case spinner.TickMsg:
 		select {
@@ -250,7 +250,7 @@ type delStatus struct {
 	status []*deleteStatus
 }
 
-func (m Model) deleteCurrent(s delStatus) tea.Cmd {
+func deleteCurrent(s delStatus) tea.Cmd {
 	if s.cur == len(s.disks) {
 		return nil
 	}
