@@ -39,11 +39,6 @@ type Model struct {
 	deleteOutput viewport.Model
 }
 
-type deleteStatus struct {
-	done bool
-	err  error
-}
-
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
 	return Model{
 		providerList: newProviderList(providers),
@@ -230,6 +225,11 @@ func (m Model) loadDisks(provider unused.Provider) tea.Cmd {
 
 		return loadedDisks{disks, nil}
 	}
+}
+
+type deleteStatus struct {
+	done bool
+	err  error
 }
 
 type delStatus struct {
