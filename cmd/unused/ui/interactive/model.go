@@ -137,7 +137,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.output.SetContent(sb.String())
 
-		return m, tea.Batch(spinner.Tick, deleteCurrent(msg))
+		return m, deleteCurrent(msg)
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
