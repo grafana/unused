@@ -88,7 +88,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 			if m.state == stateProviderList {
-				return m, tea.Batch(spinner.Tick, m.changeState(stateFetchingDisks))
+				m.providerView = m.providerView.WithRows(nil)
+				m.provider = m.providerList.SelectedItem().(providerItem).Provider
+				m.state = stateFetchingDisks
+
+				return m, tea.Batch(
+					spinner.Tick,
+					m.loadDisks(m.providerList.SelectedItem().(providerItem).Provider))
 			}
 
 		case "x":
@@ -105,11 +111,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case stateChange:
 		switch msg.next {
-		case stateFetchingDisks:
-			m.providerView = m.providerView.WithRows(nil)
-			m.provider = m.providerList.SelectedItem().(providerItem).Provider
-
-			go m.loadDisks()
 
 		case stateProviderView:
 			m.providerView = m.providerView.WithRows(disksToRows(m.disks[m.provider], m.extraCols))
@@ -118,6 +119,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = msg.next
 
 		return m, nil
+
+	case LoadedDisks:
+		// TODO handle error
+		m.providerView = m.providerView.WithRows(disksToRows(msg.disks, m.extraCols))
+		m.state = stateProviderView
 
 	case spinner.TickMsg:
 		select {
@@ -196,9 +202,21 @@ func (m Model) View() string {
 	}
 }
 
-func (m Model) loadDisks() {
-	if _, ok := m.disks[m.provider]; !ok {
-		disks, _ := m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
+type LoadedDisks struct {
+	disks unused.Disks
+	err   error
+}
+
+func (m Model) loadDisks(provider unused.Provider) tea.Cmd {
+	return func() tea.Msg {
+		if disks, ok := m.disks[provider]; ok {
+			return LoadedDisks{disks, nil}
+		}
+
+		disks, err := m.provider.ListUnusedDisks(context.TODO())
+		if err != nil {
+			return LoadedDisks{nil, err}
+		}
 
 		if m.key != "" {
 			filtered := make(unused.Disks, 0, len(disks))
@@ -211,9 +229,9 @@ func (m Model) loadDisks() {
 		}
 
 		m.disks[m.provider] = disks
-	}
 
-	m.loadingDone <- struct{}{}
+		return LoadedDisks{disks, nil}
+	}
 }
 
 func (m Model) deleteDisks() {
