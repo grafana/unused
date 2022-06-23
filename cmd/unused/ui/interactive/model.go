@@ -36,7 +36,6 @@ type Model struct {
 	spinner      spinner.Model
 	disks        map[unused.Provider]unused.Disks
 	state        state
-	loadingDone  chan struct{}
 	extraCols    []string
 	key, value   string
 	output       viewport.Model
@@ -56,7 +55,6 @@ func New(providers []unused.Provider, extraColumns []string, key, value string) 
 		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 		spinner:      spinner.New(),
-		loadingDone:  make(chan struct{}),
 		extraCols:    extraColumns,
 		key:          key,
 		value:        value,
@@ -127,8 +125,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case spinner.TickMsg:
 		select {
-		case <-m.loadingDone:
-			return m, m.changeState(stateProviderView)
 		default:
 		}
 
