@@ -85,7 +85,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				return m, tea.Batch(
 					spinner.Tick,
-					m.loadDisks(m.providerList.SelectedItem().(providerItem).Provider))
+					loadDisks(m.providerList.SelectedItem().(providerItem).Provider, m.disks, m.key, m.value))
 			}
 
 		case "x":
@@ -200,28 +200,28 @@ type loadedDisks struct {
 	err   error
 }
 
-func (m Model) loadDisks(provider unused.Provider) tea.Cmd {
+func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks, key, value string) tea.Cmd {
 	return func() tea.Msg {
-		if disks, ok := m.disks[provider]; ok {
+		if disks, ok := cache[provider]; ok {
 			return loadedDisks{disks, nil}
 		}
 
-		disks, err := m.provider.ListUnusedDisks(context.TODO())
+		disks, err := provider.ListUnusedDisks(context.TODO())
 		if err != nil {
 			return loadedDisks{nil, err}
 		}
 
-		if m.key != "" {
+		if key != "" {
 			filtered := make(unused.Disks, 0, len(disks))
 			for _, d := range disks {
-				if d.Meta().Matches(m.key, m.value) {
+				if d.Meta().Matches(key, value) {
 					filtered = append(filtered, d)
 				}
 			}
 			disks = filtered
 		}
 
-		m.disks[m.provider] = disks
+		cache[provider] = disks
 
 		return loadedDisks{disks, nil}
 	}
