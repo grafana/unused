@@ -35,7 +35,6 @@ type Model struct {
 	extraCols    []string
 	key, value   string
 	output       viewport.Model
-	deleteOutput viewport.Model
 }
 
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
@@ -136,7 +135,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		m.deleteOutput.SetContent(sb.String())
+		m.output.SetContent(sb.String())
 
 		return m, tea.Batch(spinner.Tick, deleteCurrent(msg))
 
@@ -150,8 +149,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.providerView = m.providerView.WithTargetWidth(msg.Width).WithPageSize(msg.Height - 6)
 		m.output.Width = msg.Width
 		m.output.Height = msg.Height - 1
-		m.deleteOutput.Width = msg.Width
-		m.deleteOutput.Height = msg.Height - 1
 	}
 
 	var cmd tea.Cmd
@@ -187,7 +184,7 @@ func (m Model) View() string {
 		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	case stateDeletingDisks:
-		return m.deleteOutput.View()
+		return m.output.View()
 
 	default:
 		return "WHAT"
