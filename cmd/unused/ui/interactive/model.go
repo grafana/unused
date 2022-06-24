@@ -23,10 +23,6 @@ const (
 	stateDeletingDisks
 )
 
-type stateChange struct {
-	prev, next state
-}
-
 var _ tea.Model = Model{}
 
 type Model struct {
@@ -36,17 +32,9 @@ type Model struct {
 	spinner      spinner.Model
 	disks        map[unused.Provider]unused.Disks
 	state        state
-	loadingDone  chan struct{}
 	extraCols    []string
 	key, value   string
 	output       viewport.Model
-	deleteStatus map[string]*deleteStatus
-}
-
-type deleteStatus struct {
-	cur  bool
-	done bool
-	err  error
 }
 
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
@@ -56,7 +44,6 @@ func New(providers []unused.Provider, extraColumns []string, key, value string) 
 		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 		spinner:      spinner.New(),
-		loadingDone:  make(chan struct{}),
 		extraCols:    extraColumns,
 		key:          key,
 		value:        value,
@@ -77,54 +64,85 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			switch m.state {
 			case stateProviderView:
-				return m, m.changeState(stateProviderList)
+				m.state = stateProviderList
+				return m, nil
 
 			case stateDeletingDisks:
 				delete(m.disks, m.provider)
-				return m, m.changeState(stateFetchingDisks)
+				m.state = stateFetchingDisks
+				return m, tea.Batch(
+					spinner.Tick,
+					loadDisks(m.providerList.SelectedItem().(providerItem).Provider, m.disks, m.key, m.value))
 			}
 
 			return m, nil
 
 		case "enter":
 			if m.state == stateProviderList {
-				return m, tea.Batch(spinner.Tick, m.changeState(stateFetchingDisks))
+				m.providerView = m.providerView.WithRows(nil)
+				m.provider = m.providerList.SelectedItem().(providerItem).Provider
+				m.state = stateFetchingDisks
+
+				return m, tea.Batch(
+					spinner.Tick,
+					loadDisks(m.providerList.SelectedItem().(providerItem).Provider, m.disks, m.key, m.value))
 			}
 
 		case "x":
 			if m.state == stateProviderView {
 				if rows := m.providerView.SelectedRows(); len(rows) > 0 {
-					m.deleteStatus = make(map[string]*deleteStatus, len(rows))
+					s := deleteProgress{
+						disks:  make(unused.Disks, 0, len(rows)),
+						status: make([]*deleteStatus, len(rows)),
+					}
+					for _, r := range rows {
+						s.disks = append(s.disks, r.Data[columnDisk].(unused.Disk))
+					}
 
-					go m.deleteDisks()
-
-					return m, tea.Batch(spinner.Tick, m.changeState(stateDeletingDisks))
+					m.state = stateDeletingDisks
+					return m, tea.Batch(spinner.Tick, deleteCurrent(s))
 				}
 			}
 		}
 
-	case stateChange:
-		switch msg.next {
-		case stateFetchingDisks:
-			m.providerView = m.providerView.WithRows(nil)
-			m.provider = m.providerList.SelectedItem().(providerItem).Provider
+	case loadedDisks:
+		// TODO handle error
+		m.providerView = m.providerView.WithRows(disksToRows(msg.disks, m.extraCols))
+		m.state = stateProviderView
 
-			go m.loadDisks()
+	case deleteProgress:
+		sb := &strings.Builder{}
 
-		case stateProviderView:
-			m.providerView = m.providerView.WithRows(disksToRows(m.disks[m.provider], m.extraCols))
+		fmt.Fprintf(sb, "Deleting %d disks from %s %s\n\n", len(msg.disks), m.provider.Name(), m.provider.Meta().String())
+
+		for i, d := range msg.disks {
+			s := msg.status[i]
+
+			switch {
+			case s == nil:
+				fmt.Fprintf(sb, "  %s\n", d.Name())
+
+			case msg.cur == i:
+				fmt.Fprintf(sb, "➤ %s %s\n", d.Name(), m.spinner.View())
+
+			case !s.done:
+
+			case s.err != nil:
+				fmt.Fprintf(sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
+
+			default:
+				fmt.Fprintf(sb, "✓ %s\n", d.Name())
+			}
 		}
 
-		m.state = msg.next
+		m.output.SetContent(sb.String())
 
-		return m, nil
+		return m, deleteCurrent(msg)
 
 	case spinner.TickMsg:
-		select {
-		case <-m.loadingDone:
-			return m, m.changeState(stateProviderView)
-		default:
-		}
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 
 	case tea.WindowSizeMsg:
 		m.providerList.SetSize(msg.Width, msg.Height)
@@ -136,17 +154,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch m.state {
-	case stateFetchingDisks:
-		m.spinner, cmd = m.spinner.Update(msg)
-
 	case stateProviderList:
 		m.providerList, cmd = m.providerList.Update(msg)
 
 	case stateProviderView:
 		m.providerView, cmd = m.providerView.Update(msg)
-
-	case stateDeletingDisks:
-		m.spinner, cmd = m.spinner.Update(msg)
 	}
 
 	return m, cmd
@@ -166,71 +178,73 @@ func (m Model) View() string {
 		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	case stateDeletingDisks:
-		rows := m.providerView.SelectedRows()
-		title := fmt.Sprintf("Deleting %d disks for %s %s\n", len(rows), m.provider.Name(), m.provider.Meta().String())
-
-		var sb strings.Builder
-
-		for _, r := range rows {
-			d := r.Data[columnDisk].(unused.Disk)
-			s := m.deleteStatus[d.ID()]
-			if s != nil {
-				if s.cur {
-					fmt.Fprintf(&sb, "➤ %s %s\n", d.Name(), m.spinner.View())
-				} else if s.done {
-					if s.err != nil {
-						fmt.Fprintf(&sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
-					} else {
-						fmt.Fprintf(&sb, "✓ %s\n", d.Name())
-					}
-				}
-			} else {
-				fmt.Fprintf(&sb, "  %s\n", d.Name())
-			}
-		}
-
-		return lipgloss.JoinVertical(lipgloss.Left, title, sb.String())
+		return m.output.View()
 
 	default:
 		return "WHAT"
 	}
 }
 
-func (m Model) loadDisks() {
-	if _, ok := m.disks[m.provider]; !ok {
-		disks, _ := m.provider.ListUnusedDisks(context.TODO()) // TODO handle error
+type loadedDisks struct {
+	disks unused.Disks
+	err   error
+}
 
-		if m.key != "" {
+func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks, key, value string) tea.Cmd {
+	return func() tea.Msg {
+		if disks, ok := cache[provider]; ok {
+			return loadedDisks{disks, nil}
+		}
+
+		disks, err := provider.ListUnusedDisks(context.TODO())
+		if err != nil {
+			return loadedDisks{nil, err}
+		}
+
+		if key != "" {
 			filtered := make(unused.Disks, 0, len(disks))
 			for _, d := range disks {
-				if d.Meta().Matches(m.key, m.value) {
+				if d.Meta().Matches(key, value) {
 					filtered = append(filtered, d)
 				}
 			}
 			disks = filtered
 		}
 
-		m.disks[m.provider] = disks
-	}
+		cache[provider] = disks
 
-	m.loadingDone <- struct{}{}
-}
-
-func (m Model) deleteDisks() {
-	for _, r := range m.providerView.SelectedRows() {
-		d := r.Data[columnDisk].(unused.Disk)
-		s := &deleteStatus{cur: true}
-		m.deleteStatus[d.ID()] = s
-
-		s.err = d.Provider().Delete(context.TODO(), d)
-
-		s.done = true
-		s.cur = false
+		return loadedDisks{disks, nil}
 	}
 }
 
-func (m Model) changeState(next state) tea.Cmd {
-	return func() tea.Msg {
-		return stateChange{m.state, next}
+type deleteStatus struct {
+	done bool
+	err  error
+}
+
+type deleteProgress struct {
+	cur    int
+	disks  unused.Disks
+	status []*deleteStatus
+}
+
+func deleteCurrent(p deleteProgress) tea.Cmd {
+	if p.cur == len(p.disks) {
+		return nil
 	}
+
+	if p.status[p.cur] == nil {
+		ds := &deleteStatus{}
+		p.status[p.cur] = ds
+
+		go func() {
+			d := p.disks[p.cur]
+			ds.err = d.Provider().Delete(context.TODO(), d)
+			ds.done = true
+		}()
+	} else if p.status[p.cur].done {
+		p.cur++
+	}
+
+	return func() tea.Msg { return p }
 }
