@@ -35,6 +35,7 @@ func newProviderView(extraColumns []string) table.Model {
 		HeaderStyle(headerStyle).
 		Focused(true).
 		WithSelectedText(" ", "✔").
+		WithFooterVisibility(false).
 		SelectableRows(true)
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -35,6 +36,7 @@ type Model struct {
 	extraCols    []string
 	key, value   string
 	output       viewport.Model
+	help         help.Model
 }
 
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
@@ -47,6 +49,7 @@ func New(providers []unused.Provider, extraColumns []string, key, value string) 
 		extraCols:    extraColumns,
 		key:          key,
 		value:        value,
+		help:         help.New(),
 	}
 }
 
@@ -145,10 +148,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case tea.WindowSizeMsg:
-		m.providerList.SetSize(msg.Width, msg.Height)
-		m.providerView = m.providerView.WithTargetWidth(msg.Width).WithPageSize(msg.Height - 6)
+		helpHeight := lipgloss.Height(m.getHelp())
+		m.providerList.SetSize(msg.Width, msg.Height-helpHeight)
+		m.providerView = m.providerView.WithTargetWidth(msg.Width).WithPageSize(msg.Height - 4 - helpHeight)
 		m.output.Width = msg.Width
-		m.output.Height = msg.Height - 1
+		m.output.Height = msg.Height - 1 - helpHeight
 	}
 
 	var cmd tea.Cmd
@@ -166,23 +170,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
 
+func (m Model) getHelp() string {
+	return m.help.View(keyMap)
+}
+
 func (m Model) View() string {
+	var view string
 	switch m.state {
 	case stateProviderList:
-		return m.providerList.View()
+		view = m.providerList.View()
 
 	case stateProviderView:
-		return m.providerView.View()
+		view = m.providerView.View()
 
 	case stateFetchingDisks:
-		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
+		view = fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	case stateDeletingDisks:
-		return m.output.View()
+		view = m.output.View()
 
 	default:
 		return "WHAT"
 	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, view, m.getHelp())
 }
 
 type loadedDisks struct {

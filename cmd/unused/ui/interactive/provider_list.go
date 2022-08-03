@@ -37,6 +37,8 @@ func newProviderList(providers []unused.Provider) list.Model {
 		)}
 	}
 	m.AdditionalShortHelpKeys = m.AdditionalFullHelpKeys
+	m.SetFilteringEnabled(false)
+	m.SetShowHelp(false)
 
 	return m
 }
