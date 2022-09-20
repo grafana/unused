@@ -13,7 +13,15 @@ import (
 
 func runWebServer(ctx context.Context, logger *logfmt.Logger, addr, metricsPath string) error {
 	mux := http.NewServeMux()
-	mux.Handle(metricsPath, promhttp.Handler())
+	h := promhttp.Handler()
+	mux.HandleFunc(metricsPath, func(w http.ResponseWriter, req *http.Request) {
+		start := time.Now()
+		h.ServeHTTP(w, req)
+		logger.Log("Prometheus query", logfmt.Labels{
+			"path": metricsPath,
+			"dur":  time.Since(start),
+		})
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/" {
 			fmt.Fprintf(w, indexTemplate, metricsPath)
