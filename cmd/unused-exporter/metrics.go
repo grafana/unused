@@ -7,18 +7,19 @@ import (
 	"time"
 
 	"github.com/grafana/unused"
+	"github.com/inkel/logfmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type metrics struct {
-	logger logger
+	logger *logfmt.Logger
 
 	providers  *prometheus.GaugeVec
 	disksCount *prometheus.GaugeVec
 	duration   *prometheus.GaugeVec
 }
 
-func newMetrics(logger logger) (metrics, error) {
+func newMetrics(logger *logfmt.Logger) (metrics, error) {
 	const (
 		namespace = "unusedpds"
 		subsystem = "provider"
@@ -71,7 +72,7 @@ func (m metrics) Collect(ctx context.Context, providers []unused.Provider) {
 
 	l := len(providers)
 
-	m.logger.Log("collecting metrics", "providers", l)
+	m.logger.Log("collecting metrics", logfmt.Labels{"providers": l})
 	wg.Add(l)
 
 	for _, p := range providers {
@@ -85,8 +86,6 @@ func (m metrics) Collect(ctx context.Context, providers []unused.Provider) {
 }
 
 func (m metrics) collect(ctx context.Context, p unused.Provider) {
-	log := m.logger.Curry("listing unused disks", "provider", p.Name(), "meta", p.Meta())
-
 	labels := []string{p.Name(), p.Meta().String()}
 
 	m.providers.WithLabelValues(labels...).Set(1)
@@ -95,7 +94,7 @@ func (m metrics) collect(ctx context.Context, p unused.Provider) {
 
 	disks, err := p.ListUnusedDisks(ctx)
 	if err != nil {
-		log("err", err)
+		m.logger.Log("listing unused disks", logfmt.Labels{"provider": p.Name(), "meta": p.Meta(), "err": err})
 		return
 	}
 
@@ -105,19 +104,18 @@ func (m metrics) collect(ctx context.Context, p unused.Provider) {
 	count := len(disks)
 	m.disksCount.WithLabelValues(labels...).Set(float64(count))
 
-	log("duration", dur, "count", count)
+	m.logger.Log("listing unused disks", logfmt.Labels{"provider": p.Name(), "meta": p.Meta(), "duration": dur, "count": count})
 
 	for _, d := range disks {
 		meta := d.Meta()
-		lbls := make([]interface{}, 0, (len(meta)+3)*2)
-		lbls = append(lbls,
-			"provider", d.Provider().Name(),
-			"name", d.Name(),
-			"created", d.CreatedAt(),
-		)
-		for _, k := range meta.Keys() {
-			lbls = append(lbls, k, meta[k])
+		lbls := logfmt.Labels{
+			"provider": d.Provider().Name(),
+			"name":     d.Name(),
+			"created":  d.CreatedAt(),
 		}
-		m.logger.Log("unused disk found", lbls...)
+		for _, k := range meta.Keys() {
+			lbls[k] = meta[k]
+		}
+		m.logger.Log("unused disk found", lbls)
 	}
 }

@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/inkel/logfmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func runWebServer(ctx context.Context, logger logger, addr, metricsPath string) error {
+func runWebServer(ctx context.Context, logger *logfmt.Logger, addr, metricsPath string) error {
 	mux := http.NewServeMux()
 	mux.Handle(metricsPath, promhttp.Handler())
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -35,11 +36,11 @@ func runWebServer(ctx context.Context, logger logger, addr, metricsPath string) 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		logger.Log("shutting down server")
+		logger.Log("shutting down server", nil)
 		closeErr = srv.Shutdown(ctx)
 	}()
 
-	logger.Log("starting server", "addr", addr, "metricspath", metricsPath)
+	logger.Log("starting server", logfmt.Labels{"addr": addr, "metricspath": metricsPath})
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("running server: %w", err)
 	}

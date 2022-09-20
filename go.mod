@@ -46,6 +46,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.2.0 // indirect
 	github.com/inkel/gotui v0.0.0-20220505123942-9c7dc08efdbf // indirect
+	github.com/inkel/logfmt v0.0.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect

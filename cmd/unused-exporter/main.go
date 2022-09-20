@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/grafana/unused/cmd/clicommon"
+	"github.com/inkel/logfmt"
 )
 
 func main() {
@@ -43,7 +44,7 @@ func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string,
 		return err
 	}
 
-	l := logger{os.Stdout}
+	l := logfmt.NewLogger(os.Stdout)
 
 	ms, err := newMetrics(l)
 	if err != nil {
@@ -51,7 +52,7 @@ func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string,
 	}
 
 	go func() {
-		l.Log("starting collection loop", "interval", interval)
+		l.Log("starting collection loop", logfmt.Labels{"interval": interval})
 
 		t := time.NewTicker(interval)
 
@@ -61,7 +62,7 @@ func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string,
 			select {
 			case <-ctx.Done():
 				t.Stop()
-				l.Log("stopping collection loop")
+				l.Log("stopping collection loop", nil)
 				return
 			case <-t.C:
 				continue // unnecessary but expressive
