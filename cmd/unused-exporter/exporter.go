@@ -40,7 +40,7 @@ func newExporter(logger *logfmt.Logger, ps []unused.Provider) (*exporter, error)
 		count: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "disks", "count"),
 			"How many unused disks are in this provider",
-			labels,
+			append(labels, "k8s_namespace"),
 			nil),
 
 		dur: prometheus.NewDesc(
@@ -82,7 +82,24 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			ctx := context.TODO()
 
 			start := time.Now()
-			c, err := e.collect(ctx, p)
+
+			countByNamespace := make(map[string]int)
+
+			disks, err := p.ListUnusedDisks(ctx)
+			for _, d := range disks {
+				meta := d.Meta()
+				lbls := logfmt.Labels{
+					"provider": d.Provider().Name(),
+					"name":     d.Name(),
+					"created":  d.CreatedAt(),
+				}
+				for _, k := range meta.Keys() {
+					lbls[k] = meta[k]
+				}
+				e.logger.Log("unused disk found", lbls)
+				countByNamespace[meta["kubernetes.io/created-for/pvc/namespace"]] += 1
+			}
+
 			dur := time.Since(start)
 
 			name := strings.ToLower(p.Name())
@@ -112,32 +129,13 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 
 			emit(e.info, 1)
 			emit(e.dur, int(dur.Microseconds()))
-			emit(e.count, c)
 			emit(e.suc, success)
+
+			for ns, c := range countByNamespace {
+				ch <- prometheus.MustNewConstMetric(e.count, prometheus.GaugeValue, float64(c), name, pid, ns)
+			}
 		}(p)
 	}
 
 	wg.Wait()
-}
-
-func (e *exporter) collect(ctx context.Context, p unused.Provider) (int, error) {
-	disks, err := p.ListUnusedDisks(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	for _, d := range disks {
-		meta := d.Meta()
-		lbls := logfmt.Labels{
-			"provider": d.Provider().Name(),
-			"name":     d.Name(),
-			"created":  d.CreatedAt(),
-		}
-		for _, k := range meta.Keys() {
-			lbls[k] = meta[k]
-		}
-		e.logger.Log("unused disk found", lbls)
-	}
-
-	return len(disks), nil
 }
