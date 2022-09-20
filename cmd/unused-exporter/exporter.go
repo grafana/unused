@@ -13,7 +13,7 @@ import (
 
 const namespace = "unused"
 
-type metrics struct {
+type exporter struct {
 	logger *logfmt.Logger
 
 	providers []unused.Provider
@@ -24,10 +24,10 @@ type metrics struct {
 	suc   *prometheus.Desc
 }
 
-func newMetrics(logger *logfmt.Logger, ps []unused.Provider) (*metrics, error) {
+func newExporter(logger *logfmt.Logger, ps []unused.Provider) (*exporter, error) {
 	labels := []string{"provider", "provider_id"}
 
-	return &metrics{
+	return &exporter{
 		logger:    logger,
 		providers: ps,
 
@@ -57,17 +57,17 @@ func newMetrics(logger *logfmt.Logger, ps []unused.Provider) (*metrics, error) {
 	}, nil
 }
 
-func (c *metrics) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.info
-	ch <- c.count
-	ch <- c.dur
+func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
+	ch <- e.info
+	ch <- e.count
+	ch <- e.dur
 }
 
-func (m *metrics) Collect(ch chan<- prometheus.Metric) {
+func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 	var wg sync.WaitGroup
-	wg.Add(len(m.providers))
+	wg.Add(len(e.providers))
 
-	for _, p := range m.providers {
+	for _, p := range e.providers {
 		go func(p unused.Provider) {
 			defer wg.Done()
 
@@ -77,12 +77,12 @@ func (m *metrics) Collect(ch chan<- prometheus.Metric) {
 				"provider": p.Name(),
 				"metadata": meta,
 			}
-			m.logger.Log("collecting metrics", lbs)
+			e.logger.Log("collecting metrics", lbs)
 
 			ctx := context.TODO()
 
 			start := time.Now()
-			c, err := m.collect(ctx, p)
+			c, err := e.collect(ctx, p)
 			dur := time.Since(start)
 
 			name := strings.ToLower(p.Name())
@@ -106,21 +106,21 @@ func (m *metrics) Collect(ch chan<- prometheus.Metric) {
 
 			if err != nil {
 				lbs["error"] = err
-				m.logger.Log("failed to collect metrics", lbs)
+				e.logger.Log("failed to collect metrics", lbs)
 				success = 0
 			}
 
-			emit(m.info, 1)
-			emit(m.dur, int(dur.Microseconds()))
-			emit(m.count, c)
-			emit(m.suc, success)
+			emit(e.info, 1)
+			emit(e.dur, int(dur.Microseconds()))
+			emit(e.count, c)
+			emit(e.suc, success)
 		}(p)
 	}
 
 	wg.Wait()
 }
 
-func (m *metrics) collect(ctx context.Context, p unused.Provider) (int, error) {
+func (e *exporter) collect(ctx context.Context, p unused.Provider) (int, error) {
 	disks, err := p.ListUnusedDisks(ctx)
 	if err != nil {
 		return 0, err
@@ -136,7 +136,7 @@ func (m *metrics) collect(ctx context.Context, p unused.Provider) (int, error) {
 		for _, k := range meta.Keys() {
 			lbls[k] = meta[k]
 		}
-		m.logger.Log("unused disk found", lbls)
+		e.logger.Log("unused disk found", lbls)
 	}
 
 	return len(disks), nil

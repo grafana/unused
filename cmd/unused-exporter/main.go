@@ -47,12 +47,12 @@ func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string,
 
 	l := logfmt.NewLogger(os.Stdout)
 
-	ms, err := newMetrics(l, providers)
+	e, err := newExporter(l, providers)
 	if err != nil {
 		return fmt.Errorf("creating exporter: %w", err)
 	}
 
-	if err := prometheus.Register(ms); err != nil {
+	if err := prometheus.Register(e); err != nil {
 		return fmt.Errorf("registering Prometheus exporter: %w", err)
 	}
 
