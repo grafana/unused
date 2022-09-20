@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,100 +11,120 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const namespace = "unused"
+
 type metrics struct {
 	logger *logfmt.Logger
 
-	providers  *prometheus.GaugeVec
-	disksCount *prometheus.GaugeVec
-	duration   *prometheus.GaugeVec
+	providers []unused.Provider
+
+	info  *prometheus.Desc
+	count *prometheus.Desc
+	dur   *prometheus.Desc
+	suc   *prometheus.Desc
 }
 
-func newMetrics(logger *logfmt.Logger) (metrics, error) {
-	const (
-		namespace = "unusedpds"
-		subsystem = "provider"
-	)
+func newMetrics(logger *logfmt.Logger, ps []unused.Provider) (*metrics, error) {
+	labels := []string{"provider", "provider_id"}
 
-	// for providers metadata is small (and it should stay that way)
-	// so we can use it as a label
-	labels := []string{"name", "metadata"}
+	return &metrics{
+		logger:    logger,
+		providers: ps,
 
-	m := metrics{
-		logger: logger,
+		info: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "provider", "info"),
+			"CSP information",
+			labels,
+			nil),
 
-		providers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Name:      "info",
-			Help:      "Information about each cloud provider",
-		}, labels),
+		count: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "disks", "count"),
+			"How many unused disks are in this provider",
+			labels,
+			nil),
 
-		duration: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Name:      "fetch_duration_ms",
-			Help:      "How long in milliseconds took to list the unused disks for this provider",
-		}, labels),
+		dur: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "provider", "duration_ms"),
+			"How long in milliseconds took to fetch this provider information",
+			labels,
+			nil),
 
-		disksCount: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Name:      "unused_disks_count",
-			Help:      "How many unused disks are currently in this provider",
-		}, labels),
-	}
-
-	for _, metric := range []prometheus.Collector{
-		m.providers,
-		m.disksCount,
-		m.duration,
-	} {
-		if err := prometheus.Register(metric); err != nil {
-			return m, fmt.Errorf("registering metric %v: %w", metric, err)
-		}
-	}
-
-	return m, nil
+		suc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "provider", "success"),
+			"Static metric indicating if collecting the metrics succeeded or not",
+			labels,
+			nil),
+	}, nil
 }
 
-func (m metrics) Collect(ctx context.Context, providers []unused.Provider) {
+func (c *metrics) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.info
+	ch <- c.count
+	ch <- c.dur
+}
+
+func (m *metrics) Collect(ch chan<- prometheus.Metric) {
 	var wg sync.WaitGroup
+	wg.Add(len(m.providers))
 
-	l := len(providers)
-
-	m.logger.Log("collecting metrics", logfmt.Labels{"providers": l})
-	wg.Add(l)
-
-	for _, p := range providers {
+	for _, p := range m.providers {
 		go func(p unused.Provider) {
 			defer wg.Done()
-			m.collect(ctx, p)
+
+			meta := p.Meta()
+
+			lbs := logfmt.Labels{
+				"provider": p.Name(),
+				"metadata": meta,
+			}
+			m.logger.Log("collecting metrics", lbs)
+
+			ctx := context.TODO()
+
+			start := time.Now()
+			c, err := m.collect(ctx, p)
+			dur := time.Since(start)
+
+			name := strings.ToLower(p.Name())
+			var pid string
+			switch name {
+			case "gcp":
+				pid = meta["project"]
+			case "aws":
+				pid = meta["profile"]
+			case "azure":
+				pid = meta["subscription"]
+			default:
+				pid = meta.String()
+			}
+
+			emit := func(d *prometheus.Desc, v int) {
+				ch <- prometheus.MustNewConstMetric(d, prometheus.GaugeValue, float64(v), name, pid)
+			}
+
+			var success int = 1
+
+			if err != nil {
+				lbs["error"] = err
+				m.logger.Log("failed to collect metrics", lbs)
+				success = 0
+			}
+
+			emit(m.info, 1)
+			emit(m.dur, int(dur.Microseconds()))
+			emit(m.count, c)
+			emit(m.suc, success)
 		}(p)
 	}
 
 	wg.Wait()
 }
 
-func (m metrics) collect(ctx context.Context, p unused.Provider) {
-	labels := []string{p.Name(), p.Meta().String()}
-
-	m.providers.WithLabelValues(labels...).Set(1)
-
-	start := time.Now()
-
+func (m *metrics) collect(ctx context.Context, p unused.Provider) (int, error) {
 	disks, err := p.ListUnusedDisks(ctx)
 	if err != nil {
-		m.logger.Log("listing unused disks", logfmt.Labels{"provider": p.Name(), "meta": p.Meta(), "err": err})
-		return
+		return 0, err
 	}
-
-	dur := time.Since(start)
-	m.duration.WithLabelValues(labels...).Set(float64(dur.Milliseconds()))
-
-	count := len(disks)
-	m.disksCount.WithLabelValues(labels...).Set(float64(count))
-
-	m.logger.Log("listing unused disks", logfmt.Labels{"provider": p.Name(), "meta": p.Meta(), "duration": dur, "count": count})
 
 	for _, d := range disks {
 		meta := d.Meta()
@@ -118,4 +138,6 @@ func (m metrics) collect(ctx context.Context, p unused.Provider) {
 		}
 		m.logger.Log("unused disk found", lbls)
 	}
+
+	return len(disks), nil
 }

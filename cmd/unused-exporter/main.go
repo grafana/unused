@@ -10,6 +10,7 @@ import (
 
 	"github.com/grafana/unused/cmd/clicommon"
 	"github.com/inkel/logfmt"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func main() {
@@ -46,29 +47,14 @@ func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string,
 
 	l := logfmt.NewLogger(os.Stdout)
 
-	ms, err := newMetrics(l)
+	ms, err := newMetrics(l, providers)
 	if err != nil {
-		return fmt.Errorf("creating metrics: %w", err)
+		return fmt.Errorf("creating exporter: %w", err)
 	}
 
-	go func() {
-		l.Log("starting collection loop", logfmt.Labels{"interval": interval})
-
-		t := time.NewTicker(interval)
-
-		for {
-			ms.Collect(ctx, providers)
-
-			select {
-			case <-ctx.Done():
-				t.Stop()
-				l.Log("stopping collection loop", nil)
-				return
-			case <-t.C:
-				continue // unnecessary but expressive
-			}
-		}
-	}()
+	if err := prometheus.Register(ms); err != nil {
+		return fmt.Errorf("registering Prometheus exporter: %w", err)
+	}
 
 	if err := runWebServer(ctx, l, address, path); err != nil {
 		return fmt.Errorf("running web server: %w", err)
