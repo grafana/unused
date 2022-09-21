@@ -80,32 +80,14 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			defer wg.Done()
 
 			meta := p.Meta()
-
-			lbs := logfmt.Labels{
+			labels := logfmt.Labels{
 				"provider": p.Name(),
 				"metadata": meta,
 			}
-			e.logger.Log("collecting metrics", lbs)
+			e.logger.Log("collecting metrics", labels)
 
 			start := time.Now()
-
-			countByNamespace := make(map[string]int)
-
 			disks, err := p.ListUnusedDisks(ctx)
-			for _, d := range disks {
-				meta := d.Meta()
-				lbls := logfmt.Labels{
-					"provider": d.Provider().Name(),
-					"name":     d.Name(),
-					"created":  d.CreatedAt(),
-				}
-				for _, k := range meta.Keys() {
-					lbls[k] = meta[k]
-				}
-				e.logger.Log("unused disk found", lbls)
-				countByNamespace[meta["kubernetes.io/created-for/pvc/namespace"]] += 1
-			}
-
 			dur := time.Since(start)
 
 			name := strings.ToLower(p.Name())
@@ -128,8 +110,8 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			var success int = 1
 
 			if err != nil {
-				lbs["error"] = err
-				e.logger.Log("failed to collect metrics", lbs)
+				labels["error"] = err
+				e.logger.Log("failed to collect metrics", labels)
 				success = 0
 			}
 
@@ -137,6 +119,20 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			emit(e.dur, int(dur.Microseconds()))
 			emit(e.suc, success)
 
+			countByNamespace := make(map[string]int)
+			for _, d := range disks {
+				labels := logfmt.Labels{
+					"provider": d.Provider().Name(),
+					"name":     d.Name(),
+					"created":  d.CreatedAt(),
+				}
+				meta := d.Meta()
+				for _, k := range meta.Keys() {
+					labels[k] = meta[k]
+				}
+				e.logger.Log("unused disk found", labels)
+				countByNamespace[meta["kubernetes.io/created-for/pvc/namespace"]] += 1
+			}
 			for ns, c := range countByNamespace {
 				ch <- prometheus.MustNewConstMetric(e.count, prometheus.GaugeValue, float64(c), name, pid, ns)
 			}
