@@ -1,0 +1,23 @@
+FROM golang:1.19.1 as builder
+
+ENV GO11MODULE=on
+
+WORKDIR /app
+
+COPY ["go.mod", "go.sum", "./"]
+
+RUN ["go", "mod", "download"]
+
+COPY . .
+
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+
+RUN ["go", "build", "-v", "-o", "unused-exporter", "./cmd/unused-exporter"]
+
+FROM alpine:3.16.2
+
+COPY --from=builder /app/unused-exporter /app/
+
+EXPOSE 8080
+
+ENTRYPOINT ["/app/unused-exporter"]
