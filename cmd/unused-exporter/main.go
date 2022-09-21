@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/grafana/unused/cmd/clicommon"
+	"github.com/inkel/logfmt"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func main() {
@@ -21,6 +23,7 @@ func main() {
 
 	var (
 		interval = flag.Duration("metrics.interval", 15*time.Second, "polling interval to query providers for unused disks")
+		timeout  = flag.Duration("collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
 		path     = flag.String("metrics.path", "/metrics", "path on which to expose metris")
 		address  = flag.String("web.address", ":8080", "address to expose metrics and web interface")
 	)
@@ -30,44 +33,29 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	if err := realMain(ctx, gcpProjects, awsProfiles, azureSubs, *address, *path, *interval); err != nil {
+	if err := realMain(ctx, gcpProjects, awsProfiles, azureSubs, *address, *path, *interval, *timeout); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string, address, path string, interval time.Duration) error {
+func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string, address, path string, interval, timeout time.Duration) error {
 	providers, err := clicommon.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		return err
 	}
 
-	l := logger{os.Stdout}
+	l := logfmt.NewLogger(os.Stdout)
 
-	ms, err := newMetrics(l)
+	e, err := newExporter(ctx, l, providers, timeout)
 	if err != nil {
-		return fmt.Errorf("creating metrics: %w", err)
+		return fmt.Errorf("creating exporter: %w", err)
 	}
 
-	go func() {
-		l.Log("starting collection loop", "interval", interval)
-
-		t := time.NewTicker(interval)
-
-		for {
-			ms.Collect(ctx, providers)
-
-			select {
-			case <-ctx.Done():
-				t.Stop()
-				l.Log("stopping collection loop")
-				return
-			case <-t.C:
-				continue // unnecessary but expressive
-			}
-		}
-	}()
+	if err := prometheus.Register(e); err != nil {
+		return fmt.Errorf("registering Prometheus exporter: %w", err)
+	}
 
 	if err := runWebServer(ctx, l, address, path); err != nil {
 		return fmt.Errorf("running web server: %w", err)
