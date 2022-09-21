@@ -14,7 +14,10 @@ import (
 const namespace = "unused"
 
 type exporter struct {
+	ctx    context.Context
 	logger *logfmt.Logger
+
+	timeout time.Duration
 
 	providers []unused.Provider
 
@@ -24,12 +27,14 @@ type exporter struct {
 	suc   *prometheus.Desc
 }
 
-func newExporter(logger *logfmt.Logger, ps []unused.Provider) (*exporter, error) {
+func newExporter(ctx context.Context, logger *logfmt.Logger, ps []unused.Provider, timeout time.Duration) (*exporter, error) {
 	labels := []string{"provider", "provider_id"}
 
 	return &exporter{
+		ctx:       ctx,
 		logger:    logger,
 		providers: ps,
+		timeout:   timeout,
 
 		info: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "provider", "info"),
@@ -64,6 +69,9 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (e *exporter) Collect(ch chan<- prometheus.Metric) {
+	ctx, cancel := context.WithTimeout(e.ctx, e.timeout)
+	defer cancel()
+
 	var wg sync.WaitGroup
 	wg.Add(len(e.providers))
 
@@ -78,8 +86,6 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 				"metadata": meta,
 			}
 			e.logger.Log("collecting metrics", lbs)
-
-			ctx := context.TODO()
 
 			start := time.Now()
 
