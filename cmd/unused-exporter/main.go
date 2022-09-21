@@ -22,10 +22,9 @@ func main() {
 	flag.Var(&azureSubs, "azure.sub", "Azure subscription (can be specified multiple times)")
 
 	var (
-		interval = flag.Duration("metrics.interval", 15*time.Second, "polling interval to query providers for unused disks")
-		timeout  = flag.Duration("collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
-		path     = flag.String("metrics.path", "/metrics", "path on which to expose metris")
-		address  = flag.String("web.address", ":8080", "address to expose metrics and web interface")
+		timeout = flag.Duration("collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
+		path    = flag.String("metrics.path", "/metrics", "path on which to expose metris")
+		address = flag.String("web.address", ":8080", "address to expose metrics and web interface")
 	)
 
 	flag.Parse()
@@ -33,14 +32,14 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	if err := realMain(ctx, gcpProjects, awsProfiles, azureSubs, *address, *path, *interval, *timeout); err != nil {
+	if err := realMain(ctx, gcpProjects, awsProfiles, azureSubs, *address, *path, *timeout); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string, address, path string, interval, timeout time.Duration) error {
+func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string, address, path string, timeout time.Duration) error {
 	providers, err := clicommon.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		return err
