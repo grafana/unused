@@ -16,38 +16,37 @@ import (
 func main() {
 	// defer profile.Start(profile.CPUProfile, profile.MemProfile).Stop()
 
-	var gcpProjects, awsProfiles, azureSubs clicommon.StringSliceFlag
-	flag.Var(&gcpProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
-	flag.Var(&awsProfiles, "aws.profile", "AWS profile (can be specified multiple times)")
-	flag.Var(&azureSubs, "azure.sub", "Azure subscription (can be specified multiple times)")
+	cfg := config{
+		Logger: logfmt.NewLogger(os.Stdout),
+	}
 
-	var (
-		timeout = flag.Duration("collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
-		path    = flag.String("metrics.path", "/metrics", "path on which to expose metris")
-		address = flag.String("web.address", ":8080", "address to expose metrics and web interface")
-	)
+	flag.Var(&cfg.Providers.GCP, "gcp.project", "GCP project ID (can be specified multiple times)")
+	flag.Var(&cfg.Providers.AWS, "aws.profile", "AWS profile (can be specified multiple times)")
+	flag.Var(&cfg.Providers.Azure, "azure.sub", "Azure subscription (can be specified multiple times)")
+
+	flag.DurationVar(&cfg.Collector.Timeout, "collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
+	flag.StringVar(&cfg.Web.Path, "metrics.path", "/metrics", "path on which to expose metris")
+	flag.StringVar(&cfg.Web.Address, "web.address", ":8080", "address to expose metrics and web interface")
 
 	flag.Parse()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	if err := realMain(ctx, gcpProjects, awsProfiles, azureSubs, *address, *path, *timeout); err != nil {
+	if err := realMain(ctx, cfg); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string, address, path string, timeout time.Duration) error {
-	providers, err := clicommon.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
+func realMain(ctx context.Context, cfg config) error {
+	providers, err := clicommon.CreateProviders(ctx, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
 	if err != nil {
 		return err
 	}
 
-	l := logfmt.NewLogger(os.Stdout)
-
-	e, err := newExporter(ctx, l, providers, timeout)
+	e, err := newExporter(ctx, providers, cfg)
 	if err != nil {
 		return fmt.Errorf("creating exporter: %w", err)
 	}
@@ -56,7 +55,7 @@ func realMain(ctx context.Context, gcpProjects, awsProfiles, azureSubs []string,
 		return fmt.Errorf("registering Prometheus exporter: %w", err)
 	}
 
-	if err := runWebServer(ctx, l, address, path); err != nil {
+	if err := runWebServer(ctx, cfg); err != nil {
 		return fmt.Errorf("running web server: %w", err)
 	}
 
