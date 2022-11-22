@@ -27,6 +27,7 @@ func main() {
 	flag.DurationVar(&cfg.Collector.Timeout, "collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
 	flag.StringVar(&cfg.Web.Path, "metrics.path", "/metrics", "path on which to expose metris")
 	flag.StringVar(&cfg.Web.Address, "web.address", ":8080", "address to expose metrics and web interface")
+	flag.DurationVar(&cfg.Web.Timeout, "web.timeout", 5*time.Second, "timeout for shutting down the server")
 
 	flag.Parse()
 

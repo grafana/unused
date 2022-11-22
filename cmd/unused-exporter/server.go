@@ -40,8 +40,7 @@ func runWebServer(ctx context.Context, cfg config) error {
 	go func() {
 		<-ctx.Done()
 
-		timeout := 5 * time.Second // TODO move this to a configuration value
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.Timeout)
 		defer cancel()
 
 		cfg.Logger.Log("shutting down server", nil)

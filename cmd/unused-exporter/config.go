@@ -17,6 +17,7 @@ type config struct {
 	Web struct {
 		Address string
 		Path    string
+		Timeout time.Duration
 	}
 
 	Collector struct {
