@@ -13,10 +13,10 @@ import (
 
 func runWebServer(ctx context.Context, cfg config) error {
 	mux := http.NewServeMux()
-	h := promhttp.Handler()
+	promHandler := promhttp.Handler()
 	mux.HandleFunc(cfg.Web.Path, func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
-		h.ServeHTTP(w, req)
+		promHandler.ServeHTTP(w, req)
 		cfg.Logger.Log("Prometheus query", logfmt.Labels{
 			"path": cfg.Web.Path,
 			"dur":  time.Since(start),
