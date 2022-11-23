@@ -27,14 +27,14 @@ type exporter struct {
 	suc   *prometheus.Desc
 }
 
-func newExporter(ctx context.Context, logger *logfmt.Logger, ps []unused.Provider, timeout time.Duration) (*exporter, error) {
+func newExporter(ctx context.Context, ps []unused.Provider, cfg config) (*exporter, error) {
 	labels := []string{"provider", "provider_id"}
 
 	return &exporter{
 		ctx:       ctx,
-		logger:    logger,
+		logger:    cfg.Logger,
 		providers: ps,
-		timeout:   timeout,
+		timeout:   cfg.Collector.Timeout,
 
 		info: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "provider", "info"),

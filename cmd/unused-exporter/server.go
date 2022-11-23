@@ -11,27 +11,27 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func runWebServer(ctx context.Context, logger *logfmt.Logger, addr, metricsPath string) error {
+func runWebServer(ctx context.Context, cfg config) error {
 	mux := http.NewServeMux()
 	h := promhttp.Handler()
-	mux.HandleFunc(metricsPath, func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc(cfg.Web.Path, func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 		h.ServeHTTP(w, req)
-		logger.Log("Prometheus query", logfmt.Labels{
-			"path": metricsPath,
+		cfg.Logger.Log("Prometheus query", logfmt.Labels{
+			"path": cfg.Web.Path,
 			"dur":  time.Since(start),
 		})
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/" {
-			fmt.Fprintf(w, indexTemplate, metricsPath)
+			fmt.Fprintf(w, indexTemplate, cfg.Web.Path)
 		} else {
 			http.NotFound(w, req)
 		}
 	})
 
 	srv := &http.Server{
-		Addr:    addr,
+		Addr:    cfg.Web.Address,
 		Handler: mux,
 	}
 
@@ -40,15 +40,14 @@ func runWebServer(ctx context.Context, logger *logfmt.Logger, addr, metricsPath 
 	go func() {
 		<-ctx.Done()
 
-		timeout := 5 * time.Second // TODO move this to a configuration value
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.Timeout)
 		defer cancel()
 
-		logger.Log("shutting down server", nil)
+		cfg.Logger.Log("shutting down server", nil)
 		closeErr = srv.Shutdown(ctx)
 	}()
 
-	logger.Log("starting server", logfmt.Labels{"addr": addr, "metricspath": metricsPath})
+	cfg.Logger.Log("starting server", logfmt.Labels{"addr": cfg.Web.Address, "metricspath": cfg.Web.Path})
 	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("running server: %w", err)
 	}
