@@ -13,10 +13,10 @@ import (
 
 func runWebServer(ctx context.Context, cfg config) error {
 	mux := http.NewServeMux()
-	h := promhttp.Handler()
+	promHandler := promhttp.Handler()
 	mux.HandleFunc(cfg.Web.Path, func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
-		h.ServeHTTP(w, req)
+		promHandler.ServeHTTP(w, req)
 		cfg.Logger.Log("Prometheus query", logfmt.Labels{
 			"path": cfg.Web.Path,
 			"dur":  time.Since(start),
@@ -35,25 +35,30 @@ func runWebServer(ctx context.Context, cfg config) error {
 		Handler: mux,
 	}
 
-	var closeErr error
+	listenErr := make(chan error)
 
 	go func() {
-		<-ctx.Done()
+		cfg.Logger.Log("starting server", logfmt.Labels{
+			"addr":        cfg.Web.Address,
+			"metricspath": cfg.Web.Path,
+		})
+		listenErr <- srv.ListenAndServe()
+	}()
 
+	select {
+	case <-ctx.Done():
+		cfg.Logger.Log("shutting down server", nil)
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.Timeout)
 		defer cancel()
 
-		cfg.Logger.Log("shutting down server", nil)
-		closeErr = srv.Shutdown(ctx)
-	}()
+		if err := srv.Shutdown(ctx); err != nil {
+			return fmt.Errorf("shutting down server: %w", err)
+		}
 
-	cfg.Logger.Log("starting server", logfmt.Labels{"addr": cfg.Web.Address, "metricspath": cfg.Web.Path})
-	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		return fmt.Errorf("running server: %w", err)
-	}
-
-	if closeErr != nil {
-		return fmt.Errorf("shutting down server: %w", closeErr)
+	case err := <-listenErr:
+		if !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("running server: %w", err)
+		}
 	}
 
 	return nil

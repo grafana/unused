@@ -27,13 +27,13 @@ type exporter struct {
 	suc   *prometheus.Desc
 }
 
-func newExporter(ctx context.Context, ps []unused.Provider, cfg config) (*exporter, error) {
+func registerExporter(ctx context.Context, providers []unused.Provider, cfg config) error {
 	labels := []string{"provider", "provider_id"}
 
-	return &exporter{
+	e := &exporter{
 		ctx:       ctx,
 		logger:    cfg.Logger,
-		providers: ps,
+		providers: providers,
 		timeout:   cfg.Collector.Timeout,
 
 		info: prometheus.NewDesc(
@@ -59,7 +59,9 @@ func newExporter(ctx context.Context, ps []unused.Provider, cfg config) (*export
 			"Static metric indicating if collecting the metrics succeeded or not",
 			labels,
 			nil),
-	}, nil
+	}
+
+	return prometheus.Register(e)
 }
 
 func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
