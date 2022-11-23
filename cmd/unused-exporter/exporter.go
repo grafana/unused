@@ -27,13 +27,13 @@ type exporter struct {
 	suc   *prometheus.Desc
 }
 
-func registerExporter(ctx context.Context, ps []unused.Provider, cfg config) error {
+func registerExporter(ctx context.Context, providers []unused.Provider, cfg config) error {
 	labels := []string{"provider", "provider_id"}
 
 	e := &exporter{
 		ctx:       ctx,
 		logger:    cfg.Logger,
-		providers: ps,
+		providers: providers,
 		timeout:   cfg.Collector.Timeout,
 
 		info: prometheus.NewDesc(
