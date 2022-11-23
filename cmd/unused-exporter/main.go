@@ -10,7 +10,6 @@ import (
 
 	"github.com/grafana/unused/cmd/clicommon"
 	"github.com/inkel/logfmt"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 func main() {
@@ -47,13 +46,8 @@ func realMain(ctx context.Context, cfg config) error {
 		return err
 	}
 
-	e, err := newExporter(ctx, providers, cfg)
-	if err != nil {
-		return fmt.Errorf("creating exporter: %w", err)
-	}
-
-	if err := prometheus.Register(e); err != nil {
-		return fmt.Errorf("registering Prometheus exporter: %w", err)
+	if err := registerExporter(ctx, providers, cfg); err != nil {
+		return fmt.Errorf("registering exporter: %w", err)
 	}
 
 	if err := runWebServer(ctx, cfg); err != nil {
