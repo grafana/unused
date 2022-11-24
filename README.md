@@ -10,15 +10,27 @@ This library and its companion tools should help you out to identify these resou
 This module exports some interfaces and implementations to easily list all your unsed persistent disks in GCP, AWS, and Azure.
 You can find the API in the [Go package documentation](https://pkg.go.dev/github.com/grafana/unused).
 
-## `unused` binary
-CLI tool to query all given providers and list them as a neat table.
+## Binaries
+This repository also provides two binaries ready to use to interactively view unused disks (`cmd/unused`) or expose unused disk metrics (`cmd/unused-exporter`) to [Prometheus](https://prometheus.io).
+Both programs can authenticate against the following providers using the listed CLI flags:
+
+| Provider | Flag | Description |
+|-|-|-|
+| GCP | `-gcp.project` | ID of the GCP project |
+| AWS | `-aws.profile` | AWS configuration profile name |
+| Azure | `-azure.sub` | Azure subscription ID |
+
+These flags can be specified more than once, allowing to have different configurations for each provider.
+
+### `unused` binary
+TUI tool to query all given providers and list them as a neat table.
 It also supports an interactive mode which allows to select and delete disks in an easy way.
 
 ```
 go install github.com/grafana/unused/cmd/unused@latest
 ```
 
-## `unused-exporter` Prometheus exporter
+### `unused-exporter` Prometheus exporter
 Web server exposing Prometheus metrics about each providers count of unused disks.
 It exposes the following metrics:
 
