@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/grafana/unused/cmd/clicommon"
+	"github.com/grafana/unused/cmd/internal"
 	"github.com/inkel/logfmt"
 )
 
@@ -41,7 +41,7 @@ func main() {
 }
 
 func realMain(ctx context.Context, cfg config) error {
-	providers, err := clicommon.CreateProviders(ctx, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
+	providers, err := internal.CreateProviders(ctx, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
 	if err != nil {
 		return err
 	}

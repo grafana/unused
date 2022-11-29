@@ -1,21 +1,21 @@
-package clicommon_test
+package internal_test
 
 import (
 	"flag"
 	"io"
 	"testing"
 
-	"github.com/grafana/unused/cmd/clicommon"
+	"github.com/grafana/unused/cmd/internal"
 )
 
 func TestProviderFlags(t *testing.T) {
-	var gcp, aws, azure clicommon.StringSliceFlag
+	var gcp, aws, azure internal.StringSliceFlag
 
 	fs := flag.NewFlagSet("test", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.Usage = func() {}
 
-	clicommon.ProviderFlags(fs, &gcp, &aws, &azure)
+	internal.ProviderFlags(fs, &gcp, &aws, &azure)
 
 	args := []string{
 		"-gcp.project=my-project",
@@ -27,7 +27,7 @@ func TestProviderFlags(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	tests := map[*clicommon.StringSliceFlag]string{
+	tests := map[*internal.StringSliceFlag]string{
 		&gcp:   "my-project",
 		&aws:   "my-profile",
 		&azure: "my-subscription",

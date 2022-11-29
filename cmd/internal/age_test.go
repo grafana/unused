@@ -1,10 +1,10 @@
-package clicommon_test
+package internal_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/grafana/unused/cmd/clicommon"
+	"github.com/grafana/unused/cmd/internal"
 )
 
 func TestAge(t *testing.T) {
@@ -26,7 +26,7 @@ func TestAge(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.exp, func(t *testing.T) {
-			if got := clicommon.Age(tt.in); tt.exp != got {
+			if got := internal.Age(tt.in); tt.exp != got {
 				t.Errorf("expecting Age(%s) = %s, got %s", tt.in.Format(time.RFC3339), tt.exp, got)
 			}
 		})

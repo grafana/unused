@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/grafana/unused"
-	"github.com/grafana/unused/cmd/clicommon"
+	"github.com/grafana/unused/cmd/internal"
 )
 
 func Table(ctx context.Context, options Options) error {
@@ -48,7 +48,7 @@ func Table(ctx context.Context, options Options) error {
 	for _, d := range disks {
 		p := d.Provider()
 
-		row := []string{p.Name(), d.Name(), clicommon.Age(d.CreatedAt()), clicommon.Age(d.LastUsedAt())}
+		row := []string{p.Name(), d.Name(), internal.Age(d.CreatedAt()), internal.Age(d.LastUsedAt())}
 		for _, c := range options.ExtraColumns {
 			row = append(row, d.Meta()[c])
 		}

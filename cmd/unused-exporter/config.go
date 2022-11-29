@@ -3,15 +3,15 @@ package main
 import (
 	"time"
 
-	"github.com/grafana/unused/cmd/clicommon"
+	"github.com/grafana/unused/cmd/internal"
 	"github.com/inkel/logfmt"
 )
 
 type config struct {
 	Providers struct {
-		GCP   clicommon.StringSliceFlag
-		AWS   clicommon.StringSliceFlag
-		Azure clicommon.StringSliceFlag
+		GCP   internal.StringSliceFlag
+		AWS   internal.StringSliceFlag
+		Azure internal.StringSliceFlag
 	}
 
 	Web struct {
