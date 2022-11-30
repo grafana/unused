@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/grafana/unused/cmd/internal"
-	"github.com/grafana/unused/cmd/unused/ui"
+	"github.com/grafana/unused/cmd/unused/internal/ui"
 )
 
 func main() {
