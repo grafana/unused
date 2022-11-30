@@ -37,17 +37,12 @@ func WithAuthorizer(authorizer autorest.Authorizer) OptionFunc {
 	}
 }
 
-func NewProvider(subID string, meta unused.Meta, opts ...OptionFunc) (*Provider, error) {
-	c := compute.NewDisksClient(subID)
-	for _, o := range opts {
-		o(&c)
-	}
-
+func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
 	}
 
-	return &Provider{client: c, meta: meta}, nil
+	return &Provider{client: client, meta: meta}, nil
 }
 
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {

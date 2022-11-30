@@ -6,14 +6,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused/unusedtest"
 )
 
 func TestNewProvider(t *testing.T) {
-	subID := "my-subscription"
-	p, err := azure.NewProvider(subID, nil)
+	c := compute.NewDisksClient("my-subscription")
+	p, err := azure.NewProvider(c, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -25,7 +26,8 @@ func TestNewProvider(t *testing.T) {
 
 func TestProviderMeta(t *testing.T) {
 	err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
-		return azure.NewProvider("my-subscription", meta)
+		c := compute.NewDisksClient("my-subscription")
+		return azure.NewProvider(c, meta)
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -57,7 +59,10 @@ func TestListUnusedDisks(t *testing.T) {
 	)
 	defer ts.Close()
 
-	p, err := azure.NewProvider(subID, nil, azure.WithBaseURI(ts.URL))
+	c := compute.NewDisksClient(subID)
+	c.BaseURI = ts.URL
+
+	p, err := azure.NewProvider(c, nil)
 	if err != nil {
 		t.Fatalf("unexpected error creating provider: %v", err)
 	}
