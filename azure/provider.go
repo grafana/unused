@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/grafana/unused"
 )
 
@@ -22,20 +21,6 @@ type Provider struct {
 func (p *Provider) Name() string { return "Azure" }
 
 func (p *Provider) Meta() unused.Meta { return p.meta }
-
-type OptionFunc func(c *compute.DisksClient)
-
-func WithBaseURI(uri string) OptionFunc {
-	return func(c *compute.DisksClient) {
-		c.BaseURI = uri
-	}
-}
-
-func WithAuthorizer(authorizer autorest.Authorizer) OptionFunc {
-	return func(c *compute.DisksClient) {
-		c.Authorizer = authorizer
-	}
-}
 
 func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
