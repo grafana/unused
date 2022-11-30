@@ -13,8 +13,6 @@ import (
 )
 
 func main() {
-	// defer profile.Start(profile.CPUProfile, profile.MemProfile).Stop()
-
 	cfg := config{
 		Logger: logfmt.NewLogger(os.Stdout),
 	}

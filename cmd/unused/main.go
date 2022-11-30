@@ -11,12 +11,9 @@ import (
 
 	"github.com/grafana/unused/cmd/internal"
 	"github.com/grafana/unused/cmd/unused/ui"
-	// "github.com/mmcloughlin/profile"
 )
 
 func main() {
-	// defer profile.Start(profile.CPUProfile, profile.MemProfile).Stop()
-
 	var (
 		gcpProjects, awsProfiles, azureSubs internal.StringSliceFlag
 
