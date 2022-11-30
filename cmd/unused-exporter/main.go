@@ -19,9 +19,7 @@ func main() {
 		Logger: logfmt.NewLogger(os.Stdout),
 	}
 
-	flag.Var(&cfg.Providers.GCP, "gcp.project", "GCP project ID (can be specified multiple times)")
-	flag.Var(&cfg.Providers.AWS, "aws.profile", "AWS profile (can be specified multiple times)")
-	flag.Var(&cfg.Providers.Azure, "azure.sub", "Azure subscription (can be specified multiple times)")
+	internal.ProviderFlags(flag.CommandLine, &cfg.Providers.GCP, &cfg.Providers.AWS, &cfg.Providers.Azure)
 
 	flag.DurationVar(&cfg.Collector.Timeout, "collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
 	flag.StringVar(&cfg.Web.Path, "web.path", "/metrics", "path on which to expose metrics")

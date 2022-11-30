@@ -25,9 +25,7 @@ func main() {
 		extraColumns internal.StringSliceFlag
 	)
 
-	flag.Var(&gcpProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
-	flag.Var(&awsProfiles, "aws.profile", "AWS profile (can be specified multiple times)")
-	flag.Var(&azureSubs, "azure.sub", "Azure subscription (can be specified multiple times)")
+	internal.ProviderFlags(flag.CommandLine, &gcpProjects, &awsProfiles, &azureSubs)
 
 	flag.BoolVar(&interactiveMode, "i", false, "Interactive UI mode")
 	flag.BoolVar(&verbose, "v", false, "Verbose mode")
