@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 
+	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/aws"
 	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused/gcp"
+	"google.golang.org/api/compute/v1"
 )
 
 var ErrNoProviders = errors.New("please select at least one provider")
@@ -19,7 +22,11 @@ func CreateProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 	providers := make([]unused.Provider, 0, len(gcpProjects)+len(awsProfiles)+len(azureSubs))
 
 	for _, projectID := range gcpProjects {
-		p, err := gcp.NewProvider(ctx, projectID, map[string]string{"project": projectID})
+		svc, err := compute.NewService(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("cannot create GCP compute service: %w", err)
+		}
+		p, err := gcp.NewProvider(svc, projectID, map[string]string{"project": projectID})
 		if err != nil {
 			return nil, fmt.Errorf("creating GCP provider for project %s: %w", projectID, err)
 		}
@@ -27,7 +34,12 @@ func CreateProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 	}
 
 	for _, profile := range awsProfiles {
-		p, err := aws.NewProvider(ctx, map[string]string{"profile": profile}, config.WithSharedConfigProfile(profile))
+		cfg, err := config.LoadDefaultConfig(ctx, config.WithSharedConfigProfile(profile))
+		if err != nil {
+			return nil, fmt.Errorf("cannot load AWS config for profile %s: %w", profile, err)
+		}
+
+		p, err := aws.NewProvider(ec2.NewFromConfig(cfg), map[string]string{"profile": profile})
 		if err != nil {
 			return nil, fmt.Errorf("creating AWS provider for profile %s: %w", profile, err)
 		}
@@ -41,7 +53,10 @@ func CreateProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 		}
 
 		for _, sub := range azureSubs {
-			p, err := azure.NewProvider(sub, map[string]string{"subscription": sub}, azure.WithAuthorizer(a))
+			c := azcompute.NewDisksClient(sub)
+			c.Authorizer = a
+
+			p, err := azure.NewProvider(c, map[string]string{"subscription": sub})
 			if err != nil {
 				return nil, fmt.Errorf("creating Azure provider for subscription %s: %w", sub, err)
 			}
