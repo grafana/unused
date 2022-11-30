@@ -65,11 +65,9 @@ func main() {
 
 	options.Providers = providers
 
-	var display ui.DisplayFunc
+	var display ui.DisplayFunc = ui.Table
 	if interactiveMode {
 		display = ui.Interactive
-	} else {
-		display = ui.Table
 	}
 
 	if err := display(ctx, options); err != nil {
