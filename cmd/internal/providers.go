@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
@@ -69,4 +70,12 @@ func CreateProviders(ctx context.Context, gcpProjects, awsProfiles, azureSubs []
 	}
 
 	return providers, nil
+}
+
+// ProviderFlags adds the provider configuration flags to the given
+// flag set.
+func ProviderFlags(fs *flag.FlagSet, gcp, aws, azure *StringSliceFlag) {
+	fs.Var(gcp, "gcp.project", "GCP project ID (can be specified multiple times)")
+	fs.Var(aws, "aws.profile", "AWS profile (can be specified multiple times)")
+	fs.Var(azure, "azure.sub", "Azure subscription (can be specified multiple times)")
 }
