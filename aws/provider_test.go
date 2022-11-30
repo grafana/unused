@@ -9,6 +9,7 @@ import (
 	awsutil "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/aws"
 	"github.com/grafana/unused/unusedtest"
@@ -16,8 +17,12 @@ import (
 
 func TestNewProvider(t *testing.T) {
 	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		t.Fatalf("cannot load AWS config: %v", err)
+	}
 
-	p, err := aws.NewProvider(ctx, nil)
+	p, err := aws.NewProvider(ec2.NewFromConfig(cfg), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -29,7 +34,13 @@ func TestNewProvider(t *testing.T) {
 
 func TestProviderMeta(t *testing.T) {
 	err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
-		return aws.NewProvider(context.Background(), meta)
+		ctx := context.Background()
+		cfg, err := config.LoadDefaultConfig(ctx)
+		if err != nil {
+			t.Fatalf("cannot load AWS config: %v", err)
+		}
+
+		return aws.NewProvider(ec2.NewFromConfig(cfg), meta)
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -93,7 +104,7 @@ func TestListUnusedDisks(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	p, err := aws.NewProvider(ctx, nil,
+	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 			Value: awsutil.Credentials{
 				AccessKeyID:     "AKID",
@@ -106,6 +117,11 @@ func TestListUnusedDisks(t *testing.T) {
 			func(svc, reg string, opt ...interface{}) (awsutil.Endpoint, error) {
 				return awsutil.Endpoint{URL: ts.URL}, nil
 			})))
+	if err != nil {
+		t.Fatalf("cannot load AWS config: %v", err)
+	}
+
+	p, err := aws.NewProvider(ec2.NewFromConfig(cfg), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

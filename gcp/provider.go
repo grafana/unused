@@ -9,7 +9,6 @@ import (
 
 	"github.com/grafana/unused"
 	"google.golang.org/api/compute/v1"
-	"google.golang.org/api/option"
 )
 
 var ErrMissingProject = errors.New("missing project id")
@@ -18,7 +17,7 @@ var _ unused.Provider = &Provider{}
 
 type Provider struct {
 	project string
-	svc     *compute.DisksService
+	svc     *compute.Service
 	meta    unused.Meta
 }
 
@@ -26,14 +25,9 @@ func (p *Provider) Name() string { return "GCP" }
 
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
-func NewProvider(ctx context.Context, project string, meta unused.Meta, opts ...option.ClientOption) (*Provider, error) {
+func NewProvider(svc *compute.Service, project string, meta unused.Meta) (*Provider, error) {
 	if project == "" {
 		return nil, ErrMissingProject
-	}
-
-	svc, err := compute.NewService(ctx, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create compute service: %w", err)
 	}
 
 	if meta == nil {
@@ -42,7 +36,7 @@ func NewProvider(ctx context.Context, project string, meta unused.Meta, opts ...
 
 	return &Provider{
 		project: project,
-		svc:     compute.NewDisksService(svc),
+		svc:     svc,
 		meta:    meta,
 	}, nil
 }
@@ -50,7 +44,7 @@ func NewProvider(ctx context.Context, project string, meta unused.Meta, opts ...
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	var disks unused.Disks
 
-	err := p.svc.AggregatedList(p.project).Filter("").Pages(ctx,
+	err := p.svc.Disks.AggregatedList(p.project).Filter("").Pages(ctx,
 		func(res *compute.DiskAggregatedList) error {
 			for _, item := range res.Items {
 				for _, d := range item.Disks {
@@ -92,7 +86,7 @@ func diskMetadata(d *compute.Disk) (unused.Meta, error) {
 }
 
 func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
-	_, err := p.svc.Delete(p.project, disk.Meta()["zone"], disk.Name()).Do()
+	_, err := p.svc.Disks.Delete(p.project, disk.Meta()["zone"], disk.Name()).Do()
 	if err != nil {
 		return fmt.Errorf("cannot delete GCP disk: %w", err)
 	}

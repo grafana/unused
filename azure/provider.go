@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/grafana/unused"
 )
 
@@ -23,31 +22,12 @@ func (p *Provider) Name() string { return "Azure" }
 
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
-type OptionFunc func(c *compute.DisksClient)
-
-func WithBaseURI(uri string) OptionFunc {
-	return func(c *compute.DisksClient) {
-		c.BaseURI = uri
-	}
-}
-
-func WithAuthorizer(authorizer autorest.Authorizer) OptionFunc {
-	return func(c *compute.DisksClient) {
-		c.Authorizer = authorizer
-	}
-}
-
-func NewProvider(subID string, meta unused.Meta, opts ...OptionFunc) (*Provider, error) {
-	c := compute.NewDisksClient(subID)
-	for _, o := range opts {
-		o(&c)
-	}
-
+func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
 	}
 
-	return &Provider{client: c, meta: meta}, nil
+	return &Provider{client: client, meta: meta}, nil
 }
 
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {

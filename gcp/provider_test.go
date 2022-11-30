@@ -17,7 +17,7 @@ import (
 
 func TestNewProvider(t *testing.T) {
 	t.Run("project is required", func(t *testing.T) {
-		p, err := gcp.NewProvider(context.Background(), "", nil)
+		p, err := gcp.NewProvider(nil, "", nil)
 		if !errors.Is(err, gcp.ErrMissingProject) {
 			t.Fatalf("expecting error %v, got %v", gcp.ErrMissingProject, err)
 		}
@@ -28,7 +28,11 @@ func TestNewProvider(t *testing.T) {
 
 	t.Run("metadata", func(t *testing.T) {
 		err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
-			return gcp.NewProvider(context.Background(), "my-provider", meta, option.WithAPIKey("123abc"))
+			svc, err := compute.NewService(context.Background(), option.WithAPIKey("123abc"))
+			if err != nil {
+				t.Fatalf("unexpected error creating GCP compute service: %v", err)
+			}
+			return gcp.NewProvider(svc, "my-provider", meta)
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -62,7 +66,12 @@ func TestProviderListUnusedDisks(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	p, err := gcp.NewProvider(ctx, "my-project", nil, option.WithEndpoint(ts.URL), option.WithAPIKey("123abc"))
+	svc, err := compute.NewService(context.Background(), option.WithAPIKey("123abc"), option.WithEndpoint(ts.URL))
+	if err != nil {
+		t.Fatalf("unexpected error creating GCP compute service: %v", err)
+	}
+
+	p, err := gcp.NewProvider(svc, "my-project", nil)
 	if err != nil {
 		t.Fatal("unexpected error creating provider:", err)
 	}

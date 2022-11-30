@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/grafana/unused"
@@ -22,18 +21,13 @@ func (p *Provider) Name() string { return "AWS" }
 
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
-func NewProvider(ctx context.Context, meta unused.Meta, optFns ...func(*config.LoadOptions) error) (*Provider, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
-	if err != nil {
-		return nil, fmt.Errorf("cannot load AWS config: %w", err)
-	}
-
+func NewProvider(client *ec2.Client, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
 	}
 
 	return &Provider{
-		client: ec2.NewFromConfig(cfg),
+		client: client,
 		meta:   meta,
 	}, nil
 }
