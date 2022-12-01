@@ -2,70 +2,72 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 
-	"github.com/grafana/unused/cmd/clicommon"
-	"github.com/grafana/unused/cmd/unused/ui"
-	// "github.com/mmcloughlin/profile"
+	"github.com/grafana/unused/cmd/internal"
+	"github.com/grafana/unused/cmd/unused/internal/ui"
 )
 
 func main() {
-	// defer profile.Start(profile.CPUProfile, profile.MemProfile).Stop()
-
 	var (
-		gcpProjects, awsProfiles, azureSubs clicommon.StringSliceFlag
+		gcpProjects, awsProfiles, azureSubs internal.StringSliceFlag
 
-		interactiveMode, verbose bool
+		interactiveMode bool
 
-		filter clicommon.FilterFlag
-
-		extraColumns clicommon.StringSliceFlag
+		options ui.Options
 	)
 
-	flag.Var(&gcpProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
-	flag.Var(&awsProfiles, "aws.profile", "AWS profile (can be specified multiple times)")
-	flag.Var(&azureSubs, "azure.sub", "Azure subscription (can be specified multiple times)")
+	internal.ProviderFlags(flag.CommandLine, &gcpProjects, &awsProfiles, &azureSubs)
 
 	flag.BoolVar(&interactiveMode, "i", false, "Interactive UI mode")
-	flag.BoolVar(&verbose, "v", false, "Verbose mode")
+	flag.BoolVar(&options.Verbose, "v", false, "Verbose mode")
 
-	flag.Var(&filter, "filter", "Filter by disk metadata")
+	flag.Func("filter", "Filter by disk metadata", func(v string) error {
+		ps := strings.SplitN(v, "=", 2)
 
-	flag.Var(&extraColumns, "add-column", "Display additional column with metadata")
+		if len(ps) == 0 || ps[0] == "" {
+			return errors.New("invalid filter format")
+		}
+
+		options.Filter.Key = ps[0]
+
+		if len(ps) == 2 {
+			options.Filter.Value = ps[1]
+		}
+
+		return nil
+	})
+
+	flag.Func("add-column", "Display additional column with metadata", func(c string) error {
+		options.ExtraColumns = append(options.ExtraColumns, c)
+		return nil
+	})
 
 	flag.Parse()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	providers, err := clicommon.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
+	providers, err := internal.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		cancel()
 		fmt.Fprintln(os.Stderr, "creating providers:", err)
 		os.Exit(1)
 	}
 
-	opts := ui.Options{
-		Providers:    providers,
-		ExtraColumns: extraColumns,
-		Verbose:      verbose,
-		Filter: ui.Filter{
-			Key:   filter.Key,
-			Value: filter.Value,
-		},
-	}
+	options.Providers = providers
 
-	var display ui.DisplayFunc
+	var display ui.DisplayFunc = ui.Table
 	if interactiveMode {
 		display = ui.Interactive
-	} else {
-		display = ui.Table
 	}
 
-	if err := display(ctx, opts); err != nil {
+	if err := display(ctx, options); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, "displaying output:", err)
 		os.Exit(1)

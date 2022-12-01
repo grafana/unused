@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/grafana/unused/cmd/unused/ui/interactive"
+	"github.com/grafana/unused/cmd/unused/internal/ui/interactive"
 )
 
 func Interactive(ctx context.Context, options Options) error {

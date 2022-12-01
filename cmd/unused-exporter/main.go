@@ -8,20 +8,16 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/grafana/unused/cmd/clicommon"
+	"github.com/grafana/unused/cmd/internal"
 	"github.com/inkel/logfmt"
 )
 
 func main() {
-	// defer profile.Start(profile.CPUProfile, profile.MemProfile).Stop()
-
 	cfg := config{
 		Logger: logfmt.NewLogger(os.Stdout),
 	}
 
-	flag.Var(&cfg.Providers.GCP, "gcp.project", "GCP project ID (can be specified multiple times)")
-	flag.Var(&cfg.Providers.AWS, "aws.profile", "AWS profile (can be specified multiple times)")
-	flag.Var(&cfg.Providers.Azure, "azure.sub", "Azure subscription (can be specified multiple times)")
+	internal.ProviderFlags(flag.CommandLine, &cfg.Providers.GCP, &cfg.Providers.AWS, &cfg.Providers.Azure)
 
 	flag.DurationVar(&cfg.Collector.Timeout, "collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
 	flag.StringVar(&cfg.Web.Path, "web.path", "/metrics", "path on which to expose metrics")
@@ -41,7 +37,7 @@ func main() {
 }
 
 func realMain(ctx context.Context, cfg config) error {
-	providers, err := clicommon.CreateProviders(ctx, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
+	providers, err := internal.CreateProviders(ctx, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
 	if err != nil {
 		return err
 	}

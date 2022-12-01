@@ -1,4 +1,4 @@
-package clicommon_test
+package internal_test
 
 import (
 	"context"
@@ -8,16 +8,16 @@ import (
 
 	"github.com/grafana/unused/aws"
 	"github.com/grafana/unused/azure"
-	"github.com/grafana/unused/cmd/clicommon"
+	"github.com/grafana/unused/cmd/internal"
 	"github.com/grafana/unused/gcp"
 )
 
 func TestCreateProviders(t *testing.T) {
 	t.Run("fail when no provider is given", func(t *testing.T) {
-		ps, err := clicommon.CreateProviders(context.Background(), nil, nil, nil)
+		ps, err := internal.CreateProviders(context.Background(), nil, nil, nil)
 
-		if !errors.Is(err, clicommon.ErrNoProviders) {
-			t.Fatalf("expecting error %v, got %v", clicommon.ErrNoProviders, err)
+		if !errors.Is(err, internal.ErrNoProviders) {
+			t.Fatalf("expecting error %v, got %v", internal.ErrNoProviders, err)
 		}
 		if ps != nil {
 			t.Fatalf("expecting nil providers, got %v", ps)
@@ -29,7 +29,7 @@ func TestCreateProviders(t *testing.T) {
 	}
 
 	t.Run("GCP", func(t *testing.T) {
-		ps, err := clicommon.CreateProviders(context.Background(), []string{"foo", "bar"}, nil, nil)
+		ps, err := internal.CreateProviders(context.Background(), []string{"foo", "bar"}, nil, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -45,7 +45,7 @@ func TestCreateProviders(t *testing.T) {
 	})
 
 	t.Run("AWS", func(t *testing.T) {
-		ps, err := clicommon.CreateProviders(context.Background(), nil, []string{"foo", "bar"}, nil)
+		ps, err := internal.CreateProviders(context.Background(), nil, []string{"foo", "bar"}, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -61,7 +61,7 @@ func TestCreateProviders(t *testing.T) {
 	})
 
 	t.Run("Azure", func(t *testing.T) {
-		ps, err := clicommon.CreateProviders(context.Background(), nil, nil, []string{"foo", "bar"})
+		ps, err := internal.CreateProviders(context.Background(), nil, nil, []string{"foo", "bar"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
