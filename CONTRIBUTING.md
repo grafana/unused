@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for your interest in contributing to Grafana Plugin SDK for Go! We welcome all people who want to contribute in a healthy and constructive manner within our community. To help us create a safe and positive community experience for all, we require all participants to adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
+Thank you for your interest in contributing to Grafana unused project! We welcome all people who want to contribute in a healthy and constructive manner within our community. To help us create a safe and positive community experience for all, we require all participants to adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 This document is a guide to help you through the process of contributing to Grafana Plugin SDK for Go.
 
