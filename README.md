@@ -2,7 +2,7 @@
 This repository contains a Go library to list your unused persistent disks in different cloud providers, and binaries for displaying them at the CLI or exporting Prometheus metrics.
 
 At Grafana Labs we host our workloads in multiple cloud providers.
-Our workloads orchestration is managed by Kubernetes, and we've found that due to some misconfiguration in the backend storage, we usually had lots of unused resources, specially persistent disks.
+Our workloads orchestration is managed by Kubernetes, and we've found that due to some misconfiguration in the backend storage, we used to have lots of unused resources, specially persistent disks.
 These leaked resources cost money, and because these are resources that are not in use anymore, it translates into wasted money.
 This library and its companion tools should help you out to identify these resources and clean them up.
 
