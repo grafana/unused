@@ -1,3 +1,15 @@
+// unused is a CLI tool to query the given providers for unused disks.
+//
+// In its default operation mode it outputs a table listing all the
+// unused disks. I also supports an interactive mode where the user
+// can see mark unused disks from the listing tables to individually
+// delete them.
+//
+// Provider selection is opinionated, currently accepting the
+// following authentication method for each provider:
+//   - GCP: pass gcp.project with a valid GCP project ID.
+//   - AWS: pass aws.profile with a valid AWS shared profile.
+//   - Azure: pass azure.sub with a valid Azure subscription ID.
 package main
 
 import (
