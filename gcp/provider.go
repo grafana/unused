@@ -11,20 +11,30 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
+// ErrMissingProject is the error used when no project ID is provided
+// when trying to create a provider.
 var ErrMissingProject = errors.New("missing project id")
 
 var _ unused.Provider = &Provider{}
 
+// Provider implements [unused.Provider] for GCP.
 type Provider struct {
 	project string
 	svc     *compute.Service
 	meta    unused.Meta
 }
 
+// Name returns GCP.
 func (p *Provider) Name() string { return "GCP" }
 
+// Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
+// NewProvider creates a new GCP [unused.Provider].
+//
+// A valid GCP compute service must be supplied in order to listed the
+// unused resources. It also requires a valid project ID which should
+// be the project where the disks were created.
 func NewProvider(svc *compute.Service, project string, meta unused.Meta) (*Provider, error) {
 	if project == "" {
 		return nil, ErrMissingProject
@@ -41,6 +51,8 @@ func NewProvider(svc *compute.Service, project string, meta unused.Meta) (*Provi
 	}, nil
 }
 
+// ListUnusedDisks returns all the GCP compute disks that aren't
+// associated to any users, meaning that are not being in use.
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	var disks unused.Disks
 
@@ -85,6 +97,7 @@ func diskMetadata(d *compute.Disk) (unused.Meta, error) {
 	return m, nil
 }
 
+// Delete deletes the given disk from GCP.
 func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
 	_, err := p.svc.Disks.Delete(p.project, disk.Meta()["zone"], disk.Name()).Do()
 	if err != nil {

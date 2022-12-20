@@ -13,15 +13,22 @@ var _ unused.Provider = &Provider{}
 
 const ResourceGroupMetaKey = "resource-group"
 
+// Providcer implements [unused.Provider] for Azure.
 type Provider struct {
 	client compute.DisksClient
 	meta   unused.Meta
 }
 
+// Name returns Azure.
 func (p *Provider) Name() string { return "Azure" }
 
+// Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
+// NewProvider creates a new Azure [unused.Provider].
+//
+// A valid Azure compute disks client must be supplied in order to
+// list the unused resources.
 func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
@@ -30,6 +37,8 @@ func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error
 	return &Provider{client: client, meta: meta}, nil
 }
 
+// ListUnusedDisks returns all the Azure compute disks that are not
+// managed by other resources.
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	var upds unused.Disks
 
@@ -69,6 +78,7 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	return upds, nil
 }
 
+// Delete deletes the given disk from Azure.
 func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
 	_, err := p.client.Delete(ctx, disk.Meta()[ResourceGroupMetaKey], disk.Name())
 	if err != nil {
