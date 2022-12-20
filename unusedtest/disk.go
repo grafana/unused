@@ -8,6 +8,7 @@ import (
 
 var _ unused.Disk = Disk{}
 
+// Disk implements [unused.Disk] for testing purposes.
 type Disk struct {
 	id, name  string
 	provider  unused.Provider
@@ -15,6 +16,7 @@ type Disk struct {
 	meta      unused.Meta
 }
 
+// NewDisk returns a new test disk.
 func NewDisk(name string, provider unused.Provider, createdAt time.Time) Disk {
 	return Disk{name, name, provider, createdAt, nil}
 }
