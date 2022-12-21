@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
+// Meta is a map of key/value pairs.
 type Meta map[string]string
 
+// Keys returns all the keys in the map sorted alphabetically.
 func (m Meta) Keys() []string {
 	ks := make([]string, 0, len(m))
 	for k := range m {
@@ -16,6 +18,7 @@ func (m Meta) Keys() []string {
 	return ks
 }
 
+// String returns a string representation of metadata.
 func (m Meta) String() string {
 	var s strings.Builder
 	for i, k := range m.Keys() {
@@ -29,6 +32,8 @@ func (m Meta) String() string {
 	return s.String()
 }
 
+// Matches returns true when the given key exists in the map with the
+// given value.
 func (m Meta) Matches(key, val string) bool {
 	return m[key] == val
 }

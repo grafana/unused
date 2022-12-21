@@ -12,15 +12,23 @@ import (
 
 var _ unused.Provider = &Provider{}
 
+// Provider implements [unused.Provider] for AWS.
 type Provider struct {
 	client *ec2.Client
 	meta   unused.Meta
 }
 
+// Name returns AWS.
 func (p *Provider) Name() string { return "AWS" }
 
+// Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
+// NewProvider creates a new AWS [unused.Provider].
+//
+// A valid EC2 client must be supplied in order to list the unused
+// resources. The metadata passed will be used to identify the
+// provider.
 func NewProvider(client *ec2.Client, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
@@ -32,6 +40,8 @@ func NewProvider(client *ec2.Client, meta unused.Meta) (*Provider, error) {
 	}, nil
 }
 
+// ListUnusedDisks returns all the AWS EC2 volumes that are available,
+// ie. not used by any other resource.
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	params := &ec2.DescribeVolumesInput{
 		Filters: []types.Filter{
@@ -72,6 +82,7 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	return upds, nil
 }
 
+// Delete deletes the given disk from AWS.
 func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
 	_, err := p.client.DeleteVolume(ctx, &ec2.DeleteVolumeInput{
 		VolumeId: aws.String(disk.ID()),

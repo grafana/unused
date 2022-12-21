@@ -10,12 +10,15 @@ import (
 
 var _ unused.Provider = &Provider{}
 
+// Provider implements [unused.Provider] for testing purposes.
 type Provider struct {
 	name  string
 	disks unused.Disks
 	meta  unused.Meta
 }
 
+// NewProvider returns a new test provider that return the given disks
+// as unused.
 func NewProvider(name string, meta unused.Meta, disks ...unused.Disk) *Provider {
 	if meta == nil {
 		meta = make(unused.Meta)
@@ -46,6 +49,12 @@ func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
 	return ErrDiskNotFound
 }
 
+// TestProviderMeta returns nil if the provider properly implements
+// storing metadata.
+//
+// It accepts a constructor function that should return a valid
+// [unused.Provider] or an error when it isn't compliant with the
+// semantics of creating a provider.
 func TestProviderMeta(newProvider func(meta unused.Meta) (unused.Provider, error)) error {
 	tests := map[string]unused.Meta{
 		"nil":   nil,

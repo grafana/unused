@@ -6,6 +6,8 @@ import (
 	"github.com/grafana/unused"
 )
 
+// AssertEqualMeta returns nil if both [unused.Meta] arguments are
+// equal.
 func AssertEqualMeta(p, q unused.Meta) error {
 	if e, g := len(p), len(q); e != g {
 		return fmt.Errorf("expecting %d metadata items, got %d", e, g)

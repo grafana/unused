@@ -1,3 +1,11 @@
+// unused-exporter is a Prometheus exporter with a web interface to
+// expose unused disks as metrics.
+//
+// Provider selection is opinionated, currently accepting the
+// following authentication method for each provider:
+//   - GCP: pass gcp.project with a valid GCP project ID.
+//   - AWS: pass aws.profile with a valid AWS shared profile.
+//   - Azure: pass azure.sub with a valid Azure subscription ID.
 package main
 
 import (
