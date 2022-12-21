@@ -22,6 +22,15 @@ Both programs can authenticate against the following providers using the listed 
 
 These flags can be specified more than once, allowing to have different configurations for each provider.
 
+#### Notes on authentication
+Both binaries are opinionated on how to authenticate against each Cloud Service Provider (CSP).
+
+| Provider | Notes |
+|-|-|
+| GCP | Depends on [default credentials](https://cloud.google.com/docs/authentication/application-default-credentials) |
+| AWS | Uses profile names from your [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) |
+| Azure | Requires [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/) installed on the host and [signed in](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) |
+
 ### `unused` binary
 TUI tool to query all given providers and list them as a neat table.
 It also supports an interactive mode which allows to select and delete disks in an easy way.
