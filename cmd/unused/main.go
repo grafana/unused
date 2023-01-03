@@ -23,6 +23,7 @@ import (
 
 	"github.com/grafana/unused/cmd/internal"
 	"github.com/grafana/unused/cmd/unused/internal/ui"
+	"github.com/inkel/logfmt"
 )
 
 func main() {
@@ -65,7 +66,9 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	providers, err := internal.CreateProviders(ctx, gcpProjects, awsProfiles, azureSubs)
+	logger := logfmt.NewLogger(os.Stderr)
+
+	providers, err := internal.CreateProviders(ctx, logger, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		cancel()
 		fmt.Fprintln(os.Stderr, "creating providers:", err)
