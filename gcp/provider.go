@@ -69,7 +69,11 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 
 					m, err := diskMetadata(d)
 					if err != nil {
-						return fmt.Errorf("reading disk metadata: %w", err)
+						p.logger.Log("cannot parse disk metadata", logfmt.Labels{
+							"project": p.project,
+							"disk":    d.Name,
+							"err":     err,
+						})
 					}
 					disks = append(disks, &Disk{d, p, m})
 				}

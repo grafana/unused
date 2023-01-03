@@ -1,6 +1,7 @@
 package gcp_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -132,7 +133,10 @@ func TestProviderListUnusedDisks(t *testing.T) {
 			t.Fatalf("unexpected error creating GCP compute service: %v", err)
 		}
 
-		p, err := gcp.NewProvider(svc, "my-project", nil)
+		var buf bytes.Buffer
+		l := logfmt.NewLogger(&buf)
+
+		p, err := gcp.NewProvider(l, svc, "my-project", nil)
 		if err != nil {
 			t.Fatal("unexpected error creating provider:", err)
 		}
@@ -144,6 +148,12 @@ func TestProviderListUnusedDisks(t *testing.T) {
 
 		if len(disks) != 1 {
 			t.Fatalf("expecting 1 unused disk, got %d", len(disks))
+		}
+
+		// check that we logged about it
+		m, _ := regexp.MatchString(`msg="cannot parse disk metadata".+disk="disk-2"`, buf.String())
+		if !m {
+			t.Fatal("expecting a log line to be emitted")
 		}
 	})
 }
