@@ -12,11 +12,14 @@ import (
 	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused/cmd/internal"
 	"github.com/grafana/unused/gcp"
+	"github.com/inkel/logfmt"
 )
 
 func TestCreateProviders(t *testing.T) {
+	l := logfmt.NewLogger(io.Discard)
+
 	t.Run("fail when no provider is given", func(t *testing.T) {
-		ps, err := internal.CreateProviders(context.Background(), nil, nil, nil)
+		ps, err := internal.CreateProviders(context.Background(), l, nil, nil, nil)
 
 		if !errors.Is(err, internal.ErrNoProviders) {
 			t.Fatalf("expecting error %v, got %v", internal.ErrNoProviders, err)
@@ -31,7 +34,7 @@ func TestCreateProviders(t *testing.T) {
 	}
 
 	t.Run("GCP", func(t *testing.T) {
-		ps, err := internal.CreateProviders(context.Background(), []string{"foo", "bar"}, nil, nil)
+		ps, err := internal.CreateProviders(context.Background(), l, []string{"foo", "bar"}, nil, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -47,7 +50,7 @@ func TestCreateProviders(t *testing.T) {
 	})
 
 	t.Run("AWS", func(t *testing.T) {
-		ps, err := internal.CreateProviders(context.Background(), nil, []string{"foo", "bar"}, nil)
+		ps, err := internal.CreateProviders(context.Background(), l, nil, []string{"foo", "bar"}, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -63,7 +66,7 @@ func TestCreateProviders(t *testing.T) {
 	})
 
 	t.Run("Azure", func(t *testing.T) {
-		ps, err := internal.CreateProviders(context.Background(), nil, nil, []string{"foo", "bar"})
+		ps, err := internal.CreateProviders(context.Background(), l, nil, nil, []string{"foo", "bar"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

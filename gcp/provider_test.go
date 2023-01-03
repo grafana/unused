@@ -1,23 +1,29 @@
 package gcp_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/gcp"
 	"github.com/grafana/unused/unusedtest"
+	"github.com/inkel/logfmt"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 )
 
 func TestNewProvider(t *testing.T) {
+	l := logfmt.NewLogger(io.Discard)
+
 	t.Run("project is required", func(t *testing.T) {
-		p, err := gcp.NewProvider(nil, "", nil)
+		p, err := gcp.NewProvider(l, nil, "", nil)
 		if !errors.Is(err, gcp.ErrMissingProject) {
 			t.Fatalf("expecting error %v, got %v", gcp.ErrMissingProject, err)
 		}
@@ -32,7 +38,7 @@ func TestNewProvider(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error creating GCP compute service: %v", err)
 			}
-			return gcp.NewProvider(svc, "my-provider", meta)
+			return gcp.NewProvider(l, svc, "my-provider", meta)
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -42,6 +48,7 @@ func TestNewProvider(t *testing.T) {
 
 func TestProviderListUnusedDisks(t *testing.T) {
 	ctx := context.Background()
+	l := logfmt.NewLogger(io.Discard)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// are we requesting the right API endpoint?
@@ -71,7 +78,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		t.Fatalf("unexpected error creating GCP compute service: %v", err)
 	}
 
-	p, err := gcp.NewProvider(svc, "my-project", nil)
+	p, err := gcp.NewProvider(l, svc, "my-project", nil)
 	if err != nil {
 		t.Fatal("unexpected error creating provider:", err)
 	}
@@ -98,4 +105,55 @@ func TestProviderListUnusedDisks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("metadata doesn't match: %v", err)
 	}
+
+	t.Run("disk without JSON in description", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			// are we requesting the right API endpoint?
+			if got, exp := req.URL.Path, "/projects/my-project/aggregated/disks"; exp != got {
+				t.Fatalf("expecting request to %s, got %s", exp, got)
+			}
+
+			res := &compute.DiskAggregatedList{
+				Items: map[string]compute.DisksScopedList{
+					"foo": {
+						Disks: []*compute.Disk{
+							{Name: "disk-2", Zone: "eu-west2-b", Description: "some string that isn't JSON"},
+						},
+					},
+				},
+			}
+
+			b, _ := json.Marshal(res)
+			w.Write(b)
+		}))
+		defer ts.Close()
+
+		svc, err := compute.NewService(context.Background(), option.WithAPIKey("123abc"), option.WithEndpoint(ts.URL))
+		if err != nil {
+			t.Fatalf("unexpected error creating GCP compute service: %v", err)
+		}
+
+		var buf bytes.Buffer
+		l := logfmt.NewLogger(&buf)
+
+		p, err := gcp.NewProvider(l, svc, "my-project", nil)
+		if err != nil {
+			t.Fatal("unexpected error creating provider:", err)
+		}
+
+		disks, err := p.ListUnusedDisks(ctx)
+		if err != nil {
+			t.Fatal("unexpected error listing unused disks:", err)
+		}
+
+		if len(disks) != 1 {
+			t.Fatalf("expecting 1 unused disk, got %d", len(disks))
+		}
+
+		// check that we logged about it
+		m, _ := regexp.MatchString(`msg="cannot parse disk metadata".+disk="disk-2"`, buf.String())
+		if !m {
+			t.Fatal("expecting a log line to be emitted")
+		}
+	})
 }
