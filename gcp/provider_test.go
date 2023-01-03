@@ -4,20 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/gcp"
 	"github.com/grafana/unused/unusedtest"
+	"github.com/inkel/logfmt"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 )
 
 func TestNewProvider(t *testing.T) {
+	l := logfmt.NewLogger(io.Discard)
+
 	t.Run("project is required", func(t *testing.T) {
-		p, err := gcp.NewProvider(nil, "", nil)
+		p, err := gcp.NewProvider(l, nil, "", nil)
 		if !errors.Is(err, gcp.ErrMissingProject) {
 			t.Fatalf("expecting error %v, got %v", gcp.ErrMissingProject, err)
 		}
@@ -32,7 +37,7 @@ func TestNewProvider(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error creating GCP compute service: %v", err)
 			}
-			return gcp.NewProvider(svc, "my-provider", meta)
+			return gcp.NewProvider(l, svc, "my-provider", meta)
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -42,6 +47,7 @@ func TestNewProvider(t *testing.T) {
 
 func TestProviderListUnusedDisks(t *testing.T) {
 	ctx := context.Background()
+	l := logfmt.NewLogger(io.Discard)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// are we requesting the right API endpoint?
@@ -71,7 +77,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		t.Fatalf("unexpected error creating GCP compute service: %v", err)
 	}
 
-	p, err := gcp.NewProvider(svc, "my-project", nil)
+	p, err := gcp.NewProvider(l, svc, "my-project", nil)
 	if err != nil {
 		t.Fatal("unexpected error creating provider:", err)
 	}

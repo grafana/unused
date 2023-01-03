@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/grafana/unused"
+	"github.com/inkel/logfmt"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -22,6 +23,7 @@ type Provider struct {
 	project string
 	svc     *compute.Service
 	meta    unused.Meta
+	logger  *logfmt.Logger
 }
 
 // Name returns GCP.
@@ -35,7 +37,7 @@ func (p *Provider) Meta() unused.Meta { return p.meta }
 // A valid GCP compute service must be supplied in order to listed the
 // unused resources. It also requires a valid project ID which should
 // be the project where the disks were created.
-func NewProvider(svc *compute.Service, project string, meta unused.Meta) (*Provider, error) {
+func NewProvider(logger *logfmt.Logger, svc *compute.Service, project string, meta unused.Meta) (*Provider, error) {
 	if project == "" {
 		return nil, ErrMissingProject
 	}
@@ -48,6 +50,7 @@ func NewProvider(svc *compute.Service, project string, meta unused.Meta) (*Provi
 		project: project,
 		svc:     svc,
 		meta:    meta,
+		logger:  logger,
 	}, nil
 }
 
