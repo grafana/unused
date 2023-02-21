@@ -26,6 +26,9 @@ func (d *Disk) Provider() unused.Provider { return d.provider }
 // Name returns the name of this Azure compute disk.
 func (d *Disk) Name() string { return *d.Disk.Name }
 
+// SizeGB returns the size of this Azure compute disk in GB.
+func (d *Disk) SizeGB() int { return int(*d.Disk.DiskSizeGB) }
+
 // CreatedAt returns the time when this Azure compute disk was
 // created.
 func (d *Disk) CreatedAt() time.Time { return d.Disk.TimeCreated.ToTime() }
@@ -36,3 +39,6 @@ func (d *Disk) Meta() unused.Meta { return d.meta }
 // LastUsedAt returns a zero [time.Time] value, as Azure does not
 // provide this information.
 func (d *Disk) LastUsedAt() time.Time { return time.Time{} }
+
+// DiskType Type returns the type of this Azure compute disk.
+func (d *Disk) DiskType() string { return string(d.Disk.Sku.Name) }

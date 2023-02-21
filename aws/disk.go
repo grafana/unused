@@ -43,6 +43,12 @@ func (d *Disk) CreatedAt() time.Time { return *d.Volume.CreateTime }
 // Meta returns the disk metadata.
 func (d *Disk) Meta() unused.Meta { return d.meta }
 
+// SizeGB returns the size of this AWS EC2 volume in GB.
+func (d *Disk) SizeGB() int { return int(*d.Volume.Size) }
+
 // LastUsedAt returns a zero [time.Time] value, as AWS does not
 // provide this information.
 func (d *Disk) LastUsedAt() time.Time { return time.Time{} }
+
+// DiskType Type returns the type of this AWS EC2 volume.
+func (d *Disk) DiskType() string { return string(d.Volume.VolumeType) }
