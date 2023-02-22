@@ -35,7 +35,7 @@ func Table(ctx context.Context, options Options) error {
 
 	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
 
-	headers := []string{"PROVIDER", "DISK", "AGE", "UNUSED"}
+	headers := []string{"PROVIDER", "DISK", "AGE", "UNUSED", "TYPE", "SIZE_GB"}
 	for _, c := range options.ExtraColumns {
 		headers = append(headers, "META:"+c)
 	}
@@ -48,9 +48,10 @@ func Table(ctx context.Context, options Options) error {
 	for _, d := range disks {
 		p := d.Provider()
 
-		row := []string{p.Name(), d.Name(), internal.Age(d.CreatedAt()), internal.Age(d.LastUsedAt())}
+		row := []string{p.Name(), d.Name(), internal.Age(d.CreatedAt()), internal.Age(d.LastUsedAt()), string(d.DiskType()), fmt.Sprintf("%d", d.SizeGB())}
+		meta := d.Meta()
 		for _, c := range options.ExtraColumns {
-			row = append(row, d.Meta()[c])
+			row = append(row, meta[c])
 		}
 		if options.Verbose {
 			row = append(row, p.Meta().String(), d.Meta().String())

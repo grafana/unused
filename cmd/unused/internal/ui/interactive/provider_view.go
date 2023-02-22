@@ -12,6 +12,8 @@ const (
 	columnName   = "name"
 	columnAge    = "age"
 	columnUnused = "ageUnused"
+	columnSize   = "size"
+	columnType   = "type"
 )
 
 var (
@@ -25,6 +27,8 @@ func newProviderView(extraColumns []string) table.Model {
 		table.NewFlexColumn(columnName, "Name", 2).WithStyle(nameStyle),
 		table.NewColumn(columnAge, "Age", 6).WithStyle(ageStyle),
 		table.NewColumn(columnUnused, "Unused", 6).WithStyle(ageStyle),
+		table.NewColumn(columnType, "Type", 6).WithStyle(ageStyle),
+		table.NewColumn(columnSize, "Size (GB)", 10).WithStyle(ageStyle),
 	}
 
 	for _, c := range extraColumns {
@@ -48,6 +52,8 @@ func disksToRows(disks unused.Disks, extraColumns []string) []table.Row {
 			columnName:   d.Name(),
 			columnAge:    internal.Age(d.CreatedAt()),
 			columnUnused: internal.Age(d.LastUsedAt()),
+			columnType:   d.DiskType(),
+			columnSize:   d.SizeGB(),
 		}
 
 		meta := d.Meta()

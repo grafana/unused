@@ -15,6 +15,9 @@ type Disk interface {
 	// Name returns the disk name.
 	Name() string
 
+	// SizeGB returns the disk size in GB.
+	SizeGB() int
+
 	// CreatedAt returns the time when the disk was created.
 	CreatedAt() time.Time
 
@@ -23,4 +26,15 @@ type Disk interface {
 
 	// Meta returns the disk metadata.
 	Meta() Meta
+
+	// DiskType returns the normalized type of disk.
+	DiskType() DiskType
 }
+
+type DiskType string
+
+const (
+	SSD     DiskType = "ssd"
+	HDD     DiskType = "hdd"
+	Unknown DiskType = "unknown"
+)

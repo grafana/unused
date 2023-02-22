@@ -2,6 +2,7 @@ package gcp
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/grafana/unused"
@@ -45,4 +46,21 @@ func (d *Disk) LastUsedAt() time.Time {
 	// it's safe to assume GCP will send a valid timestamp
 	t, _ := time.Parse(time.RFC3339, d.Disk.LastDetachTimestamp)
 	return t
+}
+
+// SizeGB returns the size of the GCP compute disk in GB.
+func (d *Disk) SizeGB() int { return int(d.Disk.SizeGb) }
+
+// DiskType Type returns the type of the GCP compute disk.
+func (d *Disk) DiskType() unused.DiskType {
+	splitDiskType := strings.Split(d.Disk.Type, "/")
+	diskType := splitDiskType[len(splitDiskType)-1]
+	switch diskType {
+	case "pd-ssd":
+		return unused.SSD
+	case "pd-standard":
+		return unused.HDD
+	default:
+		return unused.Unknown
+	}
 }
