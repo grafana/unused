@@ -26,6 +26,8 @@ type Disk interface {
 
 	// Meta returns the disk metadata.
 	Meta() Meta
+
+	// DiskType returns the normalized type of disk.
 	DiskType() DiskType
 }
 

@@ -52,8 +52,7 @@ func (d *Disk) LastUsedAt() time.Time { return time.Time{} }
 
 // DiskType Type returns the type of this AWS EC2 volume.
 func (d *Disk) DiskType() unused.DiskType {
-	volumeType := d.Volume.VolumeType
-	switch volumeType {
+	switch d.Volume.VolumeType {
 	case types.VolumeTypeGp2, types.VolumeTypeGp3, types.VolumeTypeIo1, types.VolumeTypeIo2:
 		return unused.SSD
 	case types.VolumeTypeSt1, types.VolumeTypeSc1, types.VolumeTypeStandard:
