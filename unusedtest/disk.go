@@ -15,12 +15,12 @@ type Disk struct {
 	createdAt time.Time
 	meta      unused.Meta
 	size      int
-	diskType  string
+	diskType  unused.DiskType
 }
 
 // NewDisk returns a new test disk.
 func NewDisk(name string, provider unused.Provider, createdAt time.Time) Disk {
-	return Disk{name, name, provider, createdAt, nil, 0, "ssd"}
+	return Disk{name, name, provider, createdAt, nil, 0, unused.Unknown}
 }
 
 func (d Disk) ID() string                { return d.name }
@@ -30,4 +30,4 @@ func (d Disk) CreatedAt() time.Time      { return d.createdAt }
 func (d Disk) Meta() unused.Meta         { return d.meta }
 func (d Disk) LastUsedAt() time.Time     { return d.createdAt.Add(1 * time.Minute) }
 func (d Disk) SizeGB() int               { return d.size }
-func (d Disk) DiskType() string          { return d.diskType }
+func (d Disk) DiskType() unused.DiskType { return d.diskType }

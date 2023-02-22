@@ -48,7 +48,7 @@ func Table(ctx context.Context, options Options) error {
 	for _, d := range disks {
 		p := d.Provider()
 
-		row := []string{p.Name(), d.Name(), internal.Age(d.CreatedAt()), internal.Age(d.LastUsedAt()), d.DiskType(), fmt.Sprintf("%d", d.SizeGB())}
+		row := []string{p.Name(), d.Name(), internal.Age(d.CreatedAt()), internal.Age(d.LastUsedAt()), string(d.DiskType()), fmt.Sprintf("%d", d.SizeGB())}
 		for _, c := range options.ExtraColumns {
 			meta := d.Meta()
 			row = append(row, meta[c])

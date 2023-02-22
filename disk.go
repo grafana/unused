@@ -26,5 +26,13 @@ type Disk interface {
 
 	// Meta returns the disk metadata.
 	Meta() Meta
-	DiskType() string
+	DiskType() DiskType
 }
+
+type DiskType string
+
+const (
+	SSD     DiskType = "ssd"
+	HDD     DiskType = "hdd"
+	Unknown DiskType = "unknown"
+)

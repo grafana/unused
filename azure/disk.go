@@ -41,4 +41,14 @@ func (d *Disk) Meta() unused.Meta { return d.meta }
 func (d *Disk) LastUsedAt() time.Time { return time.Time{} }
 
 // DiskType Type returns the type of this Azure compute disk.
-func (d *Disk) DiskType() string { return string(d.Disk.Sku.Name) }
+func (d *Disk) DiskType() unused.DiskType {
+	diskName := d.Disk.Sku.Name
+	switch diskName {
+	case compute.StandardLRS:
+		return unused.HDD
+	case compute.PremiumLRS, compute.StandardSSDLRS, compute.UltraSSDLRS:
+		return unused.HDD
+	default:
+		return unused.Unknown
+	}
+}

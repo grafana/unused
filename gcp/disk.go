@@ -52,7 +52,15 @@ func (d *Disk) LastUsedAt() time.Time {
 func (d *Disk) SizeGB() int { return int(d.Disk.SizeGb) }
 
 // DiskType Type returns the type of the GCP compute disk.
-func (d *Disk) DiskType() string {
+func (d *Disk) DiskType() unused.DiskType {
 	splitDiskType := strings.Split(d.Disk.Type, "/")
-	return splitDiskType[len(splitDiskType)-1]
+	diskType := splitDiskType[len(splitDiskType)-1]
+	switch diskType {
+	case "pd-ssd":
+		return unused.SSD
+	case "pd-standard":
+		return unused.HDD
+	default:
+		return unused.Unknown
+	}
 }
