@@ -61,6 +61,8 @@ func main() {
 		return nil
 	})
 
+	flag.StringVar(&options.Group, "group-by", "", "Group by disk metadata values")
+
 	flag.Parse()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -78,6 +80,9 @@ func main() {
 	options.Providers = providers
 
 	var display ui.DisplayFunc = ui.Table
+	if options.Group != "" {
+		display = ui.GroupTable
+	}
 	if interactiveMode {
 		display = ui.Interactive
 	}
