@@ -46,7 +46,7 @@ func (d *Disk) DiskType() unused.DiskType {
 	case compute.StandardLRS:
 		return unused.HDD
 	case compute.PremiumLRS, compute.StandardSSDLRS, compute.UltraSSDLRS:
-		return unused.HDD
+		return unused.SSD
 	default:
 		return unused.Unknown
 	}

@@ -18,6 +18,9 @@ func TestDisk(t *testing.T) {
 		compute.Disk{
 			ID:   &id,
 			Name: &name,
+			Sku: &compute.DiskSku{
+				Name: compute.StandardSSDLRS,
+			},
 			DiskProperties: &compute.DiskProperties{
 				TimeCreated: &date.Time{Time: createdAt},
 			},
@@ -36,6 +39,10 @@ func TestDisk(t *testing.T) {
 
 	if exp, got := "my-disk", d.Name(); exp != got {
 		t.Errorf("expecting Name() %q, got %q", exp, got)
+	}
+
+	if exp, got := unused.SSD, d.DiskType(); exp != got {
+		t.Errorf("expecting DiskType() %q, got %q", exp, got)
 	}
 
 	if !createdAt.Equal(d.CreatedAt()) {
