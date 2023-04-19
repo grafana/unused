@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -33,8 +34,13 @@ func GroupTable(ctx context.Context, options Options) error {
 
 	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
 
-	headers := []string{"PROVIDER", "GROUP_BY", "TYPE", "SIZE_GB"}
-	aggrData := make(map[[3]string]int)
+	if options.Verbose {
+		fmt.Printf("Grouping by '%s' tag.\n", options.Group)
+	}
+	headers := []string{"PROVIDER", strings.ToUpper(options.Group), "TYPE", "DISKS_COUNT", "TOTAL_SIZE_GB"}
+	// headers := []string{"PROVIDER", "GROUP_BY_TAG", "TYPE", "DISKS_COUNT", "TOTAL_SIZE_GB"}
+	totalSize := make(map[[3]string]int)
+	totalCount := make(map[[3]string]int)
 
 	fmt.Fprintln(w, strings.Join(headers, "\t"))
 
@@ -47,12 +53,26 @@ func GroupTable(ctx context.Context, options Options) error {
 			aggrValue = "NONE"
 		}
 		aggrKey := [3]string{p.Name(), aggrValue, string(d.DiskType())}
-		aggrData[aggrKey] += d.SizeGB()
+		totalSize[aggrKey] += d.SizeGB()
+		totalCount[aggrKey] += 1
 	}
 
-	for info, totalSize := range aggrData {
+	keys := make([][3]string, 0, len(totalSize))
+	for k := range totalSize {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		for k := 0; k < len(keys[i]); k += 1 {
+			if keys[i][k] != keys[j][k] {
+				return keys[i][k] < keys[j][k]
+			}
+		}
+		return true
+	})
+	for _, info := range keys {
 		row := info[:]
-		row = append(row, fmt.Sprintf("%d", totalSize))
+		row = append(row, fmt.Sprintf("%d", totalCount[info]))
+		row = append(row, fmt.Sprintf("%d", totalSize[info]))
 		fmt.Fprintln(w, strings.Join(row, "\t"))
 	}
 
