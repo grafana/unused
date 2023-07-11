@@ -15,6 +15,8 @@ type Options struct {
 	ExtraColumns []string
 	Filter       Filter
 	Group        string
+	RawDate      bool
+	ExportCSV    bool
 	Verbose      bool
 }
 

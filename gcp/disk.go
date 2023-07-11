@@ -60,6 +60,8 @@ func (d *Disk) DiskType() unused.DiskType {
 		return unused.SSD
 	case "pd-standard":
 		return unused.HDD
+	case "pd-balanced":
+		return unused.BALANCED
 	default:
 		return unused.Unknown
 	}

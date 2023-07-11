@@ -62,6 +62,9 @@ func main() {
 	})
 
 	flag.StringVar(&options.Group, "group-by", "", "Group by disk metadata values")
+	flag.BoolVar(&options.ExportCSV, "export-csv", false, "Export in CSV format")
+
+	flag.BoolVar(&options.RawDate, "raw-date", false, "Show dates for created and last_used fields")
 
 	flag.Parse()
 
@@ -82,6 +85,9 @@ func main() {
 	var display ui.DisplayFunc = ui.Table
 	if options.Group != "" {
 		display = ui.GroupTable
+	}
+	if options.ExportCSV {
+		display = ui.CsvExport
 	}
 	if interactiveMode {
 		display = ui.Interactive

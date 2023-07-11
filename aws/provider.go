@@ -21,6 +21,9 @@ type Provider struct {
 // Name returns AWS.
 func (p *Provider) Name() string { return "AWS" }
 
+// Project returns profile name for AWS.
+func (p *Provider) Account() string { return p.meta["profile"]}
+
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
