@@ -263,7 +263,7 @@ func deleteCurrent(p deleteProgress) tea.Cmd {
 func newHelp() help.Model {
 	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
 		Light: "#909090",
-		Dark:  "#AAAAAA",
+		Dark:  "#FFFF00",
 	})
 
 	descStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
