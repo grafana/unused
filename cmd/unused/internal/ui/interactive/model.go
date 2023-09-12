@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -60,11 +61,11 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q":
+		switch {
+		case key.Matches(msg, keyMap.Quit):
 			return m, tea.Quit
 
-		case "esc":
+		case key.Matches(msg, keyMap.Back):
 			switch m.state {
 			case stateProviderView:
 				m.state = stateProviderList
@@ -80,7 +81,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return m, nil
 
-		case "enter":
+		case key.Matches(msg, keyMap.Select):
 			if m.state == stateProviderList {
 				m.providerView = m.providerView.WithRows(nil)
 				m.provider = m.providerList.SelectedItem().(providerItem).Provider
@@ -91,7 +92,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					loadDisks(m.providerList.SelectedItem().(providerItem).Provider, m.disks, m.key, m.value))
 			}
 
-		case "x":
+		case key.Matches(msg, keyMap.Delete):
 			if m.state == stateProviderView {
 				if rows := m.providerView.SelectedRows(); len(rows) > 0 {
 					s := deleteProgress{
