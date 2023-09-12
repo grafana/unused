@@ -28,7 +28,7 @@ func (km customKeyMap) FullHelp() [][]key.Binding {
 
 var keyMap = customKeyMap{
 	Back:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("<esc>", "back")),
-	Quit:     key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
+	Quit:     key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
 	Up:       key.NewBinding(key.WithKeys("up"), key.WithHelp("↑", "up")),
 	Down:     key.NewBinding(key.WithKeys("down"), key.WithHelp("↓", "down")),
 	PageUp:   key.NewBinding(key.WithKeys("pgup", "right"), key.WithHelp("→", "page up")),
