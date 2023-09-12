@@ -49,7 +49,7 @@ func New(providers []unused.Provider, extraColumns []string, key, value string) 
 		extraCols:    extraColumns,
 		key:          key,
 		value:        value,
-		help:         help.New(),
+		help:         newHelp(),
 	}
 }
 
@@ -258,4 +258,34 @@ func deleteCurrent(p deleteProgress) tea.Cmd {
 	}
 
 	return func() tea.Msg { return p }
+}
+
+func newHelp() help.Model {
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
+		Light: "#909090",
+		Dark:  "#AAAAAA",
+	})
+
+	descStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
+		Light: "#B2B2B2",
+		Dark:  "#999999",
+	})
+
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
+		Light: "#DDDADA",
+		Dark:  "#3C3C3C",
+	})
+
+	m := help.New()
+	m.Styles = help.Styles{
+		ShortKey:       keyStyle,
+		ShortDesc:      descStyle,
+		ShortSeparator: sepStyle,
+		Ellipsis:       sepStyle.Copy(),
+		FullKey:        keyStyle.Copy(),
+		FullDesc:       descStyle.Copy(),
+		FullSeparator:  sepStyle.Copy(),
+	}
+
+	return m
 }
