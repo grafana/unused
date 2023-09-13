@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -28,7 +27,7 @@ const (
 var _ tea.Model = Model{}
 
 type Model struct {
-	providerList list.Model
+	providerList providerListModel
 	providerView table.Model
 	provider     unused.Provider
 	spinner      spinner.Model
@@ -42,7 +41,7 @@ type Model struct {
 
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
 	return Model{
-		providerList: newProviderList(providers),
+		providerList: newProviderListModel(providers),
 		providerView: newProviderView(extraColumns),
 		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
@@ -74,23 +73,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case stateDeletingDisks:
 				delete(m.disks, m.provider)
 				m.state = stateFetchingDisks
-				return m, tea.Batch(
-					spinner.Tick,
-					loadDisks(m.providerList.SelectedItem().(providerItem).Provider, m.disks, m.key, m.value))
+				return m, tea.Batch(spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
 			}
 
 			return m, nil
-
-		case key.Matches(msg, keyMap.Select):
-			if m.state == stateProviderList {
-				m.providerView = m.providerView.WithRows(nil)
-				m.provider = m.providerList.SelectedItem().(providerItem).Provider
-				m.state = stateFetchingDisks
-
-				return m, tea.Batch(
-					spinner.Tick,
-					loadDisks(m.providerList.SelectedItem().(providerItem).Provider, m.disks, m.key, m.value))
-			}
 
 		case key.Matches(msg, keyMap.Delete):
 			if m.state == stateProviderView {
@@ -107,6 +93,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tea.Batch(spinner.Tick, deleteCurrent(s))
 				}
 			}
+		}
+
+	case unused.Provider:
+		if m.state == stateProviderList {
+			m.provider = msg
+			m.providerView = m.providerView.WithRows(nil)
+			m.state = stateFetchingDisks
+
+			return m, tea.Batch(spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
 		}
 
 	case loadedDisks:
@@ -150,7 +145,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		helpHeight := lipgloss.Height(m.getHelp())
-		m.providerList.SetSize(msg.Width, msg.Height-helpHeight)
+		m.providerList.SetSize(msg.Width, msg.Height)
 		m.providerView = m.providerView.WithTargetWidth(msg.Width).WithPageSize(msg.Height - 4 - helpHeight)
 		m.output.Width = msg.Width
 		m.output.Height = msg.Height - 1 - helpHeight
@@ -179,7 +174,7 @@ func (m Model) View() string {
 	var view string
 	switch m.state {
 	case stateProviderList:
-		view = m.providerList.View()
+		return m.providerList.View()
 
 	case stateProviderView:
 		view = m.providerView.View()
