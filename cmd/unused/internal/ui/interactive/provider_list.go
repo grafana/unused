@@ -47,28 +47,10 @@ func newProviderList(providers []unused.Provider) list.Model {
 	return m
 }
 
-type providerListKeymap struct {
-	Quit, Select     key.Binding
-	Up, Down         key.Binding
-	PageUp, PageDown key.Binding
-	Home, End        key.Binding
-}
-
-func (km providerListKeymap) ShortHelp() []key.Binding {
-	return []key.Binding{km.Quit, km.Select, km.Up, km.Down}
-}
-
-func (km providerListKeymap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		km.ShortHelp(),
-		{km.PageUp, km.PageDown, km.Home, km.End},
-	}
-}
-
 type providerListModel struct {
 	list list.Model
 	help help.Model
-	km   providerListKeymap
+	sel  key.Binding
 	w, h int
 }
 
@@ -76,16 +58,7 @@ func newProviderListModel(providers []unused.Provider) providerListModel {
 	return providerListModel{
 		list: newProviderList(providers),
 		help: newHelp(),
-		km: providerListKeymap{
-			Quit:     key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
-			Select:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select provider")),
-			Up:       key.NewBinding(key.WithKeys("up"), key.WithHelp("↑", "up")),
-			Down:     key.NewBinding(key.WithKeys("down"), key.WithHelp("↓", "down")),
-			PageUp:   key.NewBinding(key.WithKeys("pgup", "right"), key.WithHelp("→", "page up")),
-			PageDown: key.NewBinding(key.WithKeys("pgdown", "left"), key.WithHelp("←", "page down")),
-			Home:     key.NewBinding(key.WithKeys("home"), key.WithHelp("home", "first")),
-			End:      key.NewBinding(key.WithKeys("end"), key.WithHelp("end", "last")),
-		},
+		sel:  key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select provider")),
 	}
 }
 
@@ -93,7 +66,7 @@ func (m providerListModel) Update(msg tea.Msg) (providerListModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.km.Select):
+		case key.Matches(msg, m.sel):
 			return m, func() tea.Msg { return m.list.SelectedItem().(providerItem).Provider }
 
 		case msg.String() == "?":
@@ -101,7 +74,7 @@ func (m providerListModel) Update(msg tea.Msg) (providerListModel, tea.Cmd) {
 			m.resetSize()
 			return m, nil
 
-		case key.Matches(msg, m.km.Quit):
+		case key.Matches(msg, navKeys.Quit):
 			return m, tea.Quit
 
 		default:
@@ -115,11 +88,11 @@ func (m providerListModel) Update(msg tea.Msg) (providerListModel, tea.Cmd) {
 }
 
 func (m providerListModel) View() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(m.km))
+	return lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(m))
 }
 
 func (m *providerListModel) resetSize() {
-	hh := lipgloss.Height(m.help.View(m.km))
+	hh := lipgloss.Height(m.help.View(m))
 	m.list.SetSize(m.w, m.h-hh)
 	m.help.Width = m.w
 }
@@ -127,4 +100,15 @@ func (m *providerListModel) resetSize() {
 func (m *providerListModel) SetSize(w, h int) {
 	m.w, m.h = w, h
 	m.resetSize()
+}
+
+func (m providerListModel) ShortHelp() []key.Binding {
+	return []key.Binding{navKeys.Quit, m.sel, navKeys.Up, navKeys.Down}
+}
+
+func (m providerListModel) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		m.ShortHelp(),
+		{navKeys.PageUp, navKeys.PageDown, navKeys.Home, navKeys.End},
+	}
 }
