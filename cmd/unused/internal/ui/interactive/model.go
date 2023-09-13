@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
 )
 
@@ -28,7 +27,7 @@ var _ tea.Model = Model{}
 
 type Model struct {
 	providerList providerListModel
-	providerView table.Model
+	providerView providerViewModel
 	provider     unused.Provider
 	spinner      spinner.Model
 	disks        map[unused.Provider]unused.Disks
@@ -42,7 +41,7 @@ type Model struct {
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
 	m := Model{
 		providerList: newProviderListModel(providers),
-		providerView: newProviderView(extraColumns),
+		providerView: newProviderViewModel(extraColumns),
 		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 		spinner:      spinner.New(),
@@ -87,28 +86,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			return m, nil
-
-		case key.Matches(msg, keyMap.Delete):
-			if m.state == stateProviderView {
-				if rows := m.providerView.SelectedRows(); len(rows) > 0 {
-					s := deleteProgress{
-						disks:  make(unused.Disks, 0, len(rows)),
-						status: make([]*deleteStatus, len(rows)),
-					}
-					for _, r := range rows {
-						s.disks = append(s.disks, r.Data[columnDisk].(unused.Disk))
-					}
-
-					m.state = stateDeletingDisks
-					return m, tea.Batch(spinner.Tick, deleteCurrent(s))
-				}
-			}
 		}
 
 	case unused.Provider:
 		if m.state == stateProviderList {
 			m.provider = msg
-			m.providerView = m.providerView.WithRows(nil)
+			m.providerView = m.providerView.Empty()
 			m.state = stateFetchingDisks
 
 			return m, tea.Batch(spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
@@ -116,10 +99,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case loadedDisks:
 		// TODO handle error
-		m.providerView = m.providerView.WithRows(disksToRows(msg.disks, m.extraCols))
+		m.providerView = m.providerView.WithDisks(msg.disks)
 		m.state = stateProviderView
 
 	case deleteProgress:
+		if m.state == stateProviderView {
+			m.state = stateDeletingDisks
+			return m, tea.Batch(spinner.Tick, deleteCurrent(msg))
+		}
+
 		sb := &strings.Builder{}
 
 		fmt.Fprintf(sb, "Deleting %d disks from %s %s\n\n", len(msg.disks), m.provider.Name(), m.provider.Meta().String())
@@ -156,7 +144,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		helpHeight := lipgloss.Height(m.getHelp())
 		m.providerList.SetSize(msg.Width, msg.Height)
-		m.providerView = m.providerView.WithTargetWidth(msg.Width).WithPageSize(msg.Height - 4 - helpHeight)
+		m.providerView.SetSize(msg.Width, msg.Height)
 		m.output.Width = msg.Width
 		m.output.Height = msg.Height - 1 - helpHeight
 	}
@@ -187,7 +175,7 @@ func (m Model) View() string {
 		return m.providerList.View()
 
 	case stateProviderView:
-		view = m.providerView.View()
+		return m.providerView.View()
 
 	case stateFetchingDisks:
 		view = fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
