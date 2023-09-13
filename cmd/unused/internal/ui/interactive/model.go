@@ -40,7 +40,7 @@ type Model struct {
 }
 
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
-	return Model{
+	m := Model{
 		providerList: newProviderListModel(providers),
 		providerView: newProviderView(extraColumns),
 		disks:        make(map[unused.Provider]unused.Disks),
@@ -51,10 +51,20 @@ func New(providers []unused.Provider, extraColumns []string, key, value string) 
 		value:        value,
 		help:         newHelp(),
 	}
+
+	if len(providers) == 1 {
+		m.provider = providers[0]
+	}
+
+	return m
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.EnterAltScreen
+	cmds := []tea.Cmd{tea.EnterAltScreen}
+	if m.provider != nil { // No need to show the providers list if there's only one provider
+		cmds = append(cmds, func() tea.Msg { return m.provider })
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
