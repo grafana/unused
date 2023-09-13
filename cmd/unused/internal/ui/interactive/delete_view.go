@@ -39,6 +39,7 @@ func (m deleteViewModel) WithDisks(provider unused.Provider, disks unused.Disks)
 	m.provider = provider
 	m.disks = disks
 	m.status = make([]*deleteStatus, len(disks))
+	m.cur = 0
 	return m
 }
 
