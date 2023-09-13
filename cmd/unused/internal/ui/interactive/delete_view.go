@@ -71,13 +71,18 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			m.cur++
 		}
 
-		cmd = tea.Batch(m.spinner.Tick, m.deleteNext)
+		cmd = tea.Batch(m.spinner.Tick, func() tea.Msg { return deleteNextMsg{} })
 
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 	}
 
 	return m, cmd
+}
+
+type deleteStatus struct {
+	done bool
+	err  error
 }
 
 func deleteDisk(p unused.Provider, d unused.Disk, s *deleteStatus) tea.Cmd {
@@ -87,10 +92,6 @@ func deleteDisk(p unused.Provider, d unused.Disk, s *deleteStatus) tea.Cmd {
 
 		return deleteNextMsg{}
 	}
-}
-
-func (m *deleteViewModel) deleteNext() tea.Msg {
-	return deleteNextMsg{}
 }
 
 var bold = lipgloss.NewStyle().Bold(true)

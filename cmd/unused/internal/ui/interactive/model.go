@@ -105,16 +105,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.deleteView = m.deleteView.WithDisks(m.provider, msg)
 		m.state = stateDeletingDisks
 
-	case deleteProgress:
-		if m.state == stateProviderView {
-			m.state = stateDeletingDisks
-			return m, tea.Batch(spinner.Tick, deleteCurrent(msg))
-		}
-
-		var cmd tea.Cmd
-		m.deleteView, cmd = m.deleteView.Update(msg)
-		return m, cmd
-
 	case spinner.TickMsg:
 		if m.state == stateFetchingDisks {
 			var cmd tea.Cmd
@@ -145,10 +135,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
-
-func (m Model) getHelp() string {
-	return m.help.View(keyMap)
-}
 
 func (m Model) View() string {
 	switch m.state {
@@ -199,38 +185,6 @@ func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks,
 
 		return loadedDisks{disks, nil}
 	}
-}
-
-type deleteStatus struct {
-	done bool
-	err  error
-}
-
-type deleteProgress struct {
-	cur    int
-	disks  unused.Disks
-	status []*deleteStatus
-}
-
-func deleteCurrent(p deleteProgress) tea.Cmd {
-	if p.cur == len(p.disks) {
-		return nil
-	}
-
-	if p.status[p.cur] == nil {
-		ds := &deleteStatus{}
-		p.status[p.cur] = ds
-
-		go func() {
-			// d := p.disks[p.cur]
-			// ds.err = d.Provider().Delete(context.TODO(), d)
-			ds.done = true
-		}()
-	} else if p.status[p.cur].done {
-		p.cur++
-	}
-
-	return func() tea.Msg { return p }
 }
 
 func newHelp() help.Model {
