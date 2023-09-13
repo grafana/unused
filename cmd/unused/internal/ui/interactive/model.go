@@ -97,14 +97,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
 		}
 
-	case loadedDisks:
-		// TODO handle error
-		m.providerView = m.providerView.WithDisks(msg.disks)
-		m.state = stateProviderView
-
 	case unused.Disks:
-		m.deleteView = m.deleteView.WithDisks(m.provider, msg)
-		m.state = stateDeletingDisks
+		switch m.state {
+		case stateFetchingDisks:
+			m.providerView = m.providerView.WithDisks(msg)
+			m.state = stateProviderView
+
+		case stateProviderView:
+			m.deleteView = m.deleteView.WithDisks(m.provider, msg)
+			m.state = stateDeletingDisks
+		}
 
 	case spinner.TickMsg:
 		if m.state == stateFetchingDisks {
@@ -164,20 +166,15 @@ func (m Model) View() string {
 	}
 }
 
-type loadedDisks struct {
-	disks unused.Disks
-	err   error
-}
-
 func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks, key, value string) tea.Cmd {
 	return func() tea.Msg {
 		if disks, ok := cache[provider]; ok {
-			return loadedDisks{disks, nil}
+			return disks
 		}
 
 		disks, err := provider.ListUnusedDisks(context.TODO())
 		if err != nil {
-			return loadedDisks{nil, err}
+			return err
 		}
 
 		if key != "" {
@@ -192,7 +189,7 @@ func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks,
 
 		cache[provider] = disks
 
-		return loadedDisks{disks, nil}
+		return disks
 	}
 }
 
