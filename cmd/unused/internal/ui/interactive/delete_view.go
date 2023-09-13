@@ -66,7 +66,7 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			ds = &deleteStatus{}
 			m.status[m.cur] = ds
 
-			return m, tea.Batch(m.spinner.Tick, deleteDisk(m.provider, m.disks[m.cur], ds))
+			return m, deleteDisk(m.provider, m.disks[m.cur], ds)
 		} else if ds.done {
 			m.cur++
 		}
