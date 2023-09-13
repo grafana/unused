@@ -178,7 +178,7 @@ func (m Model) View() string {
 		return m.providerView.View()
 
 	case stateFetchingDisks:
-		view = fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
+		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	case stateDeletingDisks:
 		view = m.output.View()
