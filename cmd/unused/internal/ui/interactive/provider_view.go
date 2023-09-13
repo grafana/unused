@@ -71,15 +71,11 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.delete):
 			if rows := m.table.SelectedRows(); len(rows) > 0 {
-				s := deleteProgress{
-					disks:  make(unused.Disks, 0, len(rows)),
-					status: make([]*deleteStatus, len(rows)),
+				disks := make(unused.Disks, len(rows))
+				for i, r := range rows {
+					disks[i] = r.Data[columnDisk].(unused.Disk)
 				}
-				for _, r := range rows {
-					s.disks = append(s.disks, r.Data[columnDisk].(unused.Disk))
-				}
-
-				return m, func() tea.Msg { return s }
+				return m, func() tea.Msg { return disks }
 			}
 
 		case msg.String() == "?":

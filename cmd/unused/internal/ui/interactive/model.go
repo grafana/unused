@@ -3,12 +3,10 @@ package interactive
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
@@ -28,13 +26,13 @@ var _ tea.Model = Model{}
 type Model struct {
 	providerList providerListModel
 	providerView providerViewModel
+	deleteView   deleteViewModel
 	provider     unused.Provider
 	spinner      spinner.Model
 	disks        map[unused.Provider]unused.Disks
 	state        state
 	extraCols    []string
 	key, value   string
-	output       viewport.Model
 	help         help.Model
 }
 
@@ -42,6 +40,7 @@ func New(providers []unused.Provider, extraColumns []string, key, value string) 
 	m := Model{
 		providerList: newProviderListModel(providers),
 		providerView: newProviderViewModel(extraColumns),
+		deleteView:   newDeleteViewModel(),
 		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 		spinner:      spinner.New(),
@@ -70,10 +69,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, keyMap.Quit):
+		case key.Matches(msg, navKeys.Quit):
 			return m, tea.Quit
 
-		case key.Matches(msg, keyMap.Back):
+		case key.Matches(msg, navKeys.Back):
 			switch m.state {
 			case stateProviderView:
 				m.state = stateProviderList
@@ -102,51 +101,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.providerView = m.providerView.WithDisks(msg.disks)
 		m.state = stateProviderView
 
+	case unused.Disks:
+		m.deleteView = m.deleteView.WithDisks(m.provider, msg)
+		m.state = stateDeletingDisks
+
 	case deleteProgress:
 		if m.state == stateProviderView {
 			m.state = stateDeletingDisks
 			return m, tea.Batch(spinner.Tick, deleteCurrent(msg))
 		}
 
-		sb := &strings.Builder{}
-
-		fmt.Fprintf(sb, "Deleting %d disks from %s %s\n\n", len(msg.disks), m.provider.Name(), m.provider.Meta().String())
-
-		for i, d := range msg.disks {
-			s := msg.status[i]
-
-			switch {
-			case s == nil:
-				fmt.Fprintf(sb, "  %s\n", d.Name())
-
-			case msg.cur == i:
-				fmt.Fprintf(sb, "➤ %s %s\n", d.Name(), m.spinner.View())
-
-			case !s.done:
-
-			case s.err != nil:
-				fmt.Fprintf(sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
-
-			default:
-				fmt.Fprintf(sb, "✓ %s\n", d.Name())
-			}
-		}
-
-		m.output.SetContent(sb.String())
-
-		return m, deleteCurrent(msg)
-
-	case spinner.TickMsg:
 		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
+		m.deleteView, cmd = m.deleteView.Update(msg)
 		return m, cmd
 
+	case spinner.TickMsg:
+		if m.state == stateFetchingDisks {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
+
 	case tea.WindowSizeMsg:
-		helpHeight := lipgloss.Height(m.getHelp())
 		m.providerList.SetSize(msg.Width, msg.Height)
 		m.providerView.SetSize(msg.Width, msg.Height)
-		m.output.Width = msg.Width
-		m.output.Height = msg.Height - 1 - helpHeight
+		m.deleteView.SetSize(msg.Width, msg.Height)
 	}
 
 	var cmd tea.Cmd
@@ -157,6 +136,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case stateProviderView:
 		m.providerView, cmd = m.providerView.Update(msg)
+
+	case stateDeletingDisks:
+		m.deleteView, cmd = m.deleteView.Update(msg)
 	}
 
 	return m, cmd
@@ -169,7 +151,6 @@ func (m Model) getHelp() string {
 }
 
 func (m Model) View() string {
-	var view string
 	switch m.state {
 	case stateProviderList:
 		return m.providerList.View()
@@ -181,13 +162,11 @@ func (m Model) View() string {
 		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	case stateDeletingDisks:
-		view = m.output.View()
+		return m.deleteView.View()
 
 	default:
 		return "WHAT"
 	}
-
-	return lipgloss.JoinVertical(lipgloss.Left, view, m.getHelp())
 }
 
 type loadedDisks struct {
@@ -243,8 +222,8 @@ func deleteCurrent(p deleteProgress) tea.Cmd {
 		p.status[p.cur] = ds
 
 		go func() {
-			d := p.disks[p.cur]
-			ds.err = d.Provider().Delete(context.TODO(), d)
+			// d := p.disks[p.cur]
+			// ds.err = d.Provider().Delete(context.TODO(), d)
 			ds.done = true
 		}()
 	} else if p.status[p.cur].done {
