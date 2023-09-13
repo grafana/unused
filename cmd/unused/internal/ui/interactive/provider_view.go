@@ -75,7 +75,7 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 				for i, r := range rows {
 					disks[i] = r.Data[columnDisk].(unused.Disk)
 				}
-				return m, func() tea.Msg { return disks }
+				return m, sendMsg(disks)
 			}
 
 		case msg.String() == "?":

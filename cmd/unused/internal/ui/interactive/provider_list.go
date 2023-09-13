@@ -67,7 +67,7 @@ func (m providerListModel) Update(msg tea.Msg) (providerListModel, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.sel):
-			return m, func() tea.Msg { return m.list.SelectedItem().(providerItem).Provider }
+			return m, sendMsg(m.list.SelectedItem().(providerItem).Provider)
 
 		case msg.String() == "?":
 			m.help.ShowAll = !m.help.ShowAll

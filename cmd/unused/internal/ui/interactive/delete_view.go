@@ -53,7 +53,7 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.confirm):
 			m.delete = true
-			cmd = tea.Batch(m.spinner.Tick, func() tea.Msg { return deleteNextMsg{} })
+			cmd = tea.Batch(m.spinner.Tick, sendMsg(deleteNextMsg{}))
 		}
 
 	case deleteNextMsg:
@@ -72,7 +72,7 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			m.cur++
 		}
 
-		cmd = tea.Batch(m.spinner.Tick, func() tea.Msg { return deleteNextMsg{} })
+		cmd = tea.Batch(m.spinner.Tick, sendMsg(deleteNextMsg{}))
 
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)

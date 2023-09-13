@@ -61,7 +61,7 @@ func New(providers []unused.Provider, extraColumns []string, key, value string) 
 func (m Model) Init() tea.Cmd {
 	cmds := []tea.Cmd{tea.EnterAltScreen}
 	if m.provider != nil { // No need to show the providers list if there's only one provider
-		cmds = append(cmds, func() tea.Msg { return m.provider })
+		cmds = append(cmds, sendMsg(m.provider))
 	}
 	return tea.Batch(cmds...)
 }
@@ -192,6 +192,10 @@ func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks,
 		return disks
 	}
 }
+
+// sendMsg is a tea.Cmd that will send whatever is passed as an
+// argument as a tea.Msg.
+func sendMsg(msg tea.Msg) tea.Cmd { return func() tea.Msg { return msg } }
 
 func newHelp() help.Model {
 	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
