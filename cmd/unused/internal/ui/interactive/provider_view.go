@@ -25,30 +25,6 @@ var (
 	ageStyle    = lipgloss.NewStyle().Align(lipgloss.Right)
 )
 
-func disksToRows(disks unused.Disks, extraColumns []string) []table.Row {
-	rows := make([]table.Row, len(disks))
-
-	for i, d := range disks {
-		row := table.RowData{
-			columnDisk:   d,
-			columnName:   d.Name(),
-			columnAge:    internal.Age(d.CreatedAt()),
-			columnUnused: internal.Age(d.LastUsedAt()),
-			columnType:   d.DiskType(),
-			columnSize:   d.SizeGB(),
-		}
-
-		meta := d.Meta()
-		for _, c := range extraColumns {
-			row[c] = meta[c]
-		}
-
-		rows[i] = table.NewRow(row)
-	}
-
-	return rows
-}
-
 type providerViewModel struct {
 	table  table.Model
 	help   help.Model
