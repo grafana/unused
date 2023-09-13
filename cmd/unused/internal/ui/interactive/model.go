@@ -34,6 +34,7 @@ type Model struct {
 	extraCols    []string
 	key, value   string
 	help         help.Model
+	err          error
 }
 
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
@@ -116,6 +117,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.providerList.SetSize(msg.Width, msg.Height)
 		m.providerView.SetSize(msg.Width, msg.Height)
 		m.deleteView.SetSize(msg.Width, msg.Height)
+
+	case error:
+		m.err = msg
+		return m, nil
 	}
 
 	var cmd tea.Cmd
@@ -137,6 +142,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
 
 func (m Model) View() string {
+	if m.err != nil {
+		return errorStyle.Render(m.err.Error())
+	}
+
 	switch m.state {
 	case stateProviderList:
 		return m.providerList.View()
