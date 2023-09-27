@@ -3,16 +3,12 @@ package interactive
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
 )
 
@@ -28,22 +24,24 @@ const (
 var _ tea.Model = Model{}
 
 type Model struct {
-	providerList list.Model
-	providerView table.Model
+	providerList providerListModel
+	providerView providerViewModel
+	deleteView   deleteViewModel
 	provider     unused.Provider
 	spinner      spinner.Model
 	disks        map[unused.Provider]unused.Disks
 	state        state
 	extraCols    []string
 	key, value   string
-	output       viewport.Model
 	help         help.Model
+	err          error
 }
 
 func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
-	return Model{
-		providerList: newProviderList(providers),
-		providerView: newProviderView(extraColumns),
+	m := Model{
+		providerList: newProviderListModel(providers),
+		providerView: newProviderViewModel(extraColumns),
+		deleteView:   newDeleteViewModel(),
 		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 		spinner:      spinner.New(),
@@ -52,20 +50,30 @@ func New(providers []unused.Provider, extraColumns []string, key, value string) 
 		value:        value,
 		help:         newHelp(),
 	}
+
+	if len(providers) == 1 {
+		m.provider = providers[0]
+	}
+
+	return m
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.EnterAltScreen
+	cmds := []tea.Cmd{tea.EnterAltScreen}
+	if m.provider != nil { // No need to show the providers list if there's only one provider
+		cmds = append(cmds, sendMsg(m.provider))
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, keyMap.Quit):
+		case key.Matches(msg, navKeys.Quit):
 			return m, tea.Quit
 
-		case key.Matches(msg, keyMap.Back):
+		case key.Matches(msg, navKeys.Back):
 			switch m.state {
 			case stateProviderView:
 				m.state = stateProviderList
@@ -74,86 +82,47 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case stateDeletingDisks:
 				delete(m.disks, m.provider)
 				m.state = stateFetchingDisks
-				return m, tea.Batch(
-					spinner.Tick,
-					loadDisks(m.providerList.SelectedItem().(providerItem).Provider, m.disks, m.key, m.value))
+				return m, tea.Batch(spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
 			}
 
 			return m, nil
-
-		case key.Matches(msg, keyMap.Select):
-			if m.state == stateProviderList {
-				m.providerView = m.providerView.WithRows(nil)
-				m.provider = m.providerList.SelectedItem().(providerItem).Provider
-				m.state = stateFetchingDisks
-
-				return m, tea.Batch(
-					spinner.Tick,
-					loadDisks(m.providerList.SelectedItem().(providerItem).Provider, m.disks, m.key, m.value))
-			}
-
-		case key.Matches(msg, keyMap.Delete):
-			if m.state == stateProviderView {
-				if rows := m.providerView.SelectedRows(); len(rows) > 0 {
-					s := deleteProgress{
-						disks:  make(unused.Disks, 0, len(rows)),
-						status: make([]*deleteStatus, len(rows)),
-					}
-					for _, r := range rows {
-						s.disks = append(s.disks, r.Data[columnDisk].(unused.Disk))
-					}
-
-					m.state = stateDeletingDisks
-					return m, tea.Batch(spinner.Tick, deleteCurrent(s))
-				}
-			}
 		}
 
-	case loadedDisks:
-		// TODO handle error
-		m.providerView = m.providerView.WithRows(disksToRows(msg.disks, m.extraCols))
-		m.state = stateProviderView
+	case unused.Provider:
+		if m.state == stateProviderList {
+			m.provider = msg
+			m.providerView = m.providerView.Empty()
+			m.state = stateFetchingDisks
 
-	case deleteProgress:
-		sb := &strings.Builder{}
-
-		fmt.Fprintf(sb, "Deleting %d disks from %s %s\n\n", len(msg.disks), m.provider.Name(), m.provider.Meta().String())
-
-		for i, d := range msg.disks {
-			s := msg.status[i]
-
-			switch {
-			case s == nil:
-				fmt.Fprintf(sb, "  %s\n", d.Name())
-
-			case msg.cur == i:
-				fmt.Fprintf(sb, "➤ %s %s\n", d.Name(), m.spinner.View())
-
-			case !s.done:
-
-			case s.err != nil:
-				fmt.Fprintf(sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
-
-			default:
-				fmt.Fprintf(sb, "✓ %s\n", d.Name())
-			}
+			return m, tea.Batch(spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
 		}
 
-		m.output.SetContent(sb.String())
+	case unused.Disks:
+		switch m.state {
+		case stateFetchingDisks:
+			m.providerView = m.providerView.WithDisks(msg)
+			m.state = stateProviderView
 
-		return m, deleteCurrent(msg)
+		case stateProviderView:
+			m.deleteView = m.deleteView.WithDisks(m.provider, msg)
+			m.state = stateDeletingDisks
+		}
 
 	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
-		return m, cmd
+		if m.state == stateFetchingDisks {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
 
 	case tea.WindowSizeMsg:
-		helpHeight := lipgloss.Height(m.getHelp())
-		m.providerList.SetSize(msg.Width, msg.Height-helpHeight)
-		m.providerView = m.providerView.WithTargetWidth(msg.Width).WithPageSize(msg.Height - 4 - helpHeight)
-		m.output.Width = msg.Width
-		m.output.Height = msg.Height - 1 - helpHeight
+		m.providerList.SetSize(msg.Width, msg.Height)
+		m.providerView.SetSize(msg.Width, msg.Height)
+		m.deleteView.SetSize(msg.Width, msg.Height)
+
+	case error:
+		m.err = msg
+		return m, nil
 	}
 
 	var cmd tea.Cmd
@@ -164,6 +133,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case stateProviderView:
 		m.providerView, cmd = m.providerView.Update(msg)
+
+	case stateDeletingDisks:
+		m.deleteView, cmd = m.deleteView.Update(msg)
 	}
 
 	return m, cmd
@@ -171,46 +143,38 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
 
-func (m Model) getHelp() string {
-	return m.help.View(keyMap)
-}
-
 func (m Model) View() string {
-	var view string
+	if m.err != nil {
+		return errorStyle.Render(m.err.Error())
+	}
+
 	switch m.state {
 	case stateProviderList:
-		view = m.providerList.View()
+		return m.providerList.View()
 
 	case stateProviderView:
-		view = m.providerView.View()
+		return m.providerView.View()
 
 	case stateFetchingDisks:
-		view = fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
+		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	case stateDeletingDisks:
-		view = m.output.View()
+		return m.deleteView.View()
 
 	default:
 		return "WHAT"
 	}
-
-	return lipgloss.JoinVertical(lipgloss.Left, view, m.getHelp())
-}
-
-type loadedDisks struct {
-	disks unused.Disks
-	err   error
 }
 
 func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks, key, value string) tea.Cmd {
 	return func() tea.Msg {
 		if disks, ok := cache[provider]; ok {
-			return loadedDisks{disks, nil}
+			return disks
 		}
 
 		disks, err := provider.ListUnusedDisks(context.TODO())
 		if err != nil {
-			return loadedDisks{nil, err}
+			return err
 		}
 
 		if key != "" {
@@ -225,41 +189,13 @@ func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks,
 
 		cache[provider] = disks
 
-		return loadedDisks{disks, nil}
+		return disks
 	}
 }
 
-type deleteStatus struct {
-	done bool
-	err  error
-}
-
-type deleteProgress struct {
-	cur    int
-	disks  unused.Disks
-	status []*deleteStatus
-}
-
-func deleteCurrent(p deleteProgress) tea.Cmd {
-	if p.cur == len(p.disks) {
-		return nil
-	}
-
-	if p.status[p.cur] == nil {
-		ds := &deleteStatus{}
-		p.status[p.cur] = ds
-
-		go func() {
-			d := p.disks[p.cur]
-			ds.err = d.Provider().Delete(context.TODO(), d)
-			ds.done = true
-		}()
-	} else if p.status[p.cur].done {
-		p.cur++
-	}
-
-	return func() tea.Msg { return p }
-}
+// sendMsg is a tea.Cmd that will send whatever is passed as an
+// argument as a tea.Msg.
+func sendMsg(msg tea.Msg) tea.Cmd { return func() tea.Msg { return msg } }
 
 func newHelp() help.Model {
 	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
