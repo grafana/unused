@@ -25,13 +25,15 @@ type deleteViewModel struct {
 	disks    unused.Disks
 	cur      int
 	status   []*deleteStatus
+	dryRun   bool
 }
 
-func newDeleteViewModel() deleteViewModel {
+func newDeleteViewModel(dryRun bool) deleteViewModel {
 	return deleteViewModel{
 		help:    newHelp(),
 		confirm: key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "confirm delete")),
 		spinner: spinner.New(),
+		dryRun:  dryRun,
 	}
 }
 
@@ -67,7 +69,7 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			ds = &deleteStatus{}
 			m.status[m.cur] = ds
 
-			return m, deleteDisk(m.provider, m.disks[m.cur], ds)
+			return m, deleteDisk(m.provider, m.disks[m.cur], ds, m.dryRun)
 		} else if ds.done {
 			m.cur++
 		}
@@ -86,9 +88,12 @@ type deleteStatus struct {
 	err  error
 }
 
-func deleteDisk(p unused.Provider, d unused.Disk, s *deleteStatus) tea.Cmd {
+func deleteDisk(p unused.Provider, d unused.Disk, s *deleteStatus, dryRun bool) tea.Cmd {
 	return func() tea.Msg {
-		s.err = d.Provider().Delete(context.TODO(), d)
+		if !dryRun {
+			s.err = d.Provider().Delete(context.TODO(), d)
+		}
+
 		s.done = true
 
 		return deleteNextMsg{}
@@ -107,6 +112,11 @@ func (m deleteViewModel) View() string {
 	} else {
 		confirm := bold.Render("Press `x` to start deleting the following disks:")
 		fmt.Fprintf(sb, "You're about to delete %d disks from %s %s\n%s\n", len(m.disks), m.provider.Name(), m.provider.Meta(), confirm)
+
+		if m.dryRun {
+			dryRun := bold.Render("DISKS WON'T BE DELETED BECAUSE DRY-RUN MODE IS ENABLED")
+			fmt.Fprintf(sb, "\n%s\n\n", dryRun)
+		}
 	}
 
 	for i, d := range m.disks {
