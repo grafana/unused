@@ -37,11 +37,11 @@ type Model struct {
 	err          error
 }
 
-func New(providers []unused.Provider, extraColumns []string, key, value string) Model {
+func New(providers []unused.Provider, extraColumns []string, key, value string, dryRun bool) Model {
 	m := Model{
 		providerList: newProviderListModel(providers),
 		providerView: newProviderViewModel(extraColumns),
-		deleteView:   newDeleteViewModel(),
+		deleteView:   newDeleteViewModel(dryRun),
 		disks:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 		spinner:      spinner.New(),

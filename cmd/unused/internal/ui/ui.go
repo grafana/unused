@@ -16,6 +16,7 @@ type Options struct {
 	Filter       Filter
 	Group        string
 	Verbose      bool
+	DryRun       bool
 }
 
 type DisplayFunc func(ctx context.Context, options Options) error

@@ -19,19 +19,23 @@ type deleteViewModel struct {
 	help     help.Model
 	w, h     int
 	confirm  key.Binding
+	toggle   key.Binding
 	provider unused.Provider
 	spinner  spinner.Model
 	delete   bool
 	disks    unused.Disks
 	cur      int
 	status   []*deleteStatus
+	dryRun   bool
 }
 
-func newDeleteViewModel() deleteViewModel {
+func newDeleteViewModel(dryRun bool) deleteViewModel {
 	return deleteViewModel{
 		help:    newHelp(),
 		confirm: key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "confirm delete")),
+		toggle:  key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "toggle dry-run")),
 		spinner: spinner.New(),
+		dryRun:  dryRun,
 	}
 }
 
@@ -54,6 +58,9 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 		case key.Matches(msg, m.confirm):
 			m.delete = true
 			cmd = tea.Batch(m.spinner.Tick, sendMsg(deleteNextMsg{}))
+
+		case key.Matches(msg, m.toggle):
+			m.dryRun = !m.dryRun
 		}
 
 	case deleteNextMsg:
@@ -67,7 +74,7 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			ds = &deleteStatus{}
 			m.status[m.cur] = ds
 
-			return m, deleteDisk(m.provider, m.disks[m.cur], ds)
+			return m, deleteDisk(m.provider, m.disks[m.cur], ds, m.dryRun)
 		} else if ds.done {
 			m.cur++
 		}
@@ -86,9 +93,12 @@ type deleteStatus struct {
 	err  error
 }
 
-func deleteDisk(p unused.Provider, d unused.Disk, s *deleteStatus) tea.Cmd {
+func deleteDisk(p unused.Provider, d unused.Disk, s *deleteStatus, dryRun bool) tea.Cmd {
 	return func() tea.Msg {
-		s.err = d.Provider().Delete(context.TODO(), d)
+		if !dryRun {
+			s.err = d.Provider().Delete(context.TODO(), d)
+		}
+
 		s.done = true
 
 		return deleteNextMsg{}
@@ -105,8 +115,15 @@ func (m deleteViewModel) View() string {
 	} else if m.cur == len(m.disks) {
 		fmt.Fprintf(sb, "Deleted %d disks from %s %s\n\n", len(m.disks), m.provider.Name(), m.provider.Meta().String())
 	} else {
-		confirm := bold.Render("Press `x` to start deleting the following disks:")
-		fmt.Fprintf(sb, "You're about to delete %d disks from %s %s\n%s\n", len(m.disks), m.provider.Name(), m.provider.Meta(), confirm)
+		fmt.Fprintf(sb, "You're about to delete %d disks from %s %s\n\n", len(m.disks), m.provider.Name(), m.provider.Meta())
+
+		if m.dryRun {
+			fmt.Fprintln(sb, bold.Render("DISKS WON'T BE DELETED BECAUSE DRY-RUN MODE IS ENABLED"))
+		} else {
+			fmt.Fprintln(sb, bold.Render("Press `x` to start deleting the following disks:"))
+		}
+
+		fmt.Fprintf(sb, "\n")
 	}
 
 	for i, d := range m.disks {
@@ -135,7 +152,7 @@ func (m deleteViewModel) View() string {
 }
 
 func (m deleteViewModel) ShortHelp() []key.Binding {
-	return []key.Binding{navKeys.Quit, m.confirm, navKeys.Back}
+	return []key.Binding{navKeys.Quit, m.confirm, m.toggle, navKeys.Back}
 }
 
 func (m deleteViewModel) FullHelp() [][]key.Binding {
