@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"io"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -12,11 +13,10 @@ import (
 	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused/cmd/internal"
 	"github.com/grafana/unused/gcp"
-	"github.com/inkel/logfmt"
 )
 
 func TestCreateProviders(t *testing.T) {
-	l := logfmt.NewLogger(io.Discard)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	t.Run("fail when no provider is given", func(t *testing.T) {
 		ps, err := internal.CreateProviders(context.Background(), l, nil, nil, nil)

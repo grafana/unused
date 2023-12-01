@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -14,13 +15,12 @@ import (
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/gcp"
 	"github.com/grafana/unused/unusedtest"
-	"github.com/inkel/logfmt"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 )
 
 func TestNewProvider(t *testing.T) {
-	l := logfmt.NewLogger(io.Discard)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	t.Run("project is required", func(t *testing.T) {
 		p, err := gcp.NewProvider(l, nil, "", nil)
@@ -48,7 +48,7 @@ func TestNewProvider(t *testing.T) {
 
 func TestProviderListUnusedDisks(t *testing.T) {
 	ctx := context.Background()
-	l := logfmt.NewLogger(io.Discard)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// are we requesting the right API endpoint?
@@ -134,7 +134,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		}
 
 		var buf bytes.Buffer
-		l := logfmt.NewLogger(&buf)
+		l := slog.New(slog.NewTextHandler(&buf, nil))
 
 		p, err := gcp.NewProvider(l, svc, "my-project", nil)
 		if err != nil {
@@ -151,7 +151,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		}
 
 		// check that we logged about it
-		m, _ := regexp.MatchString(`msg="cannot parse disk metadata".+disk="disk-2"`, buf.String())
+		m, _ := regexp.MatchString(`msg="cannot parse disk metadata".+disk=disk-2`, buf.String())
 		if !m {
 			t.Fatal("expecting a log line to be emitted")
 		}

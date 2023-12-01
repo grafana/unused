@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/grafana/unused"
-	"github.com/inkel/logfmt"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -23,7 +23,7 @@ type Provider struct {
 	project string
 	svc     *compute.Service
 	meta    unused.Meta
-	logger  *logfmt.Logger
+	logger  *slog.Logger
 }
 
 // Name returns GCP.
@@ -37,7 +37,7 @@ func (p *Provider) Meta() unused.Meta { return p.meta }
 // A valid GCP compute service must be supplied in order to listed the
 // unused resources. It also requires a valid project ID which should
 // be the project where the disks were created.
-func NewProvider(logger *logfmt.Logger, svc *compute.Service, project string, meta unused.Meta) (*Provider, error) {
+func NewProvider(logger *slog.Logger, svc *compute.Service, project string, meta unused.Meta) (*Provider, error) {
 	if project == "" {
 		return nil, ErrMissingProject
 	}
@@ -69,11 +69,11 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 
 					m, err := diskMetadata(d)
 					if err != nil {
-						p.logger.Log("cannot parse disk metadata", logfmt.Labels{
-							"project": p.project,
-							"disk":    d.Name,
-							"err":     err,
-						})
+						p.logger.Error("cannot parse disk metadata",
+							slog.String("project", p.project),
+							slog.String("disk", d.Name),
+							slog.String("err", err.Error()),
+						)
 					}
 					disks = append(disks, &Disk{d, p, m})
 				}

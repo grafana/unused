@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/grafana/unused/cmd/internal"
-	"github.com/inkel/logfmt"
 )
 
 func main() {
@@ -46,9 +45,7 @@ func main() {
 }
 
 func realMain(ctx context.Context, cfg config) error {
-	// TODO(inkel) pass cfg.Logger instead of old logfmt logger
-	logger := logfmt.NewLogger(os.Stdout)
-	providers, err := internal.CreateProviders(ctx, logger, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
+	providers, err := internal.CreateProviders(ctx, cfg.Logger, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
 	if err != nil {
 		return err
 	}
