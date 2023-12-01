@@ -171,6 +171,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 					slog.Time("created", d.CreatedAt()),
 				}
 				logger.Info("unused disk found", diskLabels...)
+				meta := d.Meta()
 				ns := meta["kubernetes.io/created-for/pvc/namespace"]
 				di := diskInfoByNamespace[ns]
 				if di == nil {
