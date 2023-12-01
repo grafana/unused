@@ -31,6 +31,7 @@ func main() {
 	flag.StringVar(&cfg.Web.Path, "web.path", "/metrics", "path on which to expose metrics")
 	flag.StringVar(&cfg.Web.Address, "web.address", ":8080", "address to expose metrics and web interface")
 	flag.DurationVar(&cfg.Web.Timeout, "web.timeout", 5*time.Second, "timeout for shutting down the server")
+	flag.DurationVar(&cfg.Collector.PollInterval, "collect.interval", 5*60*time.Second, "interval to poll the cloud provider API for unused disks")
 
 	flag.Parse()
 

@@ -32,6 +32,9 @@ func (p *Provider) Name() string { return "GCP" }
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
+// Id returns the GCP project for this provider.
+func (p *Provider) Id() string { return p.project }
+
 // NewProvider creates a new GCP [unused.Provider].
 //
 // A valid GCP compute service must be supplied in order to listed the

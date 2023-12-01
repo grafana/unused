@@ -7,6 +7,9 @@ type Provider interface {
 	// Name returns the provider name.
 	Name() string
 
+	// Id returns the project (GCP) or profile (AWS) or subscription (Azure) for this provider.
+	Id() string
+
 	// ListUnusedDisks returns a list of unused disks for the given
 	// provider.
 	ListUnusedDisks(ctx context.Context) (Disks, error)
