@@ -12,6 +12,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"time"
@@ -22,7 +23,7 @@ import (
 
 func main() {
 	cfg := config{
-		Logger: logfmt.NewLogger(os.Stdout),
+		Logger: slog.New(slog.NewTextHandler(os.Stdout, nil)),
 	}
 
 	internal.ProviderFlags(flag.CommandLine, &cfg.Providers.GCP, &cfg.Providers.AWS, &cfg.Providers.Azure)
@@ -45,7 +46,9 @@ func main() {
 }
 
 func realMain(ctx context.Context, cfg config) error {
-	providers, err := internal.CreateProviders(ctx, cfg.Logger, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
+	// TODO(inkel) pass cfg.Logger instead of old logfmt logger
+	logger := logfmt.NewLogger(os.Stdout)
+	providers, err := internal.CreateProviders(ctx, logger, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
 	if err != nil {
 		return err
 	}

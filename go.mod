@@ -1,6 +1,6 @@
 module github.com/grafana/unused
 
-go 1.18
+go 1.21
 
 require (
 	github.com/Azure/azure-sdk-for-go v63.0.0+incompatible

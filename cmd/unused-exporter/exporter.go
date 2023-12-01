@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/grafana/unused"
-	"github.com/inkel/logfmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -15,7 +15,7 @@ const namespace = "unused"
 
 type exporter struct {
 	ctx    context.Context
-	logger *logfmt.Logger
+	logger *slog.Logger
 
 	timeout time.Duration
 
@@ -82,11 +82,12 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			defer wg.Done()
 
 			meta := p.Meta()
-			labels := logfmt.Labels{
-				"provider": p.Name(),
-				"metadata": meta,
-			}
-			e.logger.Log("collecting metrics", labels)
+			logger := e.logger.With(
+				slog.String("provider", p.Name()),
+				slog.String("metadata", meta.String()),
+			)
+
+			logger.Info("collecting metrics")
 
 			start := time.Now()
 			disks, err := p.ListUnusedDisks(ctx)
@@ -112,8 +113,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			var success int = 1
 
 			if err != nil {
-				labels["error"] = err
-				e.logger.Log("failed to collect metrics", labels)
+				logger.Error("failed to collect metrics", slog.String("error", err.Error()))
 				success = 0
 			}
 
@@ -123,16 +123,16 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 
 			countByNamespace := make(map[string]int)
 			for _, d := range disks {
-				labels := logfmt.Labels{
-					"provider": d.Provider().Name(),
-					"name":     d.Name(),
-					"created":  d.CreatedAt(),
+				labels := []any{
+					slog.String("provider", d.Provider().Name()),
+					slog.String("name", d.Name()),
+					slog.Time("created", d.CreatedAt()),
 				}
 				meta := d.Meta()
 				for _, k := range meta.Keys() {
-					labels[k] = meta[k]
+					labels = append(labels, slog.String(k, meta[k]))
 				}
-				e.logger.Log("unused disk found", labels)
+				logger.Info("unused disk found", labels...)
 				countByNamespace[meta["kubernetes.io/created-for/pvc/namespace"]] += 1
 			}
 			for ns, c := range countByNamespace {
