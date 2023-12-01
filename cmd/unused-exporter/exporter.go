@@ -13,6 +13,12 @@ import (
 
 const namespace = "unused"
 
+type metric struct {
+	desc   *prometheus.Desc
+	value  int64
+	labels []string
+}
+
 type exporter struct {
 	ctx    context.Context
 	logger *slog.Logger
@@ -26,6 +32,9 @@ type exporter struct {
 	size  *prometheus.Desc
 	dur   *prometheus.Desc
 	suc   *prometheus.Desc
+
+	mu    sync.RWMutex
+	cache map[unused.Provider][]metric
 }
 
 func registerExporter(ctx context.Context, providers []unused.Provider, cfg config) error {
