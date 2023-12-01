@@ -41,7 +41,7 @@ func CreateProviders(ctx context.Context, logger *slog.Logger, gcpProjects, awsP
 			return nil, fmt.Errorf("cannot load AWS config for profile %s: %w", profile, err)
 		}
 
-		p, err := aws.NewProvider(ec2.NewFromConfig(cfg), profile, map[string]string{"profile": profile})
+		p, err := aws.NewProvider(ec2.NewFromConfig(cfg), profile, nil)
 		if err != nil {
 			return nil, fmt.Errorf("creating AWS provider for profile %s: %w", profile, err)
 		}
