@@ -112,7 +112,6 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			ctx, cancel := context.WithTimeout(e.ctx, e.timeout)
 			defer cancel()
 
-			meta := p.Meta()
 			logger := e.logger.With(
 				slog.String("provider", p.Name()),
 				slog.String("provider_id", p.Id()),
@@ -125,17 +124,6 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			dur := time.Since(start)
 
 			name := strings.ToLower(p.Name())
-			var pid string
-			switch name {
-			case "gcp":
-				pid = meta["project"]
-			case "aws":
-				pid = meta["profile"]
-			case "azure":
-				pid = meta["subscription"]
-			default:
-				pid = meta.String()
-			}
 
 			var ms []metric // TODO we can optimize this creation here and allocate memory only once
 
@@ -143,7 +131,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				ms = append(ms, metric{
 					desc:   d,
 					value:  v,
-					labels: append([]string{name, pid}, lbls...),
+					labels: append([]string{name, p.Id()}, lbls...),
 				})
 			}
 
