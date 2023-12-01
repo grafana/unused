@@ -1,6 +1,6 @@
 module github.com/grafana/unused
 
-go 1.18
+go 1.21
 
 require (
 	github.com/Azure/azure-sdk-for-go v63.0.0+incompatible
@@ -14,7 +14,6 @@ require (
 	github.com/charmbracelet/bubbletea v0.20.0
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/evertras/bubble-table v0.12.0
-	github.com/inkel/logfmt v0.0.2
 	github.com/prometheus/client_golang v1.12.1
 	google.golang.org/api v0.114.0
 )

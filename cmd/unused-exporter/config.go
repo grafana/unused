@@ -1,10 +1,10 @@
 package main
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/grafana/unused/cmd/internal"
-	"github.com/inkel/logfmt"
 )
 
 type config struct {
@@ -24,5 +24,5 @@ type config struct {
 		Timeout time.Duration
 	}
 
-	Logger *logfmt.Logger
+	Logger *slog.Logger
 }

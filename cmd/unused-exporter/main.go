@@ -12,17 +12,17 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/grafana/unused/cmd/internal"
-	"github.com/inkel/logfmt"
 )
 
 func main() {
 	cfg := config{
-		Logger: logfmt.NewLogger(os.Stdout),
+		Logger: slog.New(slog.NewTextHandler(os.Stdout, nil)),
 	}
 
 	internal.ProviderFlags(flag.CommandLine, &cfg.Providers.GCP, &cfg.Providers.AWS, &cfg.Providers.Azure)

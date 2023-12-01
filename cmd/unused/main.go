@@ -17,13 +17,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
 
 	"github.com/grafana/unused/cmd/internal"
 	"github.com/grafana/unused/cmd/unused/internal/ui"
-	"github.com/inkel/logfmt"
 )
 
 func main() {
@@ -69,7 +69,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	logger := logfmt.NewLogger(os.Stderr)
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
 	providers, err := internal.CreateProviders(ctx, logger, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
