@@ -23,6 +23,7 @@ type exporter struct {
 
 	info  *prometheus.Desc
 	count *prometheus.Desc
+	size  *prometheus.Desc
 	dur   *prometheus.Desc
 	suc   *prometheus.Desc
 }
@@ -48,6 +49,12 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 			append(labels, "k8s_namespace"),
 			nil),
 
+		size: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "disks", "size_gb"),
+			"Total size of unused disks in this provider in GB",
+			append(labels, "k8s_namespace", "type"),
+			nil),
+
 		dur: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "provider", "duration_ms"),
 			"How long in milliseconds took to fetch this provider information",
@@ -67,6 +74,7 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.info
 	ch <- e.count
+	ch <- e.size
 	ch <- e.dur
 }
 
@@ -121,7 +129,12 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			emit(e.dur, int(dur.Microseconds()))
 			emit(e.suc, success)
 
-			countByNamespace := make(map[string]int)
+			type namespaceInfo struct {
+				Count      int
+				SizeByType map[unused.DiskType]int64
+			}
+
+			diskInfoByNamespace := make(map[string]*namespaceInfo)
 			for _, d := range disks {
 				labels := []any{
 					slog.String("provider", d.Provider().Name()),
@@ -133,10 +146,23 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 					labels = append(labels, slog.String(k, meta[k]))
 				}
 				logger.Info("unused disk found", labels...)
-				countByNamespace[meta["kubernetes.io/created-for/pvc/namespace"]] += 1
+				ns := meta["kubernetes.io/created-for/pvc/namespace"]
+				di := diskInfoByNamespace[ns]
+				if di == nil {
+					di = &namespaceInfo{
+						SizeByType: make(map[unused.DiskType]int64),
+					}
+					diskInfoByNamespace[ns] = di
+				}
+
+				di.Count += 1
+				di.SizeByType[d.DiskType()] += int64(d.SizeGB())
 			}
-			for ns, c := range countByNamespace {
-				ch <- prometheus.MustNewConstMetric(e.count, prometheus.GaugeValue, float64(c), name, pid, ns)
+			for ns, di := range diskInfoByNamespace {
+				ch <- prometheus.MustNewConstMetric(e.count, prometheus.GaugeValue, float64(di.Count), name, pid, ns)
+				for diskType, diskSize := range di.SizeByType {
+					ch <- prometheus.MustNewConstMetric(e.size, prometheus.GaugeValue, float64(diskSize), name, pid, ns, string(diskType))
+				}
 			}
 		}(p)
 	}
