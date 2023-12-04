@@ -29,7 +29,7 @@ func NewProvider(name string, id string, meta unused.Meta, disks ...unused.Disk)
 
 func (p *Provider) Name() string { return p.name }
 
-func (p *Provider) Id() string { return p.id }
+func (p *Provider) ID() string { return p.id }
 
 func (p *Provider) Meta() unused.Meta { return p.meta }
 

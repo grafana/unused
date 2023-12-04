@@ -15,9 +15,8 @@ const ResourceGroupMetaKey = "resource-group"
 
 // Providcer implements [unused.Provider] for Azure.
 type Provider struct {
-	client       compute.DisksClient
-	subscription string
-	meta         unused.Meta
+	client compute.DisksClient
+	meta   unused.Meta
 }
 
 // Name returns Azure.
@@ -27,7 +26,7 @@ func (p *Provider) Name() string { return "Azure" }
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
 // Id returns the subscription for this provider.
-func (p *Provider) Id() string { return p.subscription }
+func (p *Provider) ID() string { return p.client.SubscriptionID }
 
 // NewProvider creates a new Azure [unused.Provider].
 //
@@ -38,7 +37,7 @@ func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error
 		meta = make(unused.Meta)
 	}
 
-	return &Provider{client: client, subscription: client.SubscriptionID, meta: meta}, nil
+	return &Provider{client: client, meta: meta}, nil
 }
 
 // ListUnusedDisks returns all the Azure compute disks that are not

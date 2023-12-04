@@ -30,6 +30,10 @@ func TestNewProvider(t *testing.T) {
 	if p == nil {
 		t.Fatal("expecting Provider, got nil")
 	}
+
+	if exp, got := "my-profile", p.ID(); exp != got {
+		t.Fatalf("provider id was incorrect, exp: %v, got: %v", exp, got)
+	}
 }
 
 func TestProviderMeta(t *testing.T) {

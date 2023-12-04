@@ -25,8 +25,8 @@ func (p *Provider) Name() string { return "AWS" }
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
-// Id returns the profile of this provider.
-func (p *Provider) Id() string { return p.profile }
+// ID returns the profile of this provider.
+func (p *Provider) ID() string { return p.profile }
 
 // NewProvider creates a new AWS [unused.Provider].
 //

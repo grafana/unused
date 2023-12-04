@@ -114,7 +114,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 
 			logger := e.logger.With(
 				slog.String("provider", p.Name()),
-				slog.String("provider_id", p.Id()),
+				slog.String("provider_id", p.ID()),
 			)
 
 			logger.Info("collecting metrics")
@@ -131,7 +131,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				ms = append(ms, metric{
 					desc:   d,
 					value:  v,
-					labels: append([]string{name, p.Id()}, lbls...),
+					labels: append([]string{name, p.ID()}, lbls...),
 				})
 			}
 
@@ -193,7 +193,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 	defer e.mu.RUnlock()
 
 	for p, ms := range e.cache {
-		e.logger.Info("reading provider cache", slog.String("provider", p.Name()), slog.String("provider_id", p.Id()), slog.Int("metrics", len(ms)))
+		e.logger.Info("reading provider cache", slog.String("provider", p.Name()), slog.String("provider_id", p.ID()), slog.Int("metrics", len(ms)))
 
 		for _, m := range ms {
 			ch <- prometheus.MustNewConstMetric(m.desc, prometheus.GaugeValue, float64(m.value), m.labels...)

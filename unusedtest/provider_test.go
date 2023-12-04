@@ -33,8 +33,8 @@ func TestNewProvider(t *testing.T) {
 			t.Errorf("unexpected provider.Name() %q", p.Name())
 		}
 
-		if p.Id() != tt.id {
-			t.Errorf("unexpected provider.Id() %q", p.Id())
+		if p.ID() != tt.id {
+			t.Errorf("unexpected provider.ID() %q", p.ID())
 		}
 
 		disks, err := p.ListUnusedDisks(ctx)
