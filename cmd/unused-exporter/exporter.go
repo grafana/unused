@@ -173,7 +173,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 
 			var ms []metric // TODO we can optimize this creation here and allocate memory only once
 
-			emit := func(d *prometheus.Desc, v int64, lbls ...string) {
+			addMetric := func(d *prometheus.Desc, v int64, lbls ...string) {
 				ms = append(ms, metric{
 					desc:   d,
 					value:  v,
@@ -181,14 +181,14 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				})
 			}
 
-			emit(e.info, 1)
-			emit(e.dur, int64(dur.Microseconds()))
-			emit(e.suc, success)
+			addMetric(e.info, 1)
+			addMetric(e.dur, int64(dur.Microseconds()))
+			addMetric(e.suc, success)
 
 			for ns, di := range diskInfoByNamespace {
-				emit(e.count, int64(di.Count), ns)
+				addMetric(e.count, int64(di.Count), ns)
 				for diskType, diskSize := range di.SizeByType {
-					emit(e.size, diskSize, ns, string(diskType))
+					addMetric(e.size, diskSize, ns, string(diskType))
 				}
 			}
 
