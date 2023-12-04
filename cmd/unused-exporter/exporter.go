@@ -23,7 +23,8 @@ type exporter struct {
 	ctx    context.Context
 	logger *slog.Logger
 
-	timeout time.Duration
+	timeout      time.Duration
+	pollInterval time.Duration
 
 	providers []unused.Provider
 
@@ -41,10 +42,11 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 	labels := []string{"provider", "provider_id"}
 
 	e := &exporter{
-		ctx:       ctx,
-		logger:    cfg.Logger,
-		providers: providers,
-		timeout:   cfg.Collector.Timeout,
+		ctx:          ctx,
+		logger:       cfg.Logger,
+		providers:    providers,
+		timeout:      cfg.Collector.Timeout,
+		pollInterval: cfg.Collector.PollInterval,
 
 		info: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "provider", "info"),
@@ -95,9 +97,7 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (e *exporter) pollProvider(p unused.Provider) {
-	// TODO(inkel) make this a configuration value
-	interval := 5 * time.Minute
-	tick := time.NewTicker(interval)
+	tick := time.NewTicker(e.pollInterval)
 	defer tick.Stop()
 
 	for {
@@ -112,10 +112,9 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			ctx, cancel := context.WithTimeout(e.ctx, e.timeout)
 			defer cancel()
 
-			meta := p.Meta()
 			logger := e.logger.With(
 				slog.String("provider", p.Name()),
-				slog.String("metadata", meta.String()),
+				slog.String("provider_id", p.ID()),
 			)
 
 			logger.Info("collecting metrics")
@@ -125,17 +124,6 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			dur := time.Since(start)
 
 			name := strings.ToLower(p.Name())
-			var pid string
-			switch name {
-			case "gcp":
-				pid = meta["project"]
-			case "aws":
-				pid = meta["profile"]
-			case "azure":
-				pid = meta["subscription"]
-			default:
-				pid = meta.String()
-			}
 
 			var ms []metric // TODO we can optimize this creation here and allocate memory only once
 
@@ -143,7 +131,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				ms = append(ms, metric{
 					desc:   d,
 					value:  v,
-					labels: append([]string{name, pid}, lbls...),
+					labels: append([]string{name, p.ID()}, lbls...),
 				})
 			}
 
@@ -165,16 +153,13 @@ func (e *exporter) pollProvider(p unused.Provider) {
 
 			diskInfoByNamespace := make(map[string]*namespaceInfo)
 			for _, d := range disks {
-				labels := []any{
-					slog.String("provider", d.Provider().Name()),
+				diskLabels := []any{
 					slog.String("name", d.Name()),
+					slog.Int("size_gb", d.SizeGB()),
 					slog.Time("created", d.CreatedAt()),
 				}
+				logger.Info("unused disk found", diskLabels...)
 				meta := d.Meta()
-				for _, k := range meta.Keys() {
-					labels = append(labels, slog.String(k, meta[k]))
-				}
-				logger.Info("unused disk found", labels...)
 				ns := meta["kubernetes.io/created-for/pvc/namespace"]
 				di := diskInfoByNamespace[ns]
 				if di == nil {
@@ -208,7 +193,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 	defer e.mu.RUnlock()
 
 	for p, ms := range e.cache {
-		e.logger.Info("reading provider cache", slog.String("provider", p.Name()), slog.Int("metrics", len(ms)))
+		e.logger.Info("reading provider cache", slog.String("provider", p.Name()), slog.String("provider_id", p.ID()), slog.Int("metrics", len(ms)))
 
 		for _, m := range ms {
 			ch <- prometheus.MustNewConstMetric(m.desc, prometheus.GaugeValue, float64(m.value), m.labels...)

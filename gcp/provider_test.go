@@ -32,6 +32,20 @@ func TestNewProvider(t *testing.T) {
 		}
 	})
 
+	t.Run("provider information is correct", func(t *testing.T) {
+		p, err := gcp.NewProvider(l, nil, "my-project", unused.Meta{})
+		if err != nil {
+			t.Fatalf("error creating provider: %v", err)
+		}
+		if p == nil {
+			t.Fatalf("error creating provider, provider is nil")
+		}
+
+		if exp, got := "my-project", p.ID(); exp != got {
+			t.Fatalf("provider id was incorrect, exp: %v, got: %v", exp, got)
+		}
+	})
+
 	t.Run("metadata", func(t *testing.T) {
 		err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
 			svc, err := compute.NewService(context.Background(), option.WithAPIKey("123abc"))
