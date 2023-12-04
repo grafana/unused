@@ -12,10 +12,6 @@ import (
 	"github.com/grafana/unused/unusedtest"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 func TestNewProvider(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -108,7 +104,8 @@ func TestProviderDelete(t *testing.T) {
 
 	t.Run("random", func(t *testing.T) {
 		p, disks := setup()
-		run(t, p, disks, rand.Intn(len(disks)))
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		run(t, p, disks, r.Intn(len(disks)))
 	})
 
 	t.Run("not found", func(t *testing.T) {

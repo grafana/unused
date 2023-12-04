@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/grafana/unused"
-	"google.golang.org/api/compute/v1"
+	compute "google.golang.org/api/compute/v1"
 )
 
 // ensure we are properly defining the interface

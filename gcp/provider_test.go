@@ -15,7 +15,7 @@ import (
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/gcp"
 	"github.com/grafana/unused/unusedtest"
-	"google.golang.org/api/compute/v1"
+	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 )
 
@@ -83,7 +83,10 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		}
 
 		b, _ := json.Marshal(res)
-		w.Write(b)
+		_, err := w.Write(b)
+		if err != nil {
+			t.Fatalf("unexpected error writing response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -138,7 +141,10 @@ func TestProviderListUnusedDisks(t *testing.T) {
 			}
 
 			b, _ := json.Marshal(res)
-			w.Write(b)
+			_, err := w.Write(b)
+			if err != nil {
+				t.Fatalf("unexpected error writing response %v", err)
+			}
 		}))
 		defer ts.Close()
 

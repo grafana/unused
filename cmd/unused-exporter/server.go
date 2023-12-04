@@ -31,8 +31,9 @@ func runWebServer(ctx context.Context, cfg config) error {
 	})
 
 	srv := &http.Server{
-		Addr:    cfg.Web.Address,
-		Handler: mux,
+		ReadTimeout: 1 * time.Second,
+		Addr:        cfg.Web.Address,
+		Handler:     mux,
 	}
 
 	listenErr := make(chan error)

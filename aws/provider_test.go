@@ -56,7 +56,7 @@ func TestListUnusedDisks(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// How cannot love you, AWS
-		w.Write([]byte(`<DescribeVolumesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
+		_, err := w.Write([]byte(`<DescribeVolumesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
    <volumeSet>
       <item>
@@ -105,6 +105,9 @@ func TestListUnusedDisks(t *testing.T) {
       </item>
    </volumeSet>
 </DescribeVolumesResponse>`))
+		if err != nil {
+			t.Fatalf("unexpected error writing response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
