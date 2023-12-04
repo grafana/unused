@@ -112,11 +112,13 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			var (
 				providerName = strings.ToLower(p.Name())
 				providerID   = p.ID()
-			)
 
-			logger := e.logger.With(
-				slog.String("provider", providerName),
-				slog.String("provider_id", providerID),
+				success int64 = 1
+
+				logger = e.logger.With(
+					slog.String("provider", providerName),
+					slog.String("provider_id", providerID),
+				)
 			)
 
 			logger.Info("collecting metrics")
@@ -136,8 +138,6 @@ func (e *exporter) pollProvider(p unused.Provider) {
 					labels: append([]string{providerName, providerID}, lbls...),
 				})
 			}
-
-			var success int64 = 1
 
 			if err != nil {
 				logger.Error("failed to collect metrics", slog.String("error", err.Error()))
