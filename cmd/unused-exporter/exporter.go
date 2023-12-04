@@ -149,11 +149,11 @@ func (e *exporter) pollProvider(p unused.Provider) {
 
 				meta := d.Meta()
 				if e.verbose {
-					groupLabels := make([]any, len(meta))
+					diskMetaLabels := make([]any, 0, len(meta))
 					for _, k := range meta.Keys() {
-						groupLabels = append(groupLabels, slog.String(k, meta[k]))
+						diskMetaLabels = append(diskMetaLabels, slog.String(k, meta[k]))
 					}
-					diskLabels = append(diskLabels, slog.Group("meta", groupLabels...))
+					diskLabels = append(diskLabels, diskMetaLabels...)
 				}
 
 				logger.Info("unused disk found", diskLabels...)
@@ -214,9 +214,11 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 
 		if e.verbose {
 			providerMeta := p.Meta()
+			providerMetaLabels := make([]any, 0, len(providerMeta))
 			for _, k := range providerMeta.Keys() {
-				labels = append(labels, slog.String(k, providerMeta[k]))
+				providerMetaLabels = append(providerMetaLabels, slog.String(k, providerMeta[k]))
 			}
+			labels = append(labels, providerMetaLabels...)
 		}
 
 		e.logger.Info("reading provider cache", labels...)
