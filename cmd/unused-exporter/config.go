@@ -21,8 +21,10 @@ type config struct {
 	}
 
 	Collector struct {
-		Timeout time.Duration
+		Timeout      time.Duration
+		PollInterval time.Duration
 	}
 
-	Logger *slog.Logger
+	Logger         *slog.Logger
+	VerboseLogging bool
 }

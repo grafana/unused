@@ -22,13 +22,17 @@ func TestNewProvider(t *testing.T) {
 		t.Fatalf("cannot load AWS config: %v", err)
 	}
 
-	p, err := aws.NewProvider(ec2.NewFromConfig(cfg), nil)
+	p, err := aws.NewProvider(ec2.NewFromConfig(cfg), "my-profile", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if p == nil {
 		t.Fatal("expecting Provider, got nil")
+	}
+
+	if exp, got := "my-profile", p.ID(); exp != got {
+		t.Fatalf("provider id was incorrect, exp: %v, got: %v", exp, got)
 	}
 }
 
@@ -40,7 +44,7 @@ func TestProviderMeta(t *testing.T) {
 			t.Fatalf("cannot load AWS config: %v", err)
 		}
 
-		return aws.NewProvider(ec2.NewFromConfig(cfg), meta)
+		return aws.NewProvider(ec2.NewFromConfig(cfg), "my-profile", meta)
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -121,7 +125,7 @@ func TestListUnusedDisks(t *testing.T) {
 		t.Fatalf("cannot load AWS config: %v", err)
 	}
 
-	p, err := aws.NewProvider(ec2.NewFromConfig(cfg), nil)
+	p, err := aws.NewProvider(ec2.NewFromConfig(cfg), "my-profile", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

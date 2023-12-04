@@ -19,9 +19,10 @@ func init() {
 func TestNewProvider(t *testing.T) {
 	tests := []struct {
 		name  string
+		id    string
 		disks unused.Disks
 	}{
-		{"no-disks", nil},
+		{"no-disks", "my-id", nil},
 	}
 
 	for _, tt := range tests {
@@ -30,6 +31,10 @@ func TestNewProvider(t *testing.T) {
 
 		if p.Name() != tt.name {
 			t.Errorf("unexpected provider.Name() %q", p.Name())
+		}
+
+		if p.ID() != tt.id {
+			t.Errorf("unexpected provider.ID() %q", p.ID())
 		}
 
 		disks, err := p.ListUnusedDisks(ctx)
