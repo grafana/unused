@@ -96,6 +96,11 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.dur
 }
 
+type namespaceInfo struct {
+	Count      int
+	SizeByType map[unused.DiskType]int64
+}
+
 func (e *exporter) pollProvider(p unused.Provider) {
 	tick := time.NewTicker(e.pollInterval)
 	defer tick.Stop()
@@ -147,11 +152,6 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			emit(e.info, 1)
 			emit(e.dur, int64(dur.Microseconds()))
 			emit(e.suc, success)
-
-			type namespaceInfo struct {
-				Count      int
-				SizeByType map[unused.DiskType]int64
-			}
 
 			diskInfoByNamespace := make(map[string]*namespaceInfo)
 			for _, d := range disks {
