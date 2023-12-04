@@ -20,8 +20,9 @@ type metric struct {
 }
 
 type exporter struct {
-	ctx    context.Context
-	logger *slog.Logger
+	ctx     context.Context
+	logger  *slog.Logger
+	verbose bool
 
 	timeout      time.Duration
 	pollInterval time.Duration
@@ -44,6 +45,7 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 	e := &exporter{
 		ctx:          ctx,
 		logger:       cfg.Logger,
+		verbose:      cfg.VerboseLogging,
 		providers:    providers,
 		timeout:      cfg.Collector.Timeout,
 		pollInterval: cfg.Collector.PollInterval,
@@ -144,8 +146,16 @@ func (e *exporter) pollProvider(p unused.Provider) {
 					slog.Int("size_gb", d.SizeGB()),
 					slog.Time("created", d.CreatedAt()),
 				}
-				logger.Info("unused disk found", diskLabels...)
+
 				meta := d.Meta()
+				if e.verbose {
+					for _, k := range meta.Keys() {
+						diskLabels = append(diskLabels, slog.String(k, meta[k]))
+					}
+				}
+
+				logger.Info("unused disk found", diskLabels...)
+
 				ns := meta["kubernetes.io/created-for/pvc/namespace"]
 				di := diskInfoByNamespace[ns]
 				if di == nil {
@@ -194,7 +204,20 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 	defer e.mu.RUnlock()
 
 	for p, ms := range e.cache {
-		e.logger.Info("reading provider cache", slog.String("provider", p.Name()), slog.String("provider_id", p.ID()), slog.Int("metrics", len(ms)))
+		labels := []any{
+			slog.String("provider", p.Name()),
+			slog.String("provider_id", p.ID()),
+			slog.Int("metrics", len(ms)),
+		}
+
+		if e.verbose {
+			providerMeta := p.Meta()
+			for _, k := range providerMeta.Keys() {
+				labels = append(labels, slog.String(k, providerMeta[k]))
+			}
+		}
+
+		e.logger.Info("reading provider cache", labels...)
 
 		for _, m := range ms {
 			ch <- prometheus.MustNewConstMetric(m.desc, prometheus.GaugeValue, float64(m.value), m.labels...)

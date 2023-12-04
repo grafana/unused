@@ -27,6 +27,7 @@ func main() {
 
 	internal.ProviderFlags(flag.CommandLine, &cfg.Providers.GCP, &cfg.Providers.AWS, &cfg.Providers.Azure)
 
+	flag.BoolVar(&cfg.VerboseLogging, "verbose", false, "add verbose logging information")
 	flag.DurationVar(&cfg.Collector.Timeout, "collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
 	flag.StringVar(&cfg.Web.Path, "web.path", "/metrics", "path on which to expose metrics")
 	flag.StringVar(&cfg.Web.Address, "web.address", ":8080", "address to expose metrics and web interface")
