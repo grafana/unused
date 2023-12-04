@@ -127,31 +127,15 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			)
 
 			logger.Info("collecting metrics")
-
 			ctx, cancel := context.WithTimeout(e.ctx, e.timeout)
 			start := time.Now()
 			disks, err := p.ListUnusedDisks(ctx)
 			cancel() // release resources early
 			dur := time.Since(start)
-
-			var ms []metric // TODO we can optimize this creation here and allocate memory only once
-
-			emit := func(d *prometheus.Desc, v int64, lbls ...string) {
-				ms = append(ms, metric{
-					desc:   d,
-					value:  v,
-					labels: append([]string{providerName, providerID}, lbls...),
-				})
-			}
-
 			if err != nil {
 				logger.Error("failed to collect metrics", slog.String("error", err.Error()))
 				success = 0
 			}
-
-			emit(e.info, 1)
-			emit(e.dur, int64(dur.Microseconds()))
-			emit(e.suc, success)
 
 			diskInfoByNamespace := make(map[string]*namespaceInfo)
 			for _, d := range disks {
@@ -174,6 +158,21 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				di.Count += 1
 				di.SizeByType[d.DiskType()] += int64(d.SizeGB())
 			}
+
+			var ms []metric // TODO we can optimize this creation here and allocate memory only once
+
+			emit := func(d *prometheus.Desc, v int64, lbls ...string) {
+				ms = append(ms, metric{
+					desc:   d,
+					value:  v,
+					labels: append([]string{providerName, providerID}, lbls...),
+				})
+			}
+
+			emit(e.info, 1)
+			emit(e.dur, int64(dur.Microseconds()))
+			emit(e.suc, success)
+
 			for ns, di := range diskInfoByNamespace {
 				emit(e.count, int64(di.Count), ns)
 				for diskType, diskSize := range di.SizeByType {
