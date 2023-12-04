@@ -149,9 +149,11 @@ func (e *exporter) pollProvider(p unused.Provider) {
 
 				meta := d.Meta()
 				if e.verbose {
+					groupLabels := make([]any, len(meta))
 					for _, k := range meta.Keys() {
-						diskLabels = append(diskLabels, slog.String(k, meta[k]))
+						groupLabels = append(groupLabels, slog.String(k, meta[k]))
 					}
+					diskLabels = append(diskLabels, slog.Group("meta", groupLabels...))
 				}
 
 				logger.Info("unused disk found", diskLabels...)
