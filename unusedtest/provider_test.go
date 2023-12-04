@@ -27,7 +27,7 @@ func TestNewProvider(t *testing.T) {
 
 	for _, tt := range tests {
 		ctx := context.Background()
-		p := unusedtest.NewProvider(tt.name, "my-id", nil, tt.disks...)
+		p := unusedtest.NewProvider(tt.name, nil, tt.disks...)
 
 		if p.Name() != tt.name {
 			t.Errorf("unexpected provider.Name() %q", p.Name())
@@ -61,7 +61,7 @@ func TestProviderDelete(t *testing.T) {
 		now := time.Now()
 
 		disks := make(unused.Disks, 10)
-		p := unusedtest.NewProvider("my-provider", "my-id", nil, disks...)
+		p := unusedtest.NewProvider("my-provider", nil, disks...)
 		for i := 0; i < cap(disks); i++ {
 			disks[i] = unusedtest.NewDisk(fmt.Sprintf("disk-%03d", i), p, now)
 		}
@@ -132,7 +132,7 @@ func TestTestProviderMeta(t *testing.T) {
 
 	t.Run("returns nil metadata", func(t *testing.T) {
 		err := unusedtest.TestProviderMeta(func(unused.Meta) (unused.Provider, error) {
-			p := unusedtest.NewProvider("my-provider", "my-id", nil)
+			p := unusedtest.NewProvider("my-provider", nil)
 			p.SetMeta(nil)
 			return p, nil
 		})
@@ -149,7 +149,7 @@ func TestTestProviderMeta(t *testing.T) {
 				newMeta[k] = v
 				newMeta[v] = k
 			}
-			return unusedtest.NewProvider("my-provider", "my-id", newMeta), nil
+			return unusedtest.NewProvider("my-provider", newMeta), nil
 		})
 		if err == nil {
 			t.Fatal("expecting error")
@@ -163,7 +163,7 @@ func TestTestProviderMeta(t *testing.T) {
 			for k := range meta {
 				newMeta[k] = k
 			}
-			return unusedtest.NewProvider("my-provider", "my-id", newMeta), nil
+			return unusedtest.NewProvider("my-provider", newMeta), nil
 		})
 		if err == nil {
 			t.Fatal("expecting error")
@@ -172,7 +172,7 @@ func TestTestProviderMeta(t *testing.T) {
 
 	t.Run("passes all testes", func(t *testing.T) {
 		err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
-			return unusedtest.NewProvider("my-provider", "my-id", meta), nil
+			return unusedtest.NewProvider("my-provider", meta), nil
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
