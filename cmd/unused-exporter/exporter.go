@@ -114,9 +114,6 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				providerID   = p.ID()
 			)
 
-			ctx, cancel := context.WithTimeout(e.ctx, e.timeout)
-			defer cancel()
-
 			logger := e.logger.With(
 				slog.String("provider", providerName),
 				slog.String("provider_id", providerID),
@@ -124,8 +121,10 @@ func (e *exporter) pollProvider(p unused.Provider) {
 
 			logger.Info("collecting metrics")
 
+			ctx, cancel := context.WithTimeout(e.ctx, e.timeout)
 			start := time.Now()
 			disks, err := p.ListUnusedDisks(ctx)
+			cancel() // release resources early
 			dur := time.Since(start)
 
 			var ms []metric // TODO we can optimize this creation here and allocate memory only once
