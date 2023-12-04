@@ -8,7 +8,7 @@ import (
 )
 
 func TestDisk(t *testing.T) {
-	p := unusedtest.NewProvider("my-provider", "my-id", nil)
+	p := unusedtest.NewProvider("my-provider", nil)
 	createdAt := time.Now().Round(0)
 	d := unusedtest.NewDisk("my-disk", p, createdAt)
 

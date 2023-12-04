@@ -25,5 +25,6 @@ type config struct {
 		PollInterval time.Duration
 	}
 
-	Logger *slog.Logger
+	Logger         *slog.Logger
+	VerboseLogging bool
 }

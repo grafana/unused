@@ -12,9 +12,9 @@ func TestDisksSort(t *testing.T) {
 	var (
 		now = time.Now()
 
-		foo = unusedtest.NewProvider("foo", "foo-id", nil)
-		baz = unusedtest.NewProvider("baz", "baz-id", nil)
-		bar = unusedtest.NewProvider("bar", "bar-id", nil)
+		foo = unusedtest.NewProvider("foo", nil)
+		baz = unusedtest.NewProvider("baz", nil)
+		bar = unusedtest.NewProvider("bar", nil)
 
 		gcp = unusedtest.NewDisk("ghi", foo, now.Add(-10*time.Minute))
 		aws = unusedtest.NewDisk("abc", baz, now.Add(-5*time.Minute))
