@@ -25,7 +25,7 @@ func (p *Provider) Name() string { return "Azure" }
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
-// Id returns the subscription for this provider.
+// ID returns the subscription for this provider.
 func (p *Provider) ID() string { return p.client.SubscriptionID }
 
 // NewProvider creates a new Azure [unused.Provider].
