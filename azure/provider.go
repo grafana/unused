@@ -13,7 +13,7 @@ var _ unused.Provider = &Provider{}
 
 const ResourceGroupMetaKey = "resource-group"
 
-// Providcer implements [unused.Provider] for Azure.
+// Provider implements [unused.Provider] for Azure.
 type Provider struct {
 	client compute.DisksClient
 	meta   unused.Meta

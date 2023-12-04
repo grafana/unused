@@ -15,7 +15,7 @@ import (
 	"github.com/grafana/unused/aws"
 	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused/gcp"
-	"google.golang.org/api/compute/v1"
+	compute "google.golang.org/api/compute/v1"
 )
 
 var ErrNoProviders = errors.New("please select at least one provider")

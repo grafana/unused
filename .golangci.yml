@@ -1,0 +1,75 @@
+
+# Adjust as appropriate
+linters-settings:
+  govet:
+    check-shadowing: false
+  golint:
+    min-confidence: 0
+  gocyclo:
+    min-complexity: 20
+  maligned:
+    suggest-new: true
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 6
+    min-occurrences: 8
+  lll:
+    line-length: 240
+  nakedret:
+    max-func-lines: 0
+
+issues:
+  exclude-use-default: false
+
+  exclude-rules:
+    # Duplicated errcheck checks
+    - linters: [gosec]
+      text: G104
+    # Ignore aliasing in tests
+    - linters: [gosec]
+      text: G601
+      path: _test\.go
+    # Non-secure URLs are okay in tests
+    - linters: [gosec]
+      text: G107
+      path: _test\.go
+    # Nil pointers will fail tests anyway
+    - linters: [staticcheck]
+      text: SA5011
+      path: _test\.go
+    # Duplicated errcheck checks
+    - linters: [staticcheck]
+      text: SA5001
+    # Duplicated function naming check
+    - linters: [stylecheck]
+      text: ST1003
+    # We don't require comments on everything
+    - linters: [stylecheck]
+      text: should have( a package)? comment
+    # Use of math/rand instead of crypto/rand
+    - linters: [gosec]
+      text: G404
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - errcheck
+    - goconst
+    - gocyclo
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - prealloc
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused

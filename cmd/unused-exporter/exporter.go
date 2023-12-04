@@ -118,7 +118,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 				ch <- prometheus.MustNewConstMetric(d, prometheus.GaugeValue, float64(v), name, pid)
 			}
 
-			var success int = 1
+			var success = 1
 
 			if err != nil {
 				logger.Error("failed to collect metrics", slog.String("error", err.Error()))

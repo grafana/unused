@@ -16,3 +16,6 @@ benchmark:
 checks:
 	go vet ${PKGS}
 	staticcheck ${PKGS}
+
+lint:
+	golangci-lint run -c .golangci.yml
