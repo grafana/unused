@@ -1,7 +1,10 @@
 name: Go
 
 on:
-  [push]
+  push:
+    branches: [ main, dev/hackathon-dec-2023 ]
+  pull_request:
+    branches: [ main, dev/hackathon-dec-2023 ]
 
 jobs:
 
@@ -19,7 +22,7 @@ jobs:
       run: make test
 
     - name: Benchmark
-      run: go test -v -run=XXX -benchmem -bench=. ./...
+      run: make benchmark
 
   checks:
     runs-on: ubuntu-latest
