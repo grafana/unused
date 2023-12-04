@@ -109,12 +109,17 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			// we don't wait for tick.C here as we want to start
 			// polling immediately; we wait at the end.
 
+			var (
+				providerName = strings.ToLower(p.Name())
+				providerID   = p.ID()
+			)
+
 			ctx, cancel := context.WithTimeout(e.ctx, e.timeout)
 			defer cancel()
 
 			logger := e.logger.With(
-				slog.String("provider", p.Name()),
-				slog.String("provider_id", p.ID()),
+				slog.String("provider", providerName),
+				slog.String("provider_id", providerID),
 			)
 
 			logger.Info("collecting metrics")
@@ -123,15 +128,13 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			disks, err := p.ListUnusedDisks(ctx)
 			dur := time.Since(start)
 
-			name := strings.ToLower(p.Name())
-
 			var ms []metric // TODO we can optimize this creation here and allocate memory only once
 
 			emit := func(d *prometheus.Desc, v int64, lbls ...string) {
 				ms = append(ms, metric{
 					desc:   d,
 					value:  v,
-					labels: append([]string{name, p.ID()}, lbls...),
+					labels: append([]string{providerName, providerID}, lbls...),
 				})
 			}
 
