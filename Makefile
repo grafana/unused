@@ -19,4 +19,5 @@ checks:
 	make lint
 
 lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run -c .golangci.yml
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run -c .golangci.yml -v
+
