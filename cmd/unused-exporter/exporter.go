@@ -188,7 +188,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			}
 
 			addMetric(e.info, 1)
-			addMetric(e.dur, dur.Microseconds())
+			addMetric(e.dur, dur.Milliseconds())
 			addMetric(e.suc, success)
 
 			for ns, di := range diskInfoByNamespace {
