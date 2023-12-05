@@ -83,6 +83,12 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 		cache: make(map[unused.Provider][]metric, len(providers)),
 	}
 
+	e.logger.Info("start background polling of providers",
+		slog.Int("providers", len(e.providers)),
+		slog.Duration("interval", e.pollInterval),
+		slog.Duration("timeout", e.timeout),
+	)
+
 	for _, p := range providers {
 		p := p
 		go e.pollProvider(p)
@@ -195,6 +201,12 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			e.mu.Lock()
 			e.cache[p] = ms
 			e.mu.Unlock()
+
+			logger.Info("metrics collected",
+				slog.Int("metrics", len(ms)),
+				slog.Bool("success", success == 1),
+				slog.Duration("dur", dur),
+			)
 
 			<-tick.C
 		}
