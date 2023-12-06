@@ -165,6 +165,9 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				logger.Info("unused disk found", diskLabels...)
 
 				ns := meta["kubernetes.io/created-for/pvc/namespace"]
+				if providerName == "azure" {
+					ns = meta["kubernetes.io-created-for-pvc-namespace"]
+				}
 				di := diskInfoByNamespace[ns]
 				if di == nil {
 					di = &namespaceInfo{
