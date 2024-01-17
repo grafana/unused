@@ -141,7 +141,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 					labels[k] = meta[k]
 				}
 				e.logger.Log("unused disk found", labels)
-				countByNamespace[meta["kubernetes.io/created-for/pvc/namespace"]] += 1
+				countByNamespace[meta.CreatedForNamespace()] += 1
 			}
 			for ns, c := range countByNamespace {
 				ch <- prometheus.MustNewConstMetric(e.count, prometheus.GaugeValue, float64(c), name, pid, ns)
