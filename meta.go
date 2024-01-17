@@ -32,8 +32,66 @@ func (m Meta) String() string {
 	return s.String()
 }
 
+func (m Meta) Equals(b Meta) bool {
+	akeys := m.Keys()
+	bkeys := b.Keys()
+
+	if len(akeys) != len(bkeys) {
+		return false
+	}
+
+	sort.Strings(akeys)
+	sort.Strings(bkeys)
+
+	for ak, av := range m {
+		bv, ok := b[ak]
+		if !ok {
+			return false
+		}
+
+		if av != bv {
+			return false
+		}
+	}
+
+	return true
+}
+
 // Matches returns true when the given key exists in the map with the
 // given value.
 func (m Meta) Matches(key, val string) bool {
 	return m[key] == val
+}
+
+func (m Meta) CreatedForPV() string {
+	return m.coalesce("kubernetes.io/created-for/pv/name", "kubernetes.io-created-for-pv-name")
+}
+
+func (m Meta) CreatedForPVC() string {
+	return m.coalesce("kubernetes.io/created-for/pvc/name", "kubernetes.io-created-for-pvc-name")
+}
+
+func (m Meta) CreatedForNamespace() string {
+	return m.coalesce("kubernetes.io/created-for/pvc/namespace", "kubernetes.io-created-for-pvc-namespace")
+}
+
+func (m Meta) CreatedBy() string {
+	return m.coalesce("storage.gke.io/created-by", "created-by")
+}
+
+func (m Meta) Zone() string {
+	return m.coalesce("zone", "location")
+}
+
+func (m Meta) coalesce(keys ...string) string {
+	for _, k := range keys {
+		v, ok := m[k]
+		if !ok {
+			continue
+		}
+
+		return v
+	}
+
+	return ""
 }

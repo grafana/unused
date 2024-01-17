@@ -25,6 +25,7 @@ type exporter struct {
 	count *prometheus.Desc
 	dur   *prometheus.Desc
 	suc   *prometheus.Desc
+	dlu   *prometheus.Desc
 }
 
 func registerExporter(ctx context.Context, providers []unused.Provider, cfg config) error {
@@ -59,6 +60,12 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 			"Static metric indicating if collecting the metrics succeeded or not",
 			labels,
 			nil),
+
+		dlu: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "disks", "last_used_at"),
+			"Kubernetes metadata associated with each unused disk, with the value as the last time the disk was used (if available)",
+			append(labels, []string{"disk", "created_for_pv", "created_for_pvc", "zone"}...),
+			nil),
 	}
 
 	return prometheus.Register(e)
@@ -68,6 +75,7 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.info
 	ch <- e.count
 	ch <- e.dur
+	ch <- e.dlu
 }
 
 func (e *exporter) Collect(ch chan<- prometheus.Metric) {
@@ -137,6 +145,29 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			}
 			for ns, c := range countByNamespace {
 				ch <- prometheus.MustNewConstMetric(e.count, prometheus.GaugeValue, float64(c), name, pid, ns)
+			}
+
+			for _, d := range disks {
+				m := d.Meta()
+
+				var ts float64
+				lastUsed := d.LastUsedAt()
+				if lastUsed.IsZero() {
+					ts = 0.0
+				} else {
+					ts = float64(lastUsed.UnixMilli())
+				}
+
+				if m.CreatedForPV() == "" {
+					continue
+				}
+
+				ch <- prometheus.MustNewConstMetric(e.dlu, prometheus.GaugeValue, ts, name, pid,
+					d.ID(),
+					m.CreatedForPV(),
+					m.CreatedForPVC(),
+					m.Zone(),
+				)
 			}
 		}(p)
 	}
