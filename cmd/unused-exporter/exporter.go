@@ -46,7 +46,7 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 		count: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "disks", "count"),
 			"How many unused disks are in this provider",
-			append(labels, "k8s_namespace"),
+			append(labels, "zone", "k8s_namespace"),
 			nil),
 
 		dur: prometheus.NewDesc(
@@ -129,7 +129,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			emit(e.dur, int(dur.Microseconds()))
 			emit(e.suc, success)
 
-			countByNamespace := make(map[string]int)
+			countByNamespace := make(map[string][]unused.Meta, len(disks))
 			for _, d := range disks {
 				labels := logfmt.Labels{
 					"provider": d.Provider().Name(),
@@ -141,10 +141,22 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 					labels[k] = meta[k]
 				}
 				e.logger.Log("unused disk found", labels)
-				countByNamespace[meta.CreatedForNamespace()] += 1
+				countByNamespace[meta.CreatedForNamespace()] = append(countByNamespace[meta.CreatedForNamespace()], meta)
 			}
 			for ns, c := range countByNamespace {
-				ch <- prometheus.MustNewConstMetric(e.count, prometheus.GaugeValue, float64(c), name, pid, ns)
+				zones := make(map[string]float64)
+				for _, meta := range c {
+					_, ok := zones[meta.Zone()]
+					if !ok {
+						zones[meta.Zone()] = 0
+					}
+
+					zones[meta.Zone()]++
+				}
+
+				for zone, count := range zones {
+					ch <- prometheus.MustNewConstMetric(e.count, prometheus.GaugeValue, count, name, pid, zone, ns)
+				}
 			}
 
 			for _, d := range disks {
