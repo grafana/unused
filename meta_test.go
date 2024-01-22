@@ -1,14 +1,12 @@
-package unused_test
+package unused
 
 import (
 	"sort"
 	"testing"
-
-	"github.com/grafana/unused"
 )
 
 func TestMeta(t *testing.T) {
-	m := &unused.Meta{
+	m := &Meta{
 		"def": "123",
 		"ghi": "456",
 		"abc": "789",
@@ -35,7 +33,7 @@ func TestMeta(t *testing.T) {
 }
 
 func TestMetaMatches(t *testing.T) {
-	m := &unused.Meta{
+	m := &Meta{
 		"def": "123",
 		"ghi": "456",
 		"abc": "789",
@@ -49,5 +47,129 @@ func TestMetaMatches(t *testing.T) {
 	}
 	if ok := m.Matches("def", "789"); ok {
 		t.Error("expecting no match for different value")
+	}
+}
+
+func TestCoalesce(t *testing.T) {
+	tests := []struct {
+		name     string
+		m        Meta
+		input    []string
+		expected string
+	}{
+		{
+			name: "single key returns self",
+			m: Meta{
+				"foo": "bar",
+			},
+			input:    []string{"foo"},
+			expected: "bar",
+		},
+		{
+			name: "multiple keys returns first non-nil, single match",
+			m: Meta{
+				"foo": "bar",
+			},
+			input:    []string{"buz", "foo"},
+			expected: "bar",
+		},
+		{
+			name: "multiple keys returns first non-nil, many possible matches",
+			m: Meta{
+				"foo": "bar",
+				"buz": "qux",
+			},
+			input:    []string{"buz", "foo"},
+			expected: "qux",
+		},
+		{
+			name: "any value is returned if key is present",
+			m: Meta{
+				"foo": "",
+				"buz": "qux",
+			},
+			input:    []string{"foo", "buz"},
+			expected: "",
+		},
+		{
+			name: "no given keys returns zero value",
+			m: Meta{
+				"foo": "bar",
+				"buz": "qux",
+			},
+			input:    []string{},
+			expected: "",
+		},
+		{
+			name: "no matching keys returns zero value",
+			m: Meta{
+				"foo": "bar",
+				"buz": "qux",
+			},
+			input:    []string{"nope"},
+			expected: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.m.coalesce(tt.input...)
+			if tt.expected != actual {
+				t.Fatalf("expected %v but got %v", tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestEquals(t *testing.T) {
+	tests := []struct {
+		name     string
+		m        Meta
+		input    Meta
+		expected bool
+	}{
+		{
+			name:     "nil values are equal",
+			m:        Meta{},
+			input:    Meta{},
+			expected: true,
+		},
+		{
+			name:     "nil & non-nil values are not equal",
+			m:        Meta{"not": "nil"},
+			input:    Meta{},
+			expected: false,
+		},
+		{
+			name:     "same keys but different values are not equal",
+			m:        Meta{"a": "b"},
+			input:    Meta{"a": "c"},
+			expected: false,
+		},
+		{
+			name:     "same values but different keys are not equal",
+			m:        Meta{"a": "b"},
+			input:    Meta{"c": "b"},
+			expected: false,
+		},
+		{
+			name:     "same keys & values are equal",
+			m:        Meta{"a": "b", "c": "d"},
+			input:    Meta{"a": "b", "c": "d"},
+			expected: true,
+		},
+		{
+			name:     "order is irrelevant",
+			m:        Meta{"a": "b", "c": "d"},
+			input:    Meta{"c": "d", "a": "b"},
+			expected: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.m.Equals(tt.input)
+			if tt.expected != actual {
+				t.Fatalf("expected %v but got %v", tt.expected, actual)
+			}
+		})
 	}
 }

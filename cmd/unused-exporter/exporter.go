@@ -150,11 +150,11 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			for _, d := range disks {
 				m := d.Meta()
 
-ts := 0.0
-lastUsed := d.LastUsedAt()
-if !lastUsed.IsZero() {
-    ts = float64(lastUsed.UnixMilli())
-}				
+				var ts float64
+				lastUsed := d.LastUsedAt()
+				if !lastUsed.IsZero() {
+					ts = float64(lastUsed.UnixMilli())
+				}
 
 				if m.CreatedForPV() == "" {
 					continue

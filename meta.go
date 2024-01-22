@@ -33,23 +33,13 @@ func (m Meta) String() string {
 }
 
 func (m Meta) Equals(b Meta) bool {
-	akeys := m.Keys()
-	bkeys := b.Keys()
-
-	if len(akeys) != len(bkeys) {
+	if len(m) != len(b) {
 		return false
 	}
 
-	sort.Strings(akeys)
-	sort.Strings(bkeys)
-
 	for ak, av := range m {
 		bv, ok := b[ak]
-		if !ok {
-			return false
-		}
-
-		if av != bv {
+		if !ok || av != bv {
 			return false
 		}
 	}
