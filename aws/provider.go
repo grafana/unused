@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/grafana/unused"
+	"github.com/inkel/logfmt"
 )
 
 var _ unused.Provider = &Provider{}
@@ -16,6 +17,7 @@ var _ unused.Provider = &Provider{}
 type Provider struct {
 	client *ec2.Client
 	meta   unused.Meta
+	logger *logfmt.Logger
 }
 
 // Name returns AWS.
@@ -29,7 +31,7 @@ func (p *Provider) Meta() unused.Meta { return p.meta }
 // A valid EC2 client must be supplied in order to list the unused
 // resources. The metadata passed will be used to identify the
 // provider.
-func NewProvider(client *ec2.Client, meta unused.Meta) (*Provider, error) {
+func NewProvider(logger *logfmt.Logger, client *ec2.Client, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
 	}
@@ -37,6 +39,7 @@ func NewProvider(client *ec2.Client, meta unused.Meta) (*Provider, error) {
 	return &Provider{
 		client: client,
 		meta:   meta,
+		logger: logger,
 	}, nil
 }
 
@@ -45,9 +48,15 @@ func NewProvider(client *ec2.Client, meta unused.Meta) (*Provider, error) {
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	params := &ec2.DescribeVolumesInput{
 		Filters: []types.Filter{
+			// only show available (i.e. not "in-use") volumes
 			{
 				Name:   aws.String("status"),
 				Values: []string{string(types.VolumeStateAvailable)},
+			},
+			// exclude snapshots
+			{
+				Name:   aws.String("snapshot-id"),
+				Values: []string{""},
 			},
 		},
 	}
