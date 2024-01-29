@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"text/tabwriter"
+	"time"
 
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/cmd/internal"
@@ -36,6 +37,9 @@ func Table(ctx context.Context, options Options) error {
 	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
 
 	headers := []string{"PROVIDER", "DISK", "AGE", "UNUSED", "TYPE", "SIZE_GB"}
+	if options.RawDate {
+		headers[2] = "CREATED"
+	}
 	for _, c := range options.ExtraColumns {
 		headers = append(headers, "META:"+c)
 	}
@@ -49,6 +53,10 @@ func Table(ctx context.Context, options Options) error {
 		p := d.Provider()
 
 		row := []string{p.Name(), d.Name(), internal.Age(d.CreatedAt()), internal.Age(d.LastUsedAt()), string(d.DiskType()), fmt.Sprintf("%d", d.SizeGB())}
+		if options.RawDate {
+			row[2] = d.CreatedAt().Format(time.RFC3339)
+			row[3] = d.LastUsedAt().Format(time.RFC3339)
+		}
 		meta := d.Meta()
 		for _, c := range options.ExtraColumns {
 			row = append(row, meta[c])

@@ -29,6 +29,9 @@ type Provider struct {
 // Name returns GCP.
 func (p *Provider) Name() string { return "GCP" }
 
+// Project returns project name for GCP.
+func (p *Provider) Account() string { return p.meta["project"]}
+
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
 

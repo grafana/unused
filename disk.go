@@ -36,5 +36,6 @@ type DiskType string
 const (
 	SSD     DiskType = "ssd"
 	HDD     DiskType = "hdd"
+	BALANCED DiskType = "balanced"
 	Unknown DiskType = "unknown"
 )

@@ -30,6 +30,19 @@ func (p *Provider) Name() string { return p.name }
 
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
+func (p *Provider) Account() string {
+	switch p.name {
+	case "GCP":
+		return p.meta["project"]
+	case "AWS":
+		return p.meta["profile"]
+	case "Azure":
+		return p.meta["subscription"]
+	default:
+		return ""
+	}
+}
+
 func (p *Provider) SetMeta(meta unused.Meta) { p.meta = meta }
 
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {

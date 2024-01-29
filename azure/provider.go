@@ -22,6 +22,9 @@ type Provider struct {
 // Name returns Azure.
 func (p *Provider) Name() string { return "Azure" }
 
+// Project returns subscription name for Azure.
+func (p *Provider) Account() string { return p.meta["subscription"]}
+
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
