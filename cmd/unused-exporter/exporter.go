@@ -34,6 +34,7 @@ type exporter struct {
 	size  *prometheus.Desc
 	dur   *prometheus.Desc
 	suc   *prometheus.Desc
+	dlu   *prometheus.Desc
 
 	mu    sync.RWMutex
 	cache map[unused.Provider][]metric
@@ -79,6 +80,12 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 			"Static metric indicating if collecting the metrics succeeded or not",
 			labels,
 			nil),
+    
+    dlu: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "disks", "last_used_at"),
+			"Kubernetes metadata associated with each unused disk, with the value as the last time the disk was used (if available)",
+			append(labels, []string{"disk", "created_for_pv", "created_for_pvc", "zone"}...),
+			nil),
 
 		cache: make(map[unused.Provider][]metric, len(providers)),
 	}
@@ -102,6 +109,7 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.count
 	ch <- e.size
 	ch <- e.dur
+	ch <- e.dlu
 }
 
 type namespaceInfo struct {
@@ -162,12 +170,13 @@ func (e *exporter) pollProvider(p unused.Provider) {
 					diskLabels = append(diskLabels, diskMetaLabels...)
 				}
 
-				logger.Info("unused disk found", diskLabels...)
+				e.logger.Info("unused disk found", diskLabels...)
 
 				ns := meta["kubernetes.io/created-for/pvc/namespace"]
 				if providerName == "azure" {
 					ns = meta["kubernetes.io-created-for-pvc-namespace"]
 				}
+        
 				di := diskInfoByNamespace[ns]
 				if di == nil {
 					di = &namespaceInfo{
@@ -175,9 +184,10 @@ func (e *exporter) pollProvider(p unused.Provider) {
 					}
 					diskInfoByNamespace[ns] = di
 				}
-
 				di.Count += 1
 				di.SizeByType[d.DiskType()] += int64(d.SizeGB())
+        
+        
 			}
 
 			var ms []metric // TODO we can optimize this creation here and allocate memory only once
@@ -188,6 +198,27 @@ func (e *exporter) pollProvider(p unused.Provider) {
 					value:  v,
 					labels: append([]string{providerName, providerID}, lbls...),
 				})
+			}
+      
+      for _, d := range disks {
+				m := d.Meta()
+
+				var ts float64
+				lastUsed := d.LastUsedAt()
+				if !lastUsed.IsZero() {
+					ts = float64(lastUsed.UnixMilli())
+				}
+
+				if m.CreatedForPV() == "" {
+					continue
+				}
+
+				ch <- prometheus.MustNewConstMetric(e.dlu, prometheus.GaugeValue, ts, d.Name(), p.ID(),
+					d.ID(),
+					m.CreatedForPV(),
+					m.CreatedForPVC(),
+					m.Zone(),
+				)
 			}
 
 			addMetric(e.info, 1)
@@ -213,6 +244,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 
 			<-tick.C
 		}
+    
 	}
 }
 
