@@ -268,7 +268,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 		e.logger.Info("reading provider cache", labels...)
 
 		for _, m := range ms {
-			ch <- prometheus.MustNewConstMetric(m.desc, prometheus.GaugeValue, float64(m.value), m.labels...)
+			ch <- prometheus.MustNewConstMetric(m.desc, prometheus.GaugeValue, m.value, m.labels...)
 		}
 	}
 }
