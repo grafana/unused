@@ -74,7 +74,7 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			ds = &deleteStatus{}
 			m.status[m.cur] = ds
 
-			return m, deleteDisk(m.provider, m.disks[m.cur], ds, m.dryRun)
+			return m, deleteDisk(m.disks[m.cur], ds, m.dryRun)
 		} else if ds.done {
 			m.cur++
 		}
@@ -93,7 +93,7 @@ type deleteStatus struct {
 	err  error
 }
 
-func deleteDisk(p unused.Provider, d unused.Disk, s *deleteStatus, dryRun bool) tea.Cmd {
+func deleteDisk(d unused.Disk, s *deleteStatus, dryRun bool) tea.Cmd {
 	return func() tea.Msg {
 		if !dryRun {
 			s.err = d.Provider().Delete(context.TODO(), d)

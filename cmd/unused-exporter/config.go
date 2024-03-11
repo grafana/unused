@@ -1,10 +1,10 @@
 package main
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/grafana/unused/cmd/internal"
-	"github.com/inkel/logfmt"
 )
 
 type config struct {
@@ -21,8 +21,10 @@ type config struct {
 	}
 
 	Collector struct {
-		Timeout time.Duration
+		Timeout      time.Duration
+		PollInterval time.Duration
 	}
 
-	Logger *logfmt.Logger
+	Logger         *slog.Logger
+	VerboseLogging bool
 }

@@ -22,13 +22,17 @@ func TestNewProvider(t *testing.T) {
 		t.Fatalf("cannot load AWS config: %v", err)
 	}
 
-	p, err := aws.NewProvider(nil, ec2.NewFromConfig(cfg), nil)
+	p, err := aws.NewProvider(nil, ec2.NewFromConfig(cfg), map[string]string{"profile": "my-profile"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if p == nil {
 		t.Fatal("expecting Provider, got nil")
+	}
+
+	if exp, got := "my-profile", p.ID(); exp != got {
+		t.Fatalf("provider id was incorrect, exp: %v, got: %v", exp, got)
 	}
 }
 
@@ -52,7 +56,7 @@ func TestListUnusedDisks(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// How cannot love you, AWS
-		w.Write([]byte(`<DescribeVolumesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
+		_, err := w.Write([]byte(`<DescribeVolumesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
    <volumeSet>
       <item>
@@ -101,6 +105,9 @@ func TestListUnusedDisks(t *testing.T) {
       </item>
    </volumeSet>
 </DescribeVolumesResponse>`))
+		if err != nil {
+			t.Fatalf("unexpected error writing response: %v", err)
+		}
 	}))
 	defer ts.Close()
 

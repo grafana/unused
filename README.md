@@ -28,8 +28,8 @@ Both binaries are opinionated on how to authenticate against each Cloud Service 
 | Provider | Notes |
 |-|-|
 | GCP | Depends on [default credentials](https://cloud.google.com/docs/authentication/application-default-credentials) |
-| AWS | Uses profile names from your [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) |
-| Azure | Requires [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/) installed on the host and [signed in](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) |
+| AWS | Uses profile names from your [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) or `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` env variables |
+| Azure | Either specify an `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, and `AZURE_TENANT_ID`, or requires [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/) installed on the host and [signed in](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) |
 
 ### `unused` binary
 TUI tool to query all given providers and list them as a neat table.
@@ -46,12 +46,14 @@ It exposes the following metrics:
 | Metric | Description |
 |-|-|
 | `unused_disks_count` | How many unused disks are in this provider |
+| `unused_disks_size_gb` | Total size of unused disks in this provider in GB |
+| `unused_disks_last_used_at` | Last timestamp (unix ms) when this disk was used. GCP only! |
 | `unused_provider_duration_ms` | How long in milliseconds took to fetch this provider information |
 | `unused_provider_info` | CSP information |
 | `unused_provider_success` | Static metric indicating if collecting the metrics succeeded or not |
 
 All metrics have the `provider` and `provider_id` labels to identify to which provider instance they belong.
-The `unused_disks_count` metric has an additional `k8s_namespace` metric mapped to the `kubernetes.io/created-for/pvc/namespace` annotation assigned to persistent disks created by Kubernetes.
+The `unused_disks_count` and `unused_disks_size_gb` metrics have an additional `k8s_namespace` metric mapped to the `kubernetes.io/created-for/pvc/namespace` annotation assigned to persistent disks created by Kubernetes.
 
 Information about each unused disk is currently logged to stdout given that it contains more changing information that could lead to cardinality explosion.
 

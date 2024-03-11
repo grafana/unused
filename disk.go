@@ -8,8 +8,8 @@ type Disk interface {
 	// provider.
 	ID() string
 
-	// Provider returns a string indicating the provider this disk
-	// belongs to.
+	// Provider returns a reference to the provider used to instantiate
+	// this disk
 	Provider() Provider
 
 	// Name returns the disk name.

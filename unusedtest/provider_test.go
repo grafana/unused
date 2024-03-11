@@ -12,16 +12,13 @@ import (
 	"github.com/grafana/unused/unusedtest"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 func TestNewProvider(t *testing.T) {
 	tests := []struct {
 		name  string
+		id    string
 		disks unused.Disks
 	}{
-		{"no-disks", nil},
+		{"no-disks", "my-id", nil},
 	}
 
 	for _, tt := range tests {
@@ -30,6 +27,10 @@ func TestNewProvider(t *testing.T) {
 
 		if p.Name() != tt.name {
 			t.Errorf("unexpected provider.Name() %q", p.Name())
+		}
+
+		if p.ID() != tt.id {
+			t.Errorf("unexpected provider.ID() %q", p.ID())
 		}
 
 		disks, err := p.ListUnusedDisks(ctx)
@@ -103,7 +104,8 @@ func TestProviderDelete(t *testing.T) {
 
 	t.Run("random", func(t *testing.T) {
 		p, disks := setup()
-		run(t, p, disks, rand.Intn(len(disks)))
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		run(t, p, disks, r.Intn(len(disks)))
 	})
 
 	t.Run("not found", func(t *testing.T) {

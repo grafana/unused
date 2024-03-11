@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/inkel/logfmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -17,10 +17,10 @@ func runWebServer(ctx context.Context, cfg config) error {
 	mux.HandleFunc(cfg.Web.Path, func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 		promHandler.ServeHTTP(w, req)
-		cfg.Logger.Log("Prometheus query", logfmt.Labels{
-			"path": cfg.Web.Path,
-			"dur":  time.Since(start),
-		})
+		cfg.Logger.Info("Prometheus query",
+			slog.String("path", cfg.Web.Path),
+			slog.Duration("dur", time.Since(start)),
+		)
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/" {
@@ -31,23 +31,24 @@ func runWebServer(ctx context.Context, cfg config) error {
 	})
 
 	srv := &http.Server{
-		Addr:    cfg.Web.Address,
-		Handler: mux,
+		ReadTimeout: 1 * time.Second,
+		Addr:        cfg.Web.Address,
+		Handler:     mux,
 	}
 
 	listenErr := make(chan error)
 
 	go func() {
-		cfg.Logger.Log("starting server", logfmt.Labels{
-			"addr":        cfg.Web.Address,
-			"metricspath": cfg.Web.Path,
-		})
+		cfg.Logger.Info("starting server",
+			slog.String("addr", cfg.Web.Address),
+			slog.String("metricspath", cfg.Web.Path),
+		)
 		listenErr <- srv.ListenAndServe()
 	}()
 
 	select {
 	case <-ctx.Done():
-		cfg.Logger.Log("shutting down server", nil)
+		cfg.Logger.Info("shutting down server")
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.Timeout)
 		defer cancel()
 

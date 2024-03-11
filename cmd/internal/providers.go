@@ -5,8 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log/slog"
+	"os"
 
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -14,13 +17,12 @@ import (
 	"github.com/grafana/unused/aws"
 	"github.com/grafana/unused/azure"
 	"github.com/grafana/unused/gcp"
-	"github.com/inkel/logfmt"
-	"google.golang.org/api/compute/v1"
+	compute "google.golang.org/api/compute/v1"
 )
 
 var ErrNoProviders = errors.New("please select at least one provider")
 
-func CreateProviders(ctx context.Context, logger *logfmt.Logger, gcpProjects, awsProfiles, azureSubs []string) ([]unused.Provider, error) {
+func CreateProviders(ctx context.Context, logger *slog.Logger, gcpProjects, awsProfiles, azureSubs []string) ([]unused.Provider, error) {
 	providers := make([]unused.Provider, 0, len(gcpProjects)+len(awsProfiles)+len(azureSubs))
 
 	for _, projectID := range gcpProjects {
@@ -49,7 +51,14 @@ func CreateProviders(ctx context.Context, logger *logfmt.Logger, gcpProjects, aw
 	}
 
 	if len(azureSubs) > 0 {
-		a, err := auth.NewAuthorizerFromCLI()
+		var a autorest.Authorizer
+		var err error
+
+		if os.Getenv("AZURE_CLIENT_ID") != "" && os.Getenv("AZURE_CLIENT_SECRET") != "" && os.Getenv("AZURE_TENANT_ID") != "" {
+			a, err = auth.NewAuthorizerFromEnvironment()
+		} else {
+			a, err = auth.NewAuthorizerFromCLI()
+		}
 		if err != nil {
 			return nil, fmt.Errorf("creating Azure authorizer: %w", err)
 		}

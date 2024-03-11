@@ -22,6 +22,10 @@ func TestNewProvider(t *testing.T) {
 	if p == nil {
 		t.Fatal("expecting provider")
 	}
+
+	if exp, got := "my-subscription", p.ID(); exp != got {
+		t.Fatalf("provider id was incorrect, exp: %v, got: %v", exp, got)
+	}
 }
 
 func TestProviderMeta(t *testing.T) {
@@ -38,7 +42,7 @@ func TestListUnusedDisks(t *testing.T) {
 	// Azure is really strange when it comes to marhsaling JSON, so,
 	// yeah, this is an awful hack.
 	mock := func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte(`{
+		_, err := w.Write([]byte(`{
 "value": [
   {"name":"disk-1","managedBy":"grafana"},
   {"name":"disk-2","location":"germanywestcentral","tags": {
@@ -50,6 +54,9 @@ func TestListUnusedDisks(t *testing.T) {
   {"name":"disk-3","managedBy":"grafana"}
 ]
 }`))
+		if err != nil {
+			t.Fatalf("unexpected error writing response: %v", err)
+		}
 	}
 
 	var (

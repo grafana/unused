@@ -12,25 +12,27 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/grafana/unused/cmd/internal"
-	"github.com/inkel/logfmt"
 )
 
 func main() {
 	cfg := config{
-		Logger: logfmt.NewLogger(os.Stdout),
+		Logger: slog.New(slog.NewTextHandler(os.Stdout, nil)),
 	}
 
 	internal.ProviderFlags(flag.CommandLine, &cfg.Providers.GCP, &cfg.Providers.AWS, &cfg.Providers.Azure)
 
+	flag.BoolVar(&cfg.VerboseLogging, "verbose", false, "add verbose logging information")
 	flag.DurationVar(&cfg.Collector.Timeout, "collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
 	flag.StringVar(&cfg.Web.Path, "web.path", "/metrics", "path on which to expose metrics")
 	flag.StringVar(&cfg.Web.Address, "web.address", ":8080", "address to expose metrics and web interface")
 	flag.DurationVar(&cfg.Web.Timeout, "web.timeout", 5*time.Second, "timeout for shutting down the server")
+	flag.DurationVar(&cfg.Collector.PollInterval, "collect.interval", 5*time.Minute, "interval to poll the cloud provider API for unused disks")
 
 	flag.Parse()
 

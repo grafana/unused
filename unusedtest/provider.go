@@ -28,6 +28,8 @@ func NewProvider(name string, meta unused.Meta, disks ...unused.Disk) *Provider 
 
 func (p *Provider) Name() string { return p.name }
 
+func (p *Provider) ID() string { return "my-id" }
+
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
 func (p *Provider) SetMeta(meta unused.Meta) { p.meta = meta }

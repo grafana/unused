@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -14,13 +15,12 @@ import (
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/gcp"
 	"github.com/grafana/unused/unusedtest"
-	"github.com/inkel/logfmt"
-	"google.golang.org/api/compute/v1"
+	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 )
 
 func TestNewProvider(t *testing.T) {
-	l := logfmt.NewLogger(io.Discard)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	t.Run("project is required", func(t *testing.T) {
 		p, err := gcp.NewProvider(l, nil, "", nil)
@@ -29,6 +29,20 @@ func TestNewProvider(t *testing.T) {
 		}
 		if p != nil {
 			t.Fatalf("expecting nil provider, got %v", p)
+		}
+	})
+
+	t.Run("provider information is correct", func(t *testing.T) {
+		p, err := gcp.NewProvider(l, nil, "my-project", unused.Meta{})
+		if err != nil {
+			t.Fatalf("error creating provider: %v", err)
+		}
+		if p == nil {
+			t.Fatalf("error creating provider, provider is nil")
+		}
+
+		if exp, got := "my-project", p.ID(); exp != got {
+			t.Fatalf("provider id was incorrect, exp: %v, got: %v", exp, got)
 		}
 	})
 
@@ -48,7 +62,7 @@ func TestNewProvider(t *testing.T) {
 
 func TestProviderListUnusedDisks(t *testing.T) {
 	ctx := context.Background()
-	l := logfmt.NewLogger(io.Discard)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// are we requesting the right API endpoint?
@@ -69,7 +83,10 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		}
 
 		b, _ := json.Marshal(res)
-		w.Write(b)
+		_, err := w.Write(b)
+		if err != nil {
+			t.Fatalf("unexpected error writing response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -124,7 +141,10 @@ func TestProviderListUnusedDisks(t *testing.T) {
 			}
 
 			b, _ := json.Marshal(res)
-			w.Write(b)
+			_, err := w.Write(b)
+			if err != nil {
+				t.Fatalf("unexpected error writing response %v", err)
+			}
 		}))
 		defer ts.Close()
 
@@ -134,7 +154,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		}
 
 		var buf bytes.Buffer
-		l := logfmt.NewLogger(&buf)
+		l := slog.New(slog.NewTextHandler(&buf, nil))
 
 		p, err := gcp.NewProvider(l, svc, "my-project", nil)
 		if err != nil {
@@ -151,7 +171,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		}
 
 		// check that we logged about it
-		m, _ := regexp.MatchString(`msg="cannot parse disk metadata".+disk="disk-2"`, buf.String())
+		m, _ := regexp.MatchString(`msg="cannot parse disk metadata".+disk=disk-2`, buf.String())
 		if !m {
 			t.Fatal("expecting a log line to be emitted")
 		}

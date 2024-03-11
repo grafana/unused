@@ -6,7 +6,7 @@ import (
 
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/unusedtest"
-	"google.golang.org/api/compute/v1"
+	compute "google.golang.org/api/compute/v1"
 )
 
 func TestDisk(t *testing.T) {

@@ -1,4 +1,4 @@
-// Package unsued provides the basic interfaces to obtain information
+// Package unused provides the basic interfaces to obtain information
 // and in some cases, manipulate, unused resources in different Cloud
 // Service Providers (CSPs).
 //
