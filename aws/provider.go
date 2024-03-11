@@ -3,12 +3,12 @@ package aws
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/grafana/unused"
-	"github.com/inkel/logfmt"
 )
 
 var _ unused.Provider = &Provider{}
@@ -17,7 +17,7 @@ var _ unused.Provider = &Provider{}
 type Provider struct {
 	client *ec2.Client
 	meta   unused.Meta
-	logger *logfmt.Logger
+	logger *slog.Logger
 }
 
 // Name returns AWS.
@@ -27,14 +27,14 @@ func (p *Provider) Name() string { return "AWS" }
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
 // ID returns the profile of this provider.
-func (p *Provider) ID() string { return p.profile }
+func (p *Provider) ID() string { return p.meta["profile"] }
 
 // NewProvider creates a new AWS [unused.Provider].
 //
 // A valid EC2 client must be supplied in order to list the unused
 // resources. The metadata passed will be used to identify the
 // provider.
-func NewProvider(logger *logfmt.Logger, client *ec2.Client, meta unused.Meta) (*Provider, error) {
+func NewProvider(logger *slog.Logger, client *ec2.Client, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
 	}

@@ -22,7 +22,7 @@ func TestNewProvider(t *testing.T) {
 		t.Fatalf("cannot load AWS config: %v", err)
 	}
 
-	p, err := aws.NewProvider(nil, ec2.NewFromConfig(cfg), nil)
+	p, err := aws.NewProvider(nil, ec2.NewFromConfig(cfg), map[string]string{"profile": "my-profile"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

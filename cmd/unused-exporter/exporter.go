@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 	"sync"
@@ -15,7 +16,7 @@ const namespace = "unused"
 
 type metric struct {
 	desc   *prometheus.Desc
-	value  int64
+	value  float64
 	labels []string
 }
 
@@ -80,8 +81,8 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 			"Static metric indicating if collecting the metrics succeeded or not",
 			labels,
 			nil),
-    
-    dlu: prometheus.NewDesc(
+
+		dlu: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "disks", "last_used_at"),
 			"Kubernetes metadata associated with each unused disk, with the value as the last time the disk was used (if available)",
 			append(labels, []string{"disk", "created_for_pv", "created_for_pvc", "zone"}...),
@@ -114,7 +115,7 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 
 type namespaceInfo struct {
 	Count      int
-	SizeByType map[unused.DiskType]int64
+	SizeByType map[unused.DiskType]float64
 }
 
 func (e *exporter) pollProvider(p unused.Provider) {
@@ -176,31 +177,30 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				if providerName == "azure" {
 					ns = meta["kubernetes.io-created-for-pvc-namespace"]
 				}
-        
+
 				di := diskInfoByNamespace[ns]
 				if di == nil {
 					di = &namespaceInfo{
-						SizeByType: make(map[unused.DiskType]int64),
+						SizeByType: make(map[unused.DiskType]float64),
 					}
 					diskInfoByNamespace[ns] = di
 				}
 				di.Count += 1
-				di.SizeByType[d.DiskType()] += int64(d.SizeGB())
-        
-        
+				di.SizeByType[d.DiskType()] += float64(d.SizeGB())
+
 			}
 
 			var ms []metric // TODO we can optimize this creation here and allocate memory only once
 
-			addMetric := func(d *prometheus.Desc, v int64, lbls ...string) {
+			addMetric := func(d *prometheus.Desc, v float64, lbls ...string) {
 				ms = append(ms, metric{
 					desc:   d,
 					value:  v,
 					labels: append([]string{providerName, providerID}, lbls...),
 				})
 			}
-      
-      for _, d := range disks {
+
+			for _, d := range disks {
 				m := d.Meta()
 
 				var ts float64
@@ -209,24 +209,21 @@ func (e *exporter) pollProvider(p unused.Provider) {
 					ts = float64(lastUsed.UnixMilli())
 				}
 
+				e.logger.Info(fmt.Sprintf("Disk %s last used at %v", d.Name(), d.LastUsedAt()))
+
 				if m.CreatedForPV() == "" {
 					continue
 				}
 
-				ch <- prometheus.MustNewConstMetric(e.dlu, prometheus.GaugeValue, ts, d.Name(), p.ID(),
-					d.ID(),
-					m.CreatedForPV(),
-					m.CreatedForPVC(),
-					m.Zone(),
-				)
+				addMetric(e.dlu, ts, d.ID(), m.CreatedForPV(), m.CreatedForPVC(), m.Zone())
 			}
 
 			addMetric(e.info, 1)
-			addMetric(e.dur, dur.Milliseconds())
-			addMetric(e.suc, success)
+			addMetric(e.dur, float64(dur.Milliseconds()))
+			addMetric(e.suc, float64(success))
 
 			for ns, di := range diskInfoByNamespace {
-				addMetric(e.count, int64(di.Count), ns)
+				addMetric(e.count, float64(di.Count), ns)
 				for diskType, diskSize := range di.SizeByType {
 					addMetric(e.size, diskSize, ns, string(diskType))
 				}
@@ -244,7 +241,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 
 			<-tick.C
 		}
-    
+
 	}
 }
 
