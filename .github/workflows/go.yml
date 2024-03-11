@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ main, dev/hackathon-dec-2023 ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, dev/hackathon-dec-2023 ]
+    branches: [ main ]
 
 jobs:
 
