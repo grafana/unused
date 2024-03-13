@@ -15,7 +15,6 @@ require (
 	github.com/charmbracelet/bubbletea v0.20.0
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/evertras/bubble-table v0.12.0
-	github.com/inkel/logfmt v0.0.2
 	github.com/prometheus/client_golang v1.12.1
 	google.golang.org/api v0.114.0
 )
@@ -73,5 +72,5 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.56.3 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 )
