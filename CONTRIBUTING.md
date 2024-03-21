@@ -2,13 +2,13 @@
 
 Thank you for your interest in contributing to Grafana unused project! We welcome all people who want to contribute in a healthy and constructive manner within our community. To help us create a safe and positive community experience for all, we require all participants to adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-This document is a guide to help you through the process of contributing to Grafana Plugin SDK for Go.
+This document is a guide to help you through the process of contributing to Grafana unused.
 
 ## Become a contributor
 
 You can contribute to Grafana Plugin SDK for Go in several ways. Here are some examples:
 
-- Contribute to the Grafana SDK for Go codebase.
+- Contribute to the Grafana unused codebase.
 - Report bugs and enhancements.
 
 For more ways to contribute, check out the [Open Source Guides](https://opensource.guide/how-to-contribute/).
@@ -26,7 +26,3 @@ If you believe you've found a security vulnerability, please read our [security 
 ### Suggest enhancements
 
 If you have an idea of how to improve Grafana Plugin SDK for Go, submit an [enhancement request](https://github.com/grafana/unused/issues/new?labels=enhancement&template=2-enhancement_request.md).
-
-## Where do I go from here?
-
-- Set up your [development environment](contribute/developer-guide.md).
