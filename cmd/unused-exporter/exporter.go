@@ -132,14 +132,11 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			// polling immediately; we wait at the end.
 
 			var (
-				providerName = strings.ToLower(p.Name())
-				providerID   = p.ID()
-
 				success int64 = 1
 
 				logger = e.logger.With(
-					slog.String("provider", providerName),
-					slog.String("provider_id", providerID),
+					slog.String("provider", strings.ToLower(p.Name())),
+					slog.String("provider_id", p.ID()),
 				)
 			)
 
@@ -155,29 +152,13 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			}
 
 			diskInfoByNamespace := make(map[string]*namespaceInfo)
+			var ms []metric // TODO we can optimize this creation here and allocate memory only once
+
 			for _, d := range disks {
-				diskLabels := []any{
-					slog.String("name", d.Name()),
-					slog.Int("size_gb", d.SizeGB()),
-					slog.Time("created", d.CreatedAt()),
-				}
-
-				meta := d.Meta()
-				if e.verbose {
-					diskMetaLabels := make([]any, 0, len(meta))
-					for _, k := range meta.Keys() {
-						diskMetaLabels = append(diskMetaLabels, slog.String(k, meta[k]))
-					}
-					diskLabels = append(diskLabels, diskMetaLabels...)
-				}
-
+				diskLabels := getDiskLabels(d, e.verbose)
 				e.logger.Info("unused disk found", diskLabels...)
 
-				ns := meta["kubernetes.io/created-for/pvc/namespace"]
-				if providerName == "azure" {
-					ns = meta["kubernetes.io-created-for-pvc-namespace"]
-				}
-
+				ns := getNamespace(d, p)
 				di := diskInfoByNamespace[ns]
 				if di == nil {
 					di = &namespaceInfo{
@@ -188,44 +169,24 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				di.Count += 1
 				di.SizeByType[d.DiskType()] += float64(d.SizeGB())
 
-			}
-
-			var ms []metric // TODO we can optimize this creation here and allocate memory only once
-
-			addMetric := func(d *prometheus.Desc, v float64, lbls ...string) {
-				ms = append(ms, metric{
-					desc:   d,
-					value:  v,
-					labels: append([]string{providerName, providerID}, lbls...),
-				})
-			}
-
-			for _, d := range disks {
-				m := d.Meta()
-
-				var ts float64
-				lastUsed := d.LastUsedAt()
-				if !lastUsed.IsZero() {
-					ts = float64(lastUsed.UnixMilli())
-				}
-
 				e.logger.Info(fmt.Sprintf("Disk %s last used at %v", d.Name(), d.LastUsedAt()))
 
+				m := d.Meta()
 				if m.CreatedForPV() == "" {
 					continue
 				}
 
-				addMetric(e.dlu, ts, d.ID(), m.CreatedForPV(), m.CreatedForPVC(), m.Zone())
+				addMetric(ms, p, e.dlu, lastUsedTS(d), d.ID(), m.CreatedForPV(), m.CreatedForPVC(), m.Zone())
 			}
 
-			addMetric(e.info, 1)
-			addMetric(e.dur, float64(dur.Milliseconds()))
-			addMetric(e.suc, float64(success))
+			addMetric(ms, p, e.info, 1)
+			addMetric(ms, p, e.dur, float64(dur.Milliseconds()))
+			addMetric(ms, p, e.suc, float64(success))
 
 			for ns, di := range diskInfoByNamespace {
-				addMetric(e.count, float64(di.Count), ns)
+				addMetric(ms, p, e.count, float64(di.Count), ns)
 				for diskType, diskSize := range di.SizeByType {
-					addMetric(e.size, diskSize, ns, string(diskType))
+					addMetric(ms, p, e.size, diskSize, ns, string(diskType))
 				}
 			}
 
@@ -271,4 +232,49 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(m.desc, prometheus.GaugeValue, m.value, m.labels...)
 		}
 	}
+}
+
+func getDiskLabels(d unused.Disk, v bool) []any {
+	diskLabels := []any{
+		slog.String("name", d.Name()),
+		slog.Int("size_gb", d.SizeGB()),
+		slog.Time("created", d.CreatedAt()),
+	}
+
+	if v {
+		meta := d.Meta()
+		diskMetaLabels := make([]any, 0, len(meta))
+		for _, k := range meta.Keys() {
+			diskMetaLabels = append(diskMetaLabels, slog.String(k, meta[k]))
+		}
+		diskLabels = append(diskLabels, diskMetaLabels...)
+	}
+
+	return diskLabels
+}
+
+func getNamespace(d unused.Disk, p unused.Provider) string {
+	if strings.ToLower(p.Name()) == "azure" {
+		return d.Meta()["kubernetes.io-created-for-pvc-namespace"]
+	}
+
+	return d.Meta()["kubernetes.io/created-for/pvc/namespace"]
+}
+
+func addMetric(ms []metric, p unused.Provider, d *prometheus.Desc, v float64, lbls ...string) []metric {
+	return append(ms, metric{
+		desc:   d,
+		value:  v,
+		labels: append([]string{strings.ToLower(p.Name()), p.ID()}, lbls...),
+	})
+}
+
+func lastUsedTS(d unused.Disk) (float64) {
+	var ts float64
+	lastUsed := d.LastUsedAt()
+	if !lastUsed.IsZero() {
+		ts = float64(lastUsed.UnixMilli())
+	}
+
+	return ts
 }
