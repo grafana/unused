@@ -152,7 +152,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			}
 
 			diskInfoByNamespace := make(map[string]*namespaceInfo)
-			var ms []metric // TODO we can optimize this creation here and allocate memory only once
+			var ms []metric
 
 			for _, d := range disks {
 				diskLabels := getDiskLabels(d, e.verbose)
@@ -176,17 +176,17 @@ func (e *exporter) pollProvider(p unused.Provider) {
 					continue
 				}
 
-				addMetric(ms, p, e.dlu, lastUsedTS(d), d.ID(), m.CreatedForPV(), m.CreatedForPVC(), m.Zone())
+				addMetric(&ms, p, e.dlu, lastUsedTS(d), d.ID(), m.CreatedForPV(), m.CreatedForPVC(), m.Zone())
 			}
 
-			addMetric(ms, p, e.info, 1)
-			addMetric(ms, p, e.dur, float64(dur.Milliseconds()))
-			addMetric(ms, p, e.suc, float64(success))
+			addMetric(&ms, p, e.info, 1)
+			addMetric(&ms, p, e.dur, float64(dur.Milliseconds()))
+			addMetric(&ms, p, e.suc, float64(success))
 
 			for ns, di := range diskInfoByNamespace {
-				addMetric(ms, p, e.count, float64(di.Count), ns)
+				addMetric(&ms, p, e.count, float64(di.Count), ns)
 				for diskType, diskSize := range di.SizeByType {
-					addMetric(ms, p, e.size, diskSize, ns, string(diskType))
+					addMetric(&ms, p, e.size, diskSize, ns, string(diskType))
 				}
 			}
 
@@ -261,8 +261,8 @@ func getNamespace(d unused.Disk, p unused.Provider) string {
 	return d.Meta()["kubernetes.io/created-for/pvc/namespace"]
 }
 
-func addMetric(ms []metric, p unused.Provider, d *prometheus.Desc, v float64, lbls ...string) []metric {
-	return append(ms, metric{
+func addMetric(ms *[]metric, p unused.Provider, d *prometheus.Desc, v float64, lbls ...string) {
+	*ms = append(*ms, metric{
 		desc:   d,
 		value:  v,
 		labels: append([]string{strings.ToLower(p.Name()), p.ID()}, lbls...),
