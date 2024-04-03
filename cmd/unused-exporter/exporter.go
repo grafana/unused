@@ -269,12 +269,11 @@ func addMetric(ms *[]metric, p unused.Provider, d *prometheus.Desc, v float64, l
 	})
 }
 
-func lastUsedTS(d unused.Disk) (float64) {
-	var ts float64
+func lastUsedTS(d unused.Disk) float64 {
 	lastUsed := d.LastUsedAt()
-	if !lastUsed.IsZero() {
-		ts = float64(lastUsed.UnixMilli())
+	if lastUsed.IsZero() {
+		return 0
 	}
 
-	return ts
+	return float64(lastUsed.UnixMilli())
 }
