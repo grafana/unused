@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"math"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -43,8 +44,11 @@ func (d *Disk) CreatedAt() time.Time { return *d.Volume.CreateTime }
 // Meta returns the disk metadata.
 func (d *Disk) Meta() unused.Meta { return d.meta }
 
-// SizeGB returns the size of this AWS EC2 volume in GB.
+// SizeGB returns the size of this AWS EC2 volume in GiB.
 func (d *Disk) SizeGB() int { return int(*d.Volume.Size) }
+
+// SizeBytes returns the size of this AWS EC2 volume in bytes.
+func (d *Disk) SizeBytes() int { return int(*d.Volume.Size) * int(math.Pow(1024, 3)) }
 
 // LastUsedAt returns a zero [time.Time] value, as AWS does not
 // provide this information.

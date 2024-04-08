@@ -1,6 +1,7 @@
 package unusedtest
 
 import (
+	"math"
 	"time"
 
 	"github.com/grafana/unused"
@@ -30,4 +31,5 @@ func (d Disk) CreatedAt() time.Time      { return d.createdAt }
 func (d Disk) Meta() unused.Meta         { return d.meta }
 func (d Disk) LastUsedAt() time.Time     { return d.createdAt.Add(1 * time.Minute) }
 func (d Disk) SizeGB() int               { return d.size }
+func (d Disk) SizeBytes() int            { return d.size * int(math.Pow(1000, 3)) }
 func (d Disk) DiskType() unused.DiskType { return d.diskType }

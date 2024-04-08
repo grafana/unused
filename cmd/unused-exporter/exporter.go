@@ -32,6 +32,7 @@ type exporter struct {
 
 	info  *prometheus.Desc
 	count *prometheus.Desc
+	ds    *prometheus.Desc
 	size  *prometheus.Desc
 	dur   *prometheus.Desc
 	suc   *prometheus.Desc
@@ -62,6 +63,11 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 			prometheus.BuildFQName(namespace, "disks", "count"),
 			"How many unused disks are in this provider",
 			append(labels, "k8s_namespace"),
+			nil),
+		ds: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "disk", "size_bytes"),
+			"Disk size in bytes",
+			append(labels, []string{"disk", "k8s_namespace", "type", "zone"}...),
 			nil),
 
 		size: prometheus.NewDesc(
@@ -177,6 +183,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				}
 
 				addMetric(&ms, p, e.dlu, lastUsedTS(d), d.ID(), m.CreatedForPV(), m.CreatedForPVC(), m.Zone())
+				addMetric(&ms, p, e.ds, float64(d.SizeBytes()), d.ID(), ns, string(d.DiskType()), m.Zone())
 			}
 
 			addMetric(&ms, p, e.info, 1)
