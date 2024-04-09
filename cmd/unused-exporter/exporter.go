@@ -67,7 +67,7 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 		ds: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "disk", "size_bytes"),
 			"Disk size in bytes",
-			append(labels, []string{"disk", "k8s_namespace", "type", "zone"}...),
+			append(labels, []string{"disk", "k8s_namespace", "type", "region", "zone"}...),
 			nil),
 
 		size: prometheus.NewDesc(
@@ -183,7 +183,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				}
 
 				addMetric(&ms, p, e.dlu, lastUsedTS(d), d.ID(), m.CreatedForPV(), m.CreatedForPVC(), m.Zone())
-				addMetric(&ms, p, e.ds, d.SizeBytes(), d.ID(), ns, string(d.DiskType()), m.Zone())
+				addMetric(&ms, p, e.ds, d.SizeBytes(), d.ID(), ns, string(d.DiskType()), getRegionFromZone(p, m.Zone()), m.Zone())
 			}
 
 			addMetric(&ms, p, e.info, 1)
@@ -283,4 +283,13 @@ func lastUsedTS(d unused.Disk) float64 {
 	}
 
 	return float64(lastUsed.UnixMilli())
+}
+
+func getRegionFromZone(p unused.Provider, z string) string {
+	if strings.ToLower(p.Name()) == "azure" {
+		return z
+	}
+
+	// Drop the last character to get the region from the zone for GCP and AWS
+	return z[:len(z)-1]
 }
