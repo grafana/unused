@@ -2,7 +2,6 @@ package gcp
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -53,7 +52,7 @@ func (d *Disk) LastUsedAt() time.Time {
 func (d *Disk) SizeGB() int { return int(d.Disk.SizeGb) }
 
 // SizeBytes returns the size of the GCP compute disk in bytes.
-func (d *Disk) SizeBytes() int { return int(d.Disk.SizeGb) * int(math.Pow(1000, 3)) }
+func (d *Disk) SizeBytes() float64 { return float64(d.Disk.SizeGb * 1_000_000_000) }
 
 // DiskType Type returns the type of the GCP compute disk.
 func (d *Disk) DiskType() unused.DiskType {

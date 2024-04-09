@@ -30,7 +30,7 @@ func (d *Disk) Name() string { return *d.Disk.Name }
 func (d *Disk) SizeGB() int { return int(*d.Disk.DiskSizeGB) }
 
 // SizeBytes returns the size of this Azure compute disk in bytes.
-func (d *Disk) SizeBytes() int { return int(*d.Disk.DiskSizeBytes) }
+func (d *Disk) SizeBytes() float64 { return float64(*d.Disk.DiskSizeBytes) }
 
 // CreatedAt returns the time when this Azure compute disk was
 // created.

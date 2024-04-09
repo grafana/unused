@@ -183,7 +183,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				}
 
 				addMetric(&ms, p, e.dlu, lastUsedTS(d), d.ID(), m.CreatedForPV(), m.CreatedForPVC(), m.Zone())
-				addMetric(&ms, p, e.ds, float64(d.SizeBytes()), d.ID(), ns, string(d.DiskType()), m.Zone())
+				addMetric(&ms, p, e.ds, d.SizeBytes(), d.ID(), ns, string(d.DiskType()), m.Zone())
 			}
 
 			addMetric(&ms, p, e.info, 1)

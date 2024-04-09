@@ -19,7 +19,7 @@ type Disk interface {
 	SizeGB() int
 
 	// SizeBytes returns the disk size in bytes.
-	SizeBytes() int
+	SizeBytes() float64
 
 	// CreatedAt returns the time when the disk was created.
 	CreatedAt() time.Time
