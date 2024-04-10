@@ -8,7 +8,11 @@ import (
 )
 
 type config struct {
-	Providers internal.ProviderConfig
+	Providers struct {
+		GCP   internal.StringSliceFlag
+		AWS   internal.StringSliceFlag
+		Azure internal.StringSliceFlag
+	}
 
 	Web struct {
 		Address string

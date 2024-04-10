@@ -28,14 +28,14 @@ import (
 
 func main() {
 	var (
-		providerConfig internal.ProviderConfig
+		gcpProjects, awsProfiles, azureSubs internal.StringSliceFlag
 
 		interactiveMode bool
 
 		options ui.Options
 	)
 
-	internal.ProviderFlags(flag.CommandLine, &providerConfig)
+	internal.ProviderFlags(flag.CommandLine, &gcpProjects, &awsProfiles, &azureSubs)
 
 	flag.BoolVar(&interactiveMode, "i", false, "Interactive UI mode")
 	flag.BoolVar(&options.Verbose, "v", false, "Verbose mode")
@@ -71,7 +71,7 @@ func main() {
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
-	providers, err := internal.CreateProviders(ctx, logger, &providerConfig)
+	providers, err := internal.CreateProviders(ctx, logger, gcpProjects, awsProfiles, azureSubs)
 	if err != nil {
 		cancel()
 		fmt.Fprintln(os.Stderr, "creating providers:", err)

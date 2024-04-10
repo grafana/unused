@@ -19,7 +19,7 @@ func TestCreateProviders(t *testing.T) {
 	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	t.Run("fail when no provider is given", func(t *testing.T) {
-		ps, err := internal.CreateProviders(context.Background(), l, &internal.ProviderConfig{})
+		ps, err := internal.CreateProviders(context.Background(), l, nil, nil, nil)
 
 		if !errors.Is(err, internal.ErrNoProviders) {
 			t.Fatalf("expecting error %v, got %v", internal.ErrNoProviders, err)
@@ -34,7 +34,7 @@ func TestCreateProviders(t *testing.T) {
 	}
 
 	t.Run("GCP", func(t *testing.T) {
-		ps, err := internal.CreateProviders(context.Background(), l, &internal.ProviderConfig{GCPProjects: []string{"foo", "bar"}})
+		ps, err := internal.CreateProviders(context.Background(), l, []string{"foo", "bar"}, nil, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -50,7 +50,7 @@ func TestCreateProviders(t *testing.T) {
 	})
 
 	t.Run("AWS", func(t *testing.T) {
-		ps, err := internal.CreateProviders(context.Background(), l, &internal.ProviderConfig{AWSProfiles: []string{"foo", "bar"}})
+		ps, err := internal.CreateProviders(context.Background(), l, nil, []string{"foo", "bar"}, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -66,7 +66,7 @@ func TestCreateProviders(t *testing.T) {
 	})
 
 	t.Run("Azure", func(t *testing.T) {
-		ps, err := internal.CreateProviders(context.Background(), l, &internal.ProviderConfig{AzureSubs: []string{"foo", "bar"}})
+		ps, err := internal.CreateProviders(context.Background(), l, nil, nil, []string{"foo", "bar"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -83,13 +83,13 @@ func TestCreateProviders(t *testing.T) {
 }
 
 func TestProviderFlags(t *testing.T) {
-	var pc internal.ProviderConfig
+	var gcpProject, awsProfile, azureSub internal.StringSliceFlag
 
 	fs := flag.NewFlagSet("test", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.Usage = func() {}
 
-	internal.ProviderFlags(fs, &pc)
+	internal.ProviderFlags(fs, &gcpProject, &awsProfile, &azureSub)
 
 	args := []string{
 		"-gcp.project=my-project",
@@ -105,14 +105,14 @@ func TestProviderFlags(t *testing.T) {
 	}
 
 	testSlices := map[*internal.StringSliceFlag]string{
-		&pc.GCPProjects: "my-project",
-		&pc.AWSProfiles: "my-profile",
-		&pc.AzureSubs:   "my-subscription",
+		&gcpProject: "my-project",
+		&awsProfile: "my-profile",
+		&azureSub:   "my-subscription",
 	}
 	testStrings := map[*string]string{
-		&pc.GCPProviderName:   "GKE",
-		&pc.AWSProviderName:   "EKS",
-		&pc.AzureProviderName: "AKS",
+		&gcp.ProviderName:   "GKE",
+		&aws.ProviderName:   "EKS",
+		&azure.ProviderName: "AKS",
 	}
 
 	for v, exp := range testSlices {

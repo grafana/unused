@@ -12,7 +12,7 @@ import (
 	compute "google.golang.org/api/compute/v1"
 )
 
-const DefaultProviderName = "GCP"
+var ProviderName = "GCP"
 
 // ErrMissingProject is the error used when no project ID is provided
 // when trying to create a provider.
@@ -22,7 +22,6 @@ var _ unused.Provider = &Provider{}
 
 // Provider implements [unused.Provider] for GCP.
 type Provider struct {
-	name    string
 	project string
 	svc     *compute.Service
 	meta    unused.Meta
@@ -30,7 +29,7 @@ type Provider struct {
 }
 
 // Name returns GCP.
-func (p *Provider) Name() string { return p.name }
+func (p *Provider) Name() string { return ProviderName }
 
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
@@ -43,7 +42,7 @@ func (p *Provider) ID() string { return p.project }
 // A valid GCP compute service must be supplied in order to listed the
 // unused resources. It also requires a valid project ID which should
 // be the project where the disks were created.
-func NewProvider(logger *slog.Logger, svc *compute.Service, name, project string, meta unused.Meta) (*Provider, error) {
+func NewProvider(logger *slog.Logger, svc *compute.Service, project string, meta unused.Meta) (*Provider, error) {
 	if project == "" {
 		return nil, ErrMissingProject
 	}
@@ -53,7 +52,6 @@ func NewProvider(logger *slog.Logger, svc *compute.Service, name, project string
 	}
 
 	return &Provider{
-		name:    name,
 		project: project,
 		svc:     svc,
 		meta:    meta,
