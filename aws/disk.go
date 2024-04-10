@@ -7,6 +7,8 @@ import (
 	"github.com/grafana/unused"
 )
 
+const GiBbytes = 1073741824
+
 var _ unused.Disk = &Disk{}
 
 // Disk holds information about an AWS EC2 volume.
@@ -43,8 +45,11 @@ func (d *Disk) CreatedAt() time.Time { return *d.Volume.CreateTime }
 // Meta returns the disk metadata.
 func (d *Disk) Meta() unused.Meta { return d.meta }
 
-// SizeGB returns the size of this AWS EC2 volume in GB.
+// SizeGB returns the size of this AWS EC2 volume in GiB.
 func (d *Disk) SizeGB() int { return int(*d.Volume.Size) }
+
+// SizeBytes returns the size of this AWS EC2 volume in bytes.
+func (d *Disk) SizeBytes() float64 { return float64(*d.Volume.Size) * GiBbytes }
 
 // LastUsedAt returns a zero [time.Time] value, as AWS does not
 // provide this information.

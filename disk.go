@@ -15,8 +15,11 @@ type Disk interface {
 	// Name returns the disk name.
 	Name() string
 
-	// SizeGB returns the disk size in GB.
+	// SizeGB returns the disk size in GB (Azure/GCP) and GiB for AWS.
 	SizeGB() int
+
+	// SizeBytes returns the disk size in bytes.
+	SizeBytes() float64
 
 	// CreatedAt returns the time when the disk was created.
 	CreatedAt() time.Time
