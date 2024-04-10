@@ -24,7 +24,7 @@ type Provider struct {
 }
 
 // Name returns AWS.
-func (p *Provider) Name() string { return p.name }
+func (p *Provider) Name() string { return ProviderName }
 
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
