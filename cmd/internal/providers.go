@@ -95,10 +95,7 @@ type ProviderConfig struct {
 // ProviderFlags adds the provider configuration flags to the given
 // flag set.
 func ProviderFlags(fs *flag.FlagSet, pc *ProviderConfig) {
-	fs.Var(&pc.GCPProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
-	fs.Var(&pc.AWSProfiles, "aws.profile", "AWS profile (can be specified multiple times)")
-	fs.Var(&pc.AzureSubs, "azure.sub", "Azure subscription (can be specified multiple times)")
-	fs.StringVar(&pc.GCPProviderName, "gcp.providername", gcp.DefaultProviderName, `GCP provider name to use, default: "GCP" (e.g. "GKE")`)
-	fs.StringVar(&pc.AWSProviderName, "aws.providername", aws.DefaultProviderName, `AWS provider name to use, default: "AWS" (e.g. "EKS")`)
-	fs.StringVar(&pc.AzureProviderName, "azure.providername", azure.DefaultProviderName, `Azure provider name to use, default: "Azure" (e.g. "AKS")`)
+	fs.StringVar(&gcp.ProviderName, "gcp.providername", gcp.DefaultProviderName, `GCP provider name to use, default: "GCP" (e.g. "GKE")`)
+	fs.StringVar(&aws.ProviderName, "aws.providername", aws.DefaultProviderName, `AWS provider name to use, default: "AWS" (e.g. "EKS")`)
+	fs.StringVar(&azure.ProviderName, "azure.providername", azure.DefaultProviderName, `Azure provider name to use, default: "Azure" (e.g. "AKS")`)
 }
