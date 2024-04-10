@@ -82,8 +82,7 @@ func CreateProviders(ctx context.Context, logger *slog.Logger, pc *ProviderConfi
 	return providers, nil
 }
 
-// ProviderFlags adds the provider configuration flags to the given
-// flag set.
+// ProviderConfig holds the variables used by ProviderFlags
 type ProviderConfig struct {
 	GCPProjects       StringSliceFlag
 	AWSProfiles       StringSliceFlag
@@ -93,6 +92,8 @@ type ProviderConfig struct {
 	AzureProviderName string
 }
 
+// ProviderFlags adds the provider configuration flags to the given
+// flag set.
 func ProviderFlags(fs *flag.FlagSet, pc *ProviderConfig) {
 	fs.Var(&pc.GCPProjects, "gcp.project", "GCP project ID (can be specified multiple times)")
 	fs.Var(&pc.AWSProfiles, "aws.profile", "AWS profile (can be specified multiple times)")
