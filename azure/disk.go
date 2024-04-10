@@ -7,6 +7,8 @@ import (
 	"github.com/grafana/unused"
 )
 
+const DefaultProviderName = "Azure"
+
 var _ unused.Disk = &Disk{}
 
 // Disk holds information about an Azure compute disk.

@@ -23,7 +23,7 @@ func TestNewProvider(t *testing.T) {
 	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	t.Run("project is required", func(t *testing.T) {
-		p, err := gcp.NewProvider(l, nil, "", nil)
+		p, err := gcp.NewProvider(l, nil, gcp.DefaultProviderName, "", nil)
 		if !errors.Is(err, gcp.ErrMissingProject) {
 			t.Fatalf("expecting error %v, got %v", gcp.ErrMissingProject, err)
 		}
@@ -33,7 +33,7 @@ func TestNewProvider(t *testing.T) {
 	})
 
 	t.Run("provider information is correct", func(t *testing.T) {
-		p, err := gcp.NewProvider(l, nil, "my-project", unused.Meta{})
+		p, err := gcp.NewProvider(l, nil, gcp.DefaultProviderName, "my-project", unused.Meta{})
 		if err != nil {
 			t.Fatalf("error creating provider: %v", err)
 		}
@@ -52,7 +52,7 @@ func TestNewProvider(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error creating GCP compute service: %v", err)
 			}
-			return gcp.NewProvider(l, svc, "my-provider", meta)
+			return gcp.NewProvider(l, svc, gcp.DefaultProviderName, "my-provider", meta)
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -95,7 +95,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		t.Fatalf("unexpected error creating GCP compute service: %v", err)
 	}
 
-	p, err := gcp.NewProvider(l, svc, "my-project", nil)
+	p, err := gcp.NewProvider(l, svc, gcp.DefaultProviderName, "my-project", nil)
 	if err != nil {
 		t.Fatal("unexpected error creating provider:", err)
 	}
@@ -156,7 +156,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		var buf bytes.Buffer
 		l := slog.New(slog.NewTextHandler(&buf, nil))
 
-		p, err := gcp.NewProvider(l, svc, "my-project", nil)
+		p, err := gcp.NewProvider(l, svc, gcp.DefaultProviderName, "my-project", nil)
 		if err != nil {
 			t.Fatal("unexpected error creating provider:", err)
 		}

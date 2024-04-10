@@ -13,15 +13,18 @@ import (
 
 var _ unused.Provider = &Provider{}
 
+const DefaultProviderName = "AWS"
+
 // Provider implements [unused.Provider] for AWS.
 type Provider struct {
+	name   string
 	client *ec2.Client
 	meta   unused.Meta
 	logger *slog.Logger
 }
 
 // Name returns AWS.
-func (p *Provider) Name() string { return "AWS" }
+func (p *Provider) Name() string { return p.name }
 
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
@@ -34,12 +37,13 @@ func (p *Provider) ID() string { return p.meta["profile"] }
 // A valid EC2 client must be supplied in order to list the unused
 // resources. The metadata passed will be used to identify the
 // provider.
-func NewProvider(logger *slog.Logger, client *ec2.Client, meta unused.Meta) (*Provider, error) {
+func NewProvider(logger *slog.Logger, client *ec2.Client, name string, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
 	}
 
 	return &Provider{
+		name:   name,
 		client: client,
 		meta:   meta,
 		logger: logger,

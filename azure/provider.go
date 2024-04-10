@@ -11,16 +11,20 @@ import (
 
 var _ unused.Provider = &Provider{}
 
-const ResourceGroupMetaKey = "resource-group"
+const (
+	ResourceGroupMetaKey     = "resource-group"
+	DefaultAzureProviderName = "Azure"
+)
 
 // Provider implements [unused.Provider] for Azure.
 type Provider struct {
+	name   string
 	client compute.DisksClient
 	meta   unused.Meta
 }
 
 // Name returns Azure.
-func (p *Provider) Name() string { return "Azure" }
+func (p *Provider) Name() string { return p.name }
 
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
@@ -32,12 +36,12 @@ func (p *Provider) ID() string { return p.client.SubscriptionID }
 //
 // A valid Azure compute disks client must be supplied in order to
 // list the unused resources.
-func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error) {
+func NewProvider(client compute.DisksClient, name string, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
 	}
 
-	return &Provider{client: client, meta: meta}, nil
+	return &Provider{name: name, client: client, meta: meta}, nil
 }
 
 // ListUnusedDisks returns all the Azure compute disks that are not

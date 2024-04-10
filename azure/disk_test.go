@@ -25,7 +25,7 @@ func TestDisk(t *testing.T) {
 				TimeCreated: &date.Time{Time: createdAt},
 			},
 		},
-		&Provider{},
+		&Provider{name: DefaultProviderName},
 		nil,
 	}
 

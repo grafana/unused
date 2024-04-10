@@ -25,7 +25,7 @@ func main() {
 		Logger: slog.New(slog.NewTextHandler(os.Stdout, nil)),
 	}
 
-	internal.ProviderFlags(flag.CommandLine, &cfg.Providers.GCP, &cfg.Providers.AWS, &cfg.Providers.Azure)
+	internal.ProviderFlags(flag.CommandLine, &cfg.Providers)
 
 	flag.BoolVar(&cfg.VerboseLogging, "verbose", false, "add verbose logging information")
 	flag.DurationVar(&cfg.Collector.Timeout, "collect.timeout", 30*time.Second, "timeout for collecting metrics from each provider")
@@ -47,7 +47,7 @@ func main() {
 }
 
 func realMain(ctx context.Context, cfg config) error {
-	providers, err := internal.CreateProviders(ctx, cfg.Logger, cfg.Providers.GCP, cfg.Providers.AWS, cfg.Providers.Azure)
+	providers, err := internal.CreateProviders(ctx, cfg.Logger, &cfg.Providers)
 	if err != nil {
 		return err
 	}

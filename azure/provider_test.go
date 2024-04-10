@@ -14,7 +14,7 @@ import (
 
 func TestNewProvider(t *testing.T) {
 	c := compute.NewDisksClient("my-subscription")
-	p, err := azure.NewProvider(c, nil)
+	p, err := azure.NewProvider(c, azure.DefaultProviderName, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestNewProvider(t *testing.T) {
 func TestProviderMeta(t *testing.T) {
 	err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
 		c := compute.NewDisksClient("my-subscription")
-		return azure.NewProvider(c, meta)
+		return azure.NewProvider(c, azure.DefaultProviderName, meta)
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -69,7 +69,7 @@ func TestListUnusedDisks(t *testing.T) {
 	c := compute.NewDisksClient(subID)
 	c.BaseURI = ts.URL
 
-	p, err := azure.NewProvider(c, nil)
+	p, err := azure.NewProvider(c, azure.DefaultProviderName, nil)
 	if err != nil {
 		t.Fatalf("unexpected error creating provider: %v", err)
 	}
