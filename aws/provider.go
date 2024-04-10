@@ -13,7 +13,7 @@ import (
 
 var _ unused.Provider = &Provider{}
 
-const DefaultProviderName = "AWS"
+var ProviderName = "AWS"
 
 // Provider implements [unused.Provider] for AWS.
 type Provider struct {
