@@ -12,7 +12,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const namespace = "unused"
+const (
+	namespace = "unused"
+	providerGCP = "GCP"
+	providerAWS = "AWS"
+	providerAzure = "Azure"
+)
 
 type metric struct {
 	desc   *prometheus.Desc
@@ -261,7 +266,7 @@ func getDiskLabels(d unused.Disk, v bool) []any {
 }
 
 func getNamespace(d unused.Disk, p unused.Provider) string {
-	if strings.ToLower(p.Name()) == "azure" {
+	if p.Name() == providerAzure {
 		return d.Meta()["kubernetes.io-created-for-pvc-namespace"]
 	}
 
@@ -286,10 +291,12 @@ func lastUsedTS(d unused.Disk) float64 {
 }
 
 func getRegionFromZone(p unused.Provider, z string) string {
-	if strings.ToLower(p.Name()) == "azure" {
+	switch p.Name() {
+	case providerAWS :
+		return z[:len(z)-1]
+	case providerGCP:
+		return z[:len(z)-2]
+	default:
 		return z
 	}
-
-	// Drop the last character to get the region from the zone for GCP and AWS
-	return z[:len(z)-1]
 }
