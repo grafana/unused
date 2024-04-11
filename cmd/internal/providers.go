@@ -84,10 +84,10 @@ func CreateProviders(ctx context.Context, logger *slog.Logger, gcpProjects, awsP
 
 // ProviderFlags adds the provider configuration flags to the given
 // flag set.
-func ProviderFlags(fs *flag.FlagSet, gcpFlag, awsFlag, azureFlag *StringSliceFlag) {
-	fs.Var(gcpFlag, "gcp.project", "GCP project ID (can be specified multiple times)")
-	fs.Var(awsFlag, "aws.profile", "AWS profile (can be specified multiple times)")
-	fs.Var(azureFlag, "azure.sub", "Azure subscription (can be specified multiple times)")
+func ProviderFlags(fs *flag.FlagSet, gcpProject, awsProfile, azureSub *StringSliceFlag) {
+	fs.Var(gcpProject, "gcp.project", "GCP project ID (can be specified multiple times)")
+	fs.Var(awsProfile, "aws.profile", "AWS profile (can be specified multiple times)")
+	fs.Var(azureSub, "azure.sub", "Azure subscription (can be specified multiple times)")
 	fs.StringVar(&gcp.ProviderName, "gcp.providername", gcp.ProviderName, `GCP provider name to use, default: "GCP" (e.g. "GKE")`)
 	fs.StringVar(&aws.ProviderName, "aws.providername", aws.ProviderName, `AWS provider name to use, default: "AWS" (e.g. "EKS")`)
 	fs.StringVar(&azure.ProviderName, "azure.providername", azure.ProviderName, `Azure provider name to use, default: "Azure" (e.g. "AKS")`)

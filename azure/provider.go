@@ -13,10 +13,7 @@ var ProviderName = "Azure"
 
 var _ unused.Provider = &Provider{}
 
-const (
-	ResourceGroupMetaKey     = "resource-group"
-	DefaultAzureProviderName = "Azure"
-)
+const ResourceGroupMetaKey = "resource-group"
 
 // Provider implements [unused.Provider] for Azure.
 type Provider struct {
