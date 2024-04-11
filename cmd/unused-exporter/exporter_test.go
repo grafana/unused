@@ -52,11 +52,11 @@ func TestGetRegionFromZone(t *testing.T) {
 		expected string
 	}
 
-	testCases := map[string]struct{
+	testCases := map[string]struct {
 		provider string
 		zone     string
 		expected string
-	} {
+	}{
 		"Azure": {azure.ProviderName, "eastus1", "eastus1"},
 		"GCP":   {gcp.ProviderName, "us-central1-a", "us-central1"},
 		"AWS":   {aws.ProviderName, "us-west-2a", "us-west-2"},
@@ -75,31 +75,27 @@ func TestGetRegionFromZone(t *testing.T) {
 
 func TestGetNamespace(t *testing.T) {
 	type testCase struct {
-		name     string
 		provider string
 		diskMeta map[string]string
 		expected string
 	}
 
-	testCases := []testCase{
-		{
-			name:     "Azure",
+	testCases := map[string]testCase{
+		"Azure": {
 			provider: azure.ProviderName,
 			diskMeta: map[string]string{
 				"kubernetes.io-created-for-pvc-namespace": "azure-namespace",
 			},
 			expected: "azure-namespace",
 		},
-		{
-			name:     "GCP",
+		"GCP": {
 			provider: gcp.ProviderName,
 			diskMeta: map[string]string{
 				"kubernetes.io/created-for/pvc/namespace": "gcp-namespace",
 			},
 			expected: "gcp-namespace",
 		},
-		{
-			name:     "AWS",
+		"AWS": {
 			provider: aws.ProviderName,
 			diskMeta: map[string]string{
 				"kubernetes.io/created-for/pvc/namespace": "aws-namespace",
@@ -108,8 +104,8 @@ func TestGetNamespace(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
 			p := &MockProvider{name: tc.provider}
 			d := &MockDisk{meta: tc.diskMeta}
 			result := getNamespace(d, p)
@@ -122,7 +118,6 @@ func TestGetNamespace(t *testing.T) {
 
 func TestGetDiskLabels(t *testing.T) {
 	type testCase struct {
-		name     string
 		verbose  bool
 		disk     *MockDisk
 		expected []any
@@ -130,9 +125,8 @@ func TestGetDiskLabels(t *testing.T) {
 
 	createdAt := time.Now()
 
-	testCases := []testCase{
-		{
-			name:    "Basic Disk Labels",
+	testCases := map[string]testCase{
+		"Basic Disk Labels": {
 			verbose: false,
 			disk: &MockDisk{
 				name:      "test-disk",
@@ -146,8 +140,7 @@ func TestGetDiskLabels(t *testing.T) {
 				slog.Time("created", createdAt),
 			},
 		},
-		{
-			name:    "Verbose Disk Labels",
+		"Verbose Disk Labels": {
 			verbose: true,
 			disk: &MockDisk{
 				name:      "test-disk",
@@ -168,8 +161,8 @@ func TestGetDiskLabels(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
 			actual := getDiskLabels(tc.disk, tc.verbose)
 			if !reflect.DeepEqual(actual, tc.expected) {
 				t.Errorf("getDiskLabels(%v, %v) = %v, expected %v", tc.disk, tc.verbose, actual, tc.expected)
