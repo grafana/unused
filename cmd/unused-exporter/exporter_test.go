@@ -46,17 +46,12 @@ func (d *MockDisk) SizeGB() int {
 
 func TestGetRegionFromZone(t *testing.T) {
 	type testCase struct {
-		name     string
 		provider string
 		zone     string
 		expected string
 	}
 
-	testCases := map[string]struct {
-		provider string
-		zone     string
-		expected string
-	}{
+	testCases := map[string]testCase{
 		"Azure": {azure.ProviderName, "eastus1", "eastus1"},
 		"GCP":   {gcp.ProviderName, "us-central1-a", "us-central1"},
 		"AWS":   {aws.ProviderName, "us-west-2a", "us-west-2"},
