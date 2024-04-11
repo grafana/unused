@@ -14,34 +14,18 @@ import (
 )
 
 type MockProvider struct {
+	unused.Provider
+	
 	name string
 }
+
+func (m MockProvider) Name() string { return m.name }
 
 type MockDisk struct {
 	name      string
 	sizeGB    int
 	createdAt time.Time
 	meta      map[string]string
-}
-
-func (p *MockProvider) Name() string {
-	return p.name
-}
-
-func (p *MockProvider) Delete(context context.Context, d unused.Disk) error {
-	return nil
-}
-
-func (p *MockProvider) ID() string {
-	return ""
-}
-
-func (p *MockProvider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
-	return nil, nil
-}
-
-func (p *MockProvider) Meta() unused.Meta {
-	return unused.Meta{}
 }
 
 func (d *MockDisk) Name() string {
