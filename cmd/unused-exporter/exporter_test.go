@@ -52,29 +52,18 @@ func TestGetRegionFromZone(t *testing.T) {
 		expected string
 	}
 
-	testCases := []testCase{
-		{
-			name:     "Azure",
-			provider: azure.ProviderName,
-			zone:     "eastus1",
-			expected: "eastus1",
-		},
-		{
-			name:     "GCP",
-			provider: gcp.ProviderName,
-			zone:     "us-central1-a",
-			expected: "us-central1",
-		},
-		{
-			name:     "AWS",
-			provider: aws.ProviderName,
-			zone:     "us-west-2a",
-			expected: "us-west-2",
-		},
+	testCases := map[string]struct{
+		provider string
+		zone     string
+		expected string
+	} {
+		"Azure": {azure.ProviderName, "eastus1", "eastus1"},
+		"GCP":   {gcp.ProviderName, "us-central1-a", "us-central1"},
+		"AWS":   {aws.ProviderName, "us-west-2a", "us-west-2"},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
 			p := &MockProvider{name: tc.provider}
 			result := getRegionFromZone(p, tc.zone)
 			if result != tc.expected {
