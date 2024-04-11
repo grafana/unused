@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"reflect"
 	"testing"
@@ -15,13 +14,14 @@ import (
 
 type MockProvider struct {
 	unused.Provider
-	
+
 	name string
 }
 
 func (m MockProvider) Name() string { return m.name }
 
 type MockDisk struct {
+	unused.Disk
 	name      string
 	sizeGB    int
 	createdAt time.Time
@@ -40,28 +40,8 @@ func (d *MockDisk) CreatedAt() time.Time {
 	return d.createdAt
 }
 
-func (d *MockDisk) ID() string {
-	return ""
-}
-
-func (d *MockDisk) Provider() unused.Provider {
-	return nil
-}
-
 func (d *MockDisk) SizeGB() int {
 	return d.sizeGB
-}
-
-func (d *MockDisk) SizeBytes() float64 {
-	return 0
-}
-
-func (d *MockDisk) LastUsedAt() time.Time {
-	return time.Time{}
-}
-
-func (d *MockDisk) DiskType() unused.DiskType {
-	return ""
 }
 
 func TestGetRegionFromZone(t *testing.T) {

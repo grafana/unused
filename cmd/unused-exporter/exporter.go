@@ -265,11 +265,14 @@ func getDiskLabels(d unused.Disk, v bool) []any {
 
 func getNamespace(d unused.Disk, p unused.Provider) string {
 	switch p.Name() {
+	case gcp.ProviderName:
+		return d.Meta()["kubernetes.io/created-for/pvc/namespace"]
+	case aws.ProviderName:
+		return d.Meta()["kubernetes.io/created-for/pvc/namespace"]
 	case azure.ProviderName:
 		return d.Meta()["kubernetes.io-created-for-pvc-namespace"]
 	default:
-
-		return d.Meta()["kubernetes.io/created-for/pvc/namespace"]
+		panic("getNamespace(): unrecognized provider name:" + p.Name())
 	}
 }
 
@@ -291,14 +294,14 @@ func lastUsedTS(d unused.Disk) float64 {
 }
 
 func getRegionFromZone(p unused.Provider, z string) string {
-	var region string
 	switch p.Name() {
-	case azure.ProviderName:
-		region = z
 	case gcp.ProviderName:
-		region = z[:strings.LastIndex(z, "-")]
+		return z[:strings.LastIndex(z, "-")]
 	case aws.ProviderName:
-		region = z[:len(z)-1]
+		return z[:len(z)-1]
+	case azure.ProviderName:
+		return z
+	default:
+		panic("getRegionFromZone(): unrecognized provider name:" + p.Name())
 	}
-	return region
 }
