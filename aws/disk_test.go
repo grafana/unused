@@ -25,7 +25,7 @@ func TestDisk(t *testing.T) {
 						},
 					},
 				},
-				&Provider{},
+				nil,
 				nil,
 			}
 

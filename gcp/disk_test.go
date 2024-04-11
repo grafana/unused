@@ -20,7 +20,7 @@ func TestDisk(t *testing.T) {
 			CreationTimestamp:   createdAt.Format(time.RFC3339),
 			LastDetachTimestamp: detachedAt.Format(time.RFC3339),
 		},
-		&Provider{},
+		nil,
 		unused.Meta{"foo": "bar"},
 	}
 

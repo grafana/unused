@@ -9,6 +9,8 @@ import (
 	"github.com/grafana/unused"
 )
 
+var ProviderName = "Azure"
+
 var _ unused.Provider = &Provider{}
 
 const ResourceGroupMetaKey = "resource-group"
@@ -20,7 +22,7 @@ type Provider struct {
 }
 
 // Name returns Azure.
-func (p *Provider) Name() string { return "Azure" }
+func (p *Provider) Name() string { return ProviderName }
 
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }

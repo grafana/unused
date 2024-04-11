@@ -12,6 +12,8 @@ import (
 	compute "google.golang.org/api/compute/v1"
 )
 
+var ProviderName = "GCP"
+
 // ErrMissingProject is the error used when no project ID is provided
 // when trying to create a provider.
 var ErrMissingProject = errors.New("missing project id")
@@ -27,7 +29,7 @@ type Provider struct {
 }
 
 // Name returns GCP.
-func (p *Provider) Name() string { return "GCP" }
+func (p *Provider) Name() string { return ProviderName }
 
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }

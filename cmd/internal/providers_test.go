@@ -83,33 +83,46 @@ func TestCreateProviders(t *testing.T) {
 }
 
 func TestProviderFlags(t *testing.T) {
-	var gcp, aws, azure internal.StringSliceFlag
+	var gcpProject, awsProfile, azureSub internal.StringSliceFlag
 
 	fs := flag.NewFlagSet("test", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.Usage = func() {}
 
-	internal.ProviderFlags(fs, &gcp, &aws, &azure)
+	internal.ProviderFlags(fs, &gcpProject, &awsProfile, &azureSub)
 
 	args := []string{
 		"-gcp.project=my-project",
 		"-azure.sub=my-subscription",
 		"-aws.profile=my-profile",
+		"-gcp.providername=GKE",
+		"-azure.providername=AKS",
+		"-aws.providername=EKS",
 	}
 
 	if err := fs.Parse(args); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	tests := map[*internal.StringSliceFlag]string{
-		&gcp:   "my-project",
-		&aws:   "my-profile",
-		&azure: "my-subscription",
+	testSlices := map[*internal.StringSliceFlag]string{
+		&gcpProject: "my-project",
+		&awsProfile: "my-profile",
+		&azureSub:   "my-subscription",
+	}
+	testStrings := map[*string]string{
+		&gcp.ProviderName:   "GKE",
+		&aws.ProviderName:   "EKS",
+		&azure.ProviderName: "AKS",
 	}
 
-	for v, exp := range tests {
+	for v, exp := range testSlices {
 		if len(*v) != 1 || (*v)[0] != exp {
 			t.Errorf("expecting one value (%q), got %v", exp, v)
+		}
+	}
+	for v, exp := range testStrings {
+		if *v != exp {
+			t.Errorf("expecting %q, got %v", exp, v)
 		}
 	}
 }

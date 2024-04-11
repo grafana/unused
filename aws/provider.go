@@ -13,6 +13,8 @@ import (
 
 var _ unused.Provider = &Provider{}
 
+var ProviderName = "AWS"
+
 // Provider implements [unused.Provider] for AWS.
 type Provider struct {
 	client *ec2.Client
@@ -21,7 +23,7 @@ type Provider struct {
 }
 
 // Name returns AWS.
-func (p *Provider) Name() string { return "AWS" }
+func (p *Provider) Name() string { return ProviderName }
 
 // Meta returns the provider metadata.
 func (p *Provider) Meta() unused.Meta { return p.meta }
