@@ -9,6 +9,9 @@ import (
 	"time"
 
 	"github.com/grafana/unused"
+	"github.com/grafana/unused/aws"
+	"github.com/grafana/unused/azure"
+	"github.com/grafana/unused/gcp"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -261,11 +264,13 @@ func getDiskLabels(d unused.Disk, v bool) []any {
 }
 
 func getNamespace(d unused.Disk, p unused.Provider) string {
-	if strings.ToLower(p.Name()) == "azure" {
+	switch p.Name() {
+	case azure.ProviderName:
 		return d.Meta()["kubernetes.io-created-for-pvc-namespace"]
-	}
+	default:
 
-	return d.Meta()["kubernetes.io/created-for/pvc/namespace"]
+		return d.Meta()["kubernetes.io/created-for/pvc/namespace"]
+	}
 }
 
 func addMetric(ms *[]metric, p unused.Provider, d *prometheus.Desc, v float64, lbls ...string) {
@@ -286,10 +291,14 @@ func lastUsedTS(d unused.Disk) float64 {
 }
 
 func getRegionFromZone(p unused.Provider, z string) string {
-	if strings.ToLower(p.Name()) == "azure" {
-		return z
+	var region string
+	switch p.Name() {
+	case azure.ProviderName:
+		region = z
+	case gcp.ProviderName:
+		region = z[:strings.LastIndex(z, "-")]
+	case aws.ProviderName:
+		region = z[:len(z)-1]
 	}
-
-	// Drop the last character to get the region from the zone for GCP and AWS
-	return z[:len(z)-1]
+	return region
 }

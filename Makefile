@@ -25,7 +25,7 @@ lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run -c .golangci.yml
 
 docker:
-	docker build --build-arg=GIT_VERSION=$(GIT_VERSION) -t $(IMAGE_PREFIX)/unused -f Dockerfile.exporter .
+	docker build --build-arg=GIT_VERSION=$(GIT_VERSION) -t $(IMAGE_PREFIX)/unused -f Dockerfile.exporter . --load
 	docker tag $(IMAGE_PREFIX)/unused $(IMAGE_PREFIX)/unused:$(GIT_VERSION)
 
 push: docker
