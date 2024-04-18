@@ -70,7 +70,7 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 		ds: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "disk", "size_bytes"),
 			"Disk size in bytes",
-			append(labels, []string{"disk", "k8s_namespace", "type", "region", "zone"}...),
+			append(labels, []string{"disk", "created_for_pv", "k8s_namespace", "type", "region", "zone"}...),
 			nil),
 
 		size: prometheus.NewDesc(
@@ -186,7 +186,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 				}
 
 				addMetric(&ms, p, e.dlu, lastUsedTS(d), d.ID(), m.CreatedForPV(), m.CreatedForPVC(), m.Zone())
-				addMetric(&ms, p, e.ds, d.SizeBytes(), d.ID(), ns, string(d.DiskType()), getRegionFromZone(p, m.Zone()), m.Zone())
+				addMetric(&ms, p, e.ds, d.SizeBytes(), d.ID(), m.CreatedForPV(), ns, string(d.DiskType()), getRegionFromZone(p, m.Zone()), m.Zone())
 			}
 
 			addMetric(&ms, p, e.info, 1)
