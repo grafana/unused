@@ -70,6 +70,6 @@ const indexTemplate = `<!doctype html>
   <head><title>Unused Disks Exporter</title></head>
   <body>
     <h1>Unused Disks Exporter</h1>
-    <p><a href=%q'>Metrics</a></p>
+    <p><a href=%q>Metrics</a></p>
   </body>
 </html>`
