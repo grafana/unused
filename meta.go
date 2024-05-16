@@ -65,10 +65,6 @@ func (m Meta) CreatedForNamespace() string {
 	return m.coalesce("kubernetes.io/created-for/pvc/namespace", "kubernetes.io-created-for-pvc-namespace")
 }
 
-func (m Meta) CreatedBy() string {
-	return m.coalesce("storage.gke.io/created-by", "created-by")
-}
-
 func (m Meta) Zone() string {
 	return m.coalesce("zone", "location")
 }
