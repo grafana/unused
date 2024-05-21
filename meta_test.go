@@ -173,3 +173,131 @@ func TestEquals(t *testing.T) {
 		})
 	}
 }
+
+func TestCreatedForPV(t *testing.T) {
+	tests := []struct {
+		name     string
+		m        Meta
+		expected string
+	}{
+		{
+			name:     "GCP disk",
+			m:        Meta{"kubernetes.io/created-for/pv/name": "pvc-c898536e-1601-4357-af13-01bbe82f3055"},
+			expected: "pvc-c898536e-1601-4357-af13-01bbe82f3055",
+		},
+		{
+			name:     "AWS disk",
+			m:        Meta{"kubernetes.io/created-for/pv/name": "pvc-b78d13ec-426f-4ec6-80aa-231a7d4e7db9"},
+			expected: "pvc-b78d13ec-426f-4ec6-80aa-231a7d4e7db9",
+		},
+		{
+			name:     "Azure disk",
+			m:        Meta{"kubernetes.io-created-for-pv-name": "pvc-10df52de-2b9d-44a2-8901-4cbfc4871f8c"},
+			expected: "pvc-10df52de-2b9d-44a2-8901-4cbfc4871f8c",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.m.CreatedForPV()
+			if tt.expected != actual {
+				t.Fatalf("expected %v but got %v", tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestCreatedForPVC(t *testing.T) {
+	tests := []struct {
+		name     string
+		m        Meta
+		expected string
+	}{
+		{
+			name:     "GCP disk",
+			m:        Meta{"kubernetes.io/created-for/pvc/name": "qwerty"},
+			expected: "qwerty",
+		},
+		{
+			name:     "AWS disk",
+			m:        Meta{"kubernetes.io/created-for/pvc/name": "asdf"},
+			expected: "asdf",
+		},
+		{
+			name:     "Azure disk",
+			m:        Meta{"kubernetes.io-created-for-pvc-name": "zxcv"},
+			expected: "zxcv",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.m.CreatedForPVC()
+			if tt.expected != actual {
+				t.Fatalf("expected %v but got %v", tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestCreatedForNamespace(t *testing.T) {
+	tests := []struct {
+		name     string
+		m        Meta
+		expected string
+	}{
+		{
+			name:     "GCP disk",
+			m:        Meta{"kubernetes.io/created-for/pvc/namespace": "ns1"},
+			expected: "ns1",
+		},
+		{
+			name:     "AWS disk",
+			m:        Meta{"kubernetes.io/created-for/pvc/namespace": "ns2"},
+			expected: "ns2",
+		},
+		{
+			name:     "Azure disk",
+			m:        Meta{"kubernetes.io-created-for-pvc-namespace": "ns3"},
+			expected: "ns3",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.m.CreatedForNamespace()
+			if tt.expected != actual {
+				t.Fatalf("expected %v but got %v", tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestZone(t *testing.T) {
+	tests := []struct {
+		name     string
+		m        Meta
+		expected string
+	}{
+		{
+			name:     "GCP disk",
+			m:        Meta{"zone": "asia-south1-a"},
+			expected: "asia-south1-a",
+		},
+		{
+			name:     "AWS disk",
+			m:        Meta{"zone": "us-east-2a"},
+			expected: "us-east-2a",
+		},
+		{
+			name:     "Azure disk",
+			m:        Meta{"location": "Central US"},
+			expected: "Central US",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.m.Zone()
+			if tt.expected != actual {
+				t.Fatalf("expected %v but got %v", tt.expected, actual)
+			}
+		})
+	}
+}
