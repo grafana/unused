@@ -12,6 +12,7 @@ import (
 func TestDisk(t *testing.T) {
 	createdAt := time.Date(2021, 7, 16, 5, 55, 00, 0, time.UTC)
 	detachedAt := createdAt.Add(1 * time.Hour)
+	size := 10
 
 	var d unused.Disk = &Disk{
 		&compute.Disk{
@@ -19,6 +20,7 @@ func TestDisk(t *testing.T) {
 			Name:                "my-disk",
 			CreationTimestamp:   createdAt.Format(time.RFC3339),
 			LastDetachTimestamp: detachedAt.Format(time.RFC3339),
+			SizeGb:              int64(size),
 		},
 		nil,
 		unused.Meta{"foo": "bar"},
@@ -42,6 +44,14 @@ func TestDisk(t *testing.T) {
 
 	if !detachedAt.Equal(d.LastUsedAt()) {
 		t.Errorf("expecting LastUsedAt() %v, got %v", detachedAt, d.LastUsedAt())
+	}
+
+	if exp, got := size, d.SizeGB(); exp != got {
+		t.Errorf("expecting SizeGB() %d, got %d", exp, got)
+	}
+
+	if exp, got := float64(size) * unused.GiBbytes, d.SizeBytes(); exp != got {
+		t.Errorf("expecting SizeBytes() %f, got %f", exp, got)
 	}
 
 	err := unusedtest.AssertEqualMeta(unused.Meta{"foo": "bar"}, d.Meta())

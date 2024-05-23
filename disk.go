@@ -41,3 +41,5 @@ const (
 	HDD     DiskType = "hdd"
 	Unknown DiskType = "unknown"
 )
+
+const GiBbytes = 1_073_741_824 // 2^30

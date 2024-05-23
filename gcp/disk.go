@@ -9,8 +9,6 @@ import (
 	compute "google.golang.org/api/compute/v1"
 )
 
-const GBbytes = 1_000_000_000
-
 // ensure we are properly defining the interface
 var _ unused.Disk = &Disk{}
 
@@ -50,11 +48,14 @@ func (d *Disk) LastUsedAt() time.Time {
 	return t
 }
 
-// SizeGB returns the size of the GCP compute disk in GB.
+// SizeGB returns the size of the GCP compute disk in binary GB (aka GiB).
+// GCP Storage docs: https://cloud.google.com/compute/docs/disks
+// GCP pricing docs: https://cloud.google.com/compute/disks-image-pricing
+// Note that it specifies the use of JEDEC binary gigabytes for the disk size.
 func (d *Disk) SizeGB() int { return int(d.Disk.SizeGb) }
 
 // SizeBytes returns the size of the GCP compute disk in bytes.
-func (d *Disk) SizeBytes() float64 { return float64(d.Disk.SizeGb) * GBbytes }
+func (d *Disk) SizeBytes() float64 { return float64(d.Disk.SizeGb) * unused.GiBbytes }
 
 // DiskType Type returns the type of the GCP compute disk.
 func (d *Disk) DiskType() unused.DiskType {
