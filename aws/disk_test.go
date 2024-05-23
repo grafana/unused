@@ -51,7 +51,7 @@ func TestDisk(t *testing.T) {
 				t.Errorf("expecting SizeGB() %d, got %d", exp, got)
 			}
 
-			if exp, got := float64(size) * unused.GiBbytes, d.SizeBytes(); exp != got {
+			if exp, got := float64(size)*unused.GiBbytes, d.SizeBytes(); exp != got {
 				t.Errorf("expecting SizeBytes() %f, got %f", exp, got)
 			}
 		})

@@ -24,8 +24,8 @@ func TestDisk(t *testing.T) {
 				Name: compute.StandardSSDLRS,
 			},
 			DiskProperties: &compute.DiskProperties{
-				TimeCreated: &date.Time{Time: createdAt},
-				DiskSizeGB: &sizeGB,
+				TimeCreated:   &date.Time{Time: createdAt},
+				DiskSizeGB:    &sizeGB,
 				DiskSizeBytes: &sizeBytes,
 			},
 		},
