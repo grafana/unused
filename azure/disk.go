@@ -27,6 +27,8 @@ func (d *Disk) Provider() unused.Provider { return d.provider }
 func (d *Disk) Name() string { return *d.Disk.Name }
 
 // SizeGB returns the size of this Azure compute disk in GB.
+// Note that Azure uses binary GB, aka, GiB
+// https://learn.microsoft.com/en-us/dotnet/api/microsoft.azure.management.compute.models.datadisk.disksizegb?view=azure-dotnet-legacy
 func (d *Disk) SizeGB() int { return int(*d.Disk.DiskSizeGB) }
 
 // SizeBytes returns the size of this Azure compute disk in bytes.
