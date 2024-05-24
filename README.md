@@ -39,8 +39,9 @@ It also supports an interactive mode which allows to select and delete disks in 
 go install github.com/grafana/unused/cmd/unused@latest
 ```
 
-### `unused-exporter` Prometheus exporter
+### `unused-exporter` Prometheus / OTEL exporter
 Web server exposing Prometheus metrics about each providers count of unused disks.
+
 It exposes the following metrics:
 
 | Metric | Description |
@@ -60,4 +61,14 @@ Information about each unused disk is currently logged to stdout given that it c
 
 ```
 go install github.com/grafana/unused/cmd/unused-exporter@latest
+```
+
+#### EXPERIMENTAL: OpenTelemetry exporter
+This exporter also supports exporting metrics to an OpenTelemetry Collector.
+
+To enable this feature, set the `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable to the address of the OpenTelemetry Collector. However, the OTEL SDK doesn't set an `instance` label yet, and we recommend manually setting the `service.instance.id` attribute to a unique value for each instance of the exporter.
+
+For example:
+```
+OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 OTEL_RESOURCE_ATTRIBUTES="service.instance.id=<value-of-instance-label>" unused-exporter -gcp.project=my-gcp-project -aws.profile=my-aws-profile -azure.sub=my-azure-sub
 ```
