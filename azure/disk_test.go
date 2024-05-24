@@ -13,6 +13,8 @@ func TestDisk(t *testing.T) {
 	createdAt := time.Date(2021, 7, 16, 5, 55, 00, 0, time.UTC)
 	name := "my-disk"
 	id := "my-disk-id"
+	sizeGB := int32(10)
+	sizeBytes := int64(10_737_418_240)
 
 	var d unused.Disk = &Disk{
 		compute.Disk{
@@ -22,7 +24,9 @@ func TestDisk(t *testing.T) {
 				Name: compute.StandardSSDLRS,
 			},
 			DiskProperties: &compute.DiskProperties{
-				TimeCreated: &date.Time{Time: createdAt},
+				TimeCreated:   &date.Time{Time: createdAt},
+				DiskSizeGB:    &sizeGB,
+				DiskSizeBytes: &sizeBytes,
 			},
 		},
 		nil,
@@ -47,6 +51,14 @@ func TestDisk(t *testing.T) {
 
 	if !createdAt.Equal(d.CreatedAt()) {
 		t.Errorf("expecting CreatedAt() %v, got %v", createdAt, d.CreatedAt())
+	}
+
+	if exp, got := int(sizeGB), d.SizeGB(); exp != got {
+		t.Errorf("expecting SizeGB() %d, got %d", exp, got)
+	}
+
+	if exp, got := float64(sizeBytes), d.SizeBytes(); exp != got {
+		t.Errorf("expecting SizeBytes() %f, got %f", exp, got)
 	}
 
 	if !d.LastUsedAt().IsZero() {

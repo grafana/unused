@@ -11,6 +11,7 @@ import (
 
 func TestDisk(t *testing.T) {
 	createdAt := time.Date(2021, 7, 16, 5, 55, 00, 0, time.UTC)
+	size := int32(10)
 
 	for _, keyName := range []string{"Name", "CSIVolumeName"} {
 		t.Run(keyName, func(t *testing.T) {
@@ -24,6 +25,7 @@ func TestDisk(t *testing.T) {
 							Value: aws.String("my-disk"),
 						},
 					},
+					Size: &size,
 				},
 				nil,
 				nil,
@@ -43,6 +45,14 @@ func TestDisk(t *testing.T) {
 
 			if !createdAt.Equal(d.CreatedAt()) {
 				t.Errorf("expecting CreatedAt() %v, got %v", createdAt, d.CreatedAt())
+			}
+
+			if exp, got := int(size), d.SizeGB(); exp != got {
+				t.Errorf("expecting SizeGB() %d, got %d", exp, got)
+			}
+
+			if exp, got := float64(size)*unused.GiBbytes, d.SizeBytes(); exp != got {
+				t.Errorf("expecting SizeBytes() %f, got %f", exp, got)
 			}
 		})
 	}
