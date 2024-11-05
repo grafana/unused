@@ -24,7 +24,7 @@ func runWebServer(ctx context.Context, cfg config) error {
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/" {
-			fmt.Fprintf(w, indexTemplate, cfg.Web.Path)
+			fmt.Fprintf(w, indexTemplate, cfg.Web.Path) // nolint:errcheck
 		} else {
 			http.NotFound(w, req)
 		}

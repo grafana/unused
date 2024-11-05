@@ -43,7 +43,7 @@ func Table(ctx context.Context, options Options) error {
 		headers = append(headers, "PROVIDER_META", "DISK_META")
 	}
 
-	fmt.Fprintln(w, strings.Join(headers, "\t"))
+	fmt.Fprintln(w, strings.Join(headers, "\t")) // nolint:errcheck
 
 	for _, d := range disks {
 		p := d.Provider()
@@ -57,7 +57,7 @@ func Table(ctx context.Context, options Options) error {
 			row = append(row, p.Meta().String(), d.Meta().String())
 		}
 
-		fmt.Fprintln(w, strings.Join(row, "\t"))
+		fmt.Fprintln(w, strings.Join(row, "\t")) // nolint:errcheck
 	}
 
 	if err := w.Flush(); err != nil {
