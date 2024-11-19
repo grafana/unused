@@ -47,7 +47,7 @@ func GroupTable(ctx context.Context, options Options) error {
 	totalSize := make(map[groupKey]int)
 	totalCount := make(map[groupKey]int)
 
-	fmt.Fprintln(w, strings.Join(headers, "\t"))
+	fmt.Fprintln(w, strings.Join(headers, "\t")) // nolint:errcheck
 
 	var aggrValue string
 	for _, d := range disks {
@@ -79,7 +79,7 @@ func GroupTable(ctx context.Context, options Options) error {
 	for _, aggrKey := range keys {
 		row := aggrKey[:]
 		row = append(row, strconv.Itoa(totalCount[aggrKey]), strconv.Itoa(totalSize[aggrKey]))
-		fmt.Fprintln(w, strings.Join(row, "\t"))
+		fmt.Fprintln(w, strings.Join(row, "\t")) // nolint:errcheck
 	}
 
 	if err := w.Flush(); err != nil {
