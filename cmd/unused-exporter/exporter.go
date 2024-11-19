@@ -74,14 +74,14 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 			nil),
 
 		size: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "disks", "size_gb"),
-			"Total size of unused disks in this provider in GB",
+			prometheus.BuildFQName(namespace, "disks", "total_size_bytes"),
+			"Total size of unused disks in this provider in bytes",
 			append(labels, "k8s_namespace", "type"),
 			nil),
 
 		dur: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "provider", "duration_ms"),
-			"How long in milliseconds took to fetch this provider information",
+			prometheus.BuildFQName(namespace, "provider", "duration_seconds"),
+			"How long in seconds took to fetch this provider information",
 			labels,
 			nil),
 
@@ -92,7 +92,7 @@ func registerExporter(ctx context.Context, providers []unused.Provider, cfg conf
 			nil),
 
 		dlu: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "disks", "last_used_at"),
+			prometheus.BuildFQName(namespace, "disks", "last_used_timestamp_seconds"),
 			"Kubernetes metadata associated with each unused disk, with the value as the last time the disk was used (if available)",
 			append(labels, []string{"disk", "created_for_pv", "created_for_pvc", "zone"}...),
 			nil),
@@ -176,7 +176,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 					diskInfoByNamespace[ns] = di
 				}
 				di.Count += 1
-				di.SizeByType[d.DiskType()] += float64(d.SizeGB())
+				di.SizeByType[d.DiskType()] += float64(d.SizeBytes())
 
 				e.logger.Info(fmt.Sprintf("Disk %s last used at %v", d.Name(), d.LastUsedAt()))
 
@@ -190,7 +190,7 @@ func (e *exporter) pollProvider(p unused.Provider) {
 			}
 
 			addMetric(&ms, p, e.info, 1)
-			addMetric(&ms, p, e.dur, float64(dur.Milliseconds()))
+			addMetric(&ms, p, e.dur, float64(dur.Seconds()))
 			addMetric(&ms, p, e.suc, float64(success))
 
 			for ns, di := range diskInfoByNamespace {
@@ -290,7 +290,7 @@ func lastUsedTS(d unused.Disk) float64 {
 		return 0
 	}
 
-	return float64(lastUsed.UnixMilli())
+	return float64(lastUsed.Unix())
 }
 
 func getRegionFromZone(p unused.Provider, z string) string {
