@@ -4,12 +4,14 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	awsutil "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	endpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/aws"
 	"github.com/grafana/unused/unusedtest"
@@ -49,6 +51,14 @@ func TestProviderMeta(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+}
+
+type mockEndpointResolver url.URL
+
+func (er mockEndpointResolver) ResolveEndpoint(ctx context.Context, params ec2.EndpointParameters) (endpoints.Endpoint, error) {
+	return endpoints.Endpoint{
+		URI: url.URL(er),
+	}, nil
 }
 
 func TestListUnusedDisks(t *testing.T) {
@@ -111,6 +121,9 @@ func TestListUnusedDisks(t *testing.T) {
 	}))
 	defer ts.Close()
 
+	tsURL, _ := url.Parse(ts.URL)
+	er := mockEndpointResolver(*tsURL)
+
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 			Value: awsutil.Credentials{
@@ -119,16 +132,12 @@ func TestListUnusedDisks(t *testing.T) {
 				SessionToken:    "SESSION",
 				Source:          "example hard coded credentials",
 			},
-		}),
-		config.WithEndpointResolverWithOptions(awsutil.EndpointResolverWithOptionsFunc(
-			func(svc, reg string, opt ...interface{}) (awsutil.Endpoint, error) {
-				return awsutil.Endpoint{URL: ts.URL}, nil
-			})))
+		}))
 	if err != nil {
 		t.Fatalf("cannot load AWS config: %v", err)
 	}
 
-	p, err := aws.NewProvider(nil, ec2.NewFromConfig(cfg), nil)
+	p, err := aws.NewProvider(nil, ec2.NewFromConfig(cfg, ec2.WithEndpointResolverV2(ec2.EndpointResolverV2(er))), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
