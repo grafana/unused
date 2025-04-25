@@ -82,7 +82,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case stateDeletingDisks:
 				delete(m.disks, m.provider)
 				m.state = stateFetchingDisks
-				return m, tea.Batch(spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
+				return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
 			}
 
 			return m, nil
@@ -94,7 +94,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.providerView = m.providerView.Empty()
 			m.state = stateFetchingDisks
 
-			return m, tea.Batch(spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
+			return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
 		}
 
 	case unused.Disks:
@@ -218,10 +218,10 @@ func newHelp() help.Model {
 		ShortKey:       keyStyle,
 		ShortDesc:      descStyle,
 		ShortSeparator: sepStyle,
-		Ellipsis:       sepStyle.Copy(),
-		FullKey:        keyStyle.Copy(),
-		FullDesc:       descStyle.Copy(),
-		FullSeparator:  sepStyle.Copy(),
+		Ellipsis:       sepStyle,
+		FullKey:        keyStyle,
+		FullDesc:       descStyle,
+		FullSeparator:  sepStyle,
 	}
 
 	return m
