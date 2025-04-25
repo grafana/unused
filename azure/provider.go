@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	compute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 	"github.com/grafana/unused"
 )
 
@@ -47,15 +47,16 @@ func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	var upds unused.Disks
 
-	res, err := p.client.List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("listing Azure disks: %w", err)
-	}
+	pages := p.client.NewListPager(&compute.DisksClientListOptions{})
 
 	prefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/", p.client.SubscriptionID)
 
-	for res.NotDone() {
-		for _, d := range res.Values() {
+	for pages.More() {
+		page, err := pages.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("listing Azure disks: %w", err)
+		}
+		for _, d := range page.Value {
 			if d.ManagedBy != nil {
 				continue
 			}
@@ -72,11 +73,6 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 			m[ResourceGroupMetaKey] = rg[:strings.IndexRune(rg, '/')]
 
 			upds = append(upds, &Disk{d, p, m})
-		}
-
-		err := res.NextWithContext(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("cannot advance page: %w", err)
 		}
 	}
 
