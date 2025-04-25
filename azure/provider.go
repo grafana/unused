@@ -81,9 +81,14 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 
 // Delete deletes the given disk from Azure.
 func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
-	_, err := p.client.Delete(ctx, disk.Meta()[ResourceGroupMetaKey], disk.Name())
+	poller, err := p.client.BeginDelete(ctx, disk.Meta()[ResourceGroupMetaKey], disk.Name(), nil)
 	if err != nil {
+		return fmt.Errorf("cannot delete Azure disk: failed to finish request: %w", err)
+	}
+
+	if _, err := poller.PollUntilDone(ctx, nil); err != nil {
 		return fmt.Errorf("cannot delete Azure disk: %w", err)
 	}
+
 	return nil
 }
