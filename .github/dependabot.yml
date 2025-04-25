@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "inkel"
+    groups:
+      bubbletea:
+        patterns:
+          - github.com/charmbracelet/bubbles
+          - github.com/charmbracelet/bubbletea
+          -	github.com/charmbracelet/lipgloss
+          - github.com/evertras/bubble-table
+      aws-sdk-go:
+        patterns:
+          - github.com/aws/aws-sdk-go-v2
+          - github.com/aws/aws-sdk-go-v2/*
+      azure:
+        patterns:
+          -	github.com/Azure/azure-sdk-for-go
+          -	github.com/Azure/go-autorest/autorest
+          -	github.com/Azure/go-autorest/autorest/*
