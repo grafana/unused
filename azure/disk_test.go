@@ -14,7 +14,7 @@ func TestDisk(t *testing.T) {
 	id := "my-disk-id"
 	sizeGB := int32(10)
 	sizeBytes := int64(10_737_418_240)
-	sku := compute.DiskStorageAccountTypesStandardLRS
+	sku := compute.DiskStorageAccountTypesStandardSSDLRS
 
 	var d unused.Disk = &Disk{
 		&compute.Disk{
