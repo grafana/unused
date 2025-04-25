@@ -62,6 +62,21 @@ func main() {
 		return nil
 	})
 
+	flag.Func("add-k8s-column", "Add Kubernetes metadata column; valid values are: ns, pvc, pv", func(c string) error {
+		switch c {
+		case "ns":
+			options.ExtraColumns = append(options.ExtraColumns, ui.KubernetesNS)
+		case "pvc":
+			options.ExtraColumns = append(options.ExtraColumns, ui.KubernetesPVC)
+		case "pv":
+			options.ExtraColumns = append(options.ExtraColumns, ui.KubernetesPV)
+		default:
+			return errors.New("valid values are ns, pvc, pv")
+		}
+
+		return nil
+	})
+
 	flag.StringVar(&options.Group, "group-by", "", "Group by disk metadata values")
 
 	flag.Parse()
