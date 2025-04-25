@@ -3,7 +3,7 @@ package azure
 import (
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/compute"
+	compute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 	"github.com/grafana/unused"
 )
 
@@ -29,14 +29,14 @@ func (d *Disk) Name() string { return *d.Disk.Name }
 // SizeGB returns the size of this Azure compute disk in GB.
 // Note that Azure uses binary GB, aka, GiB
 // https://learn.microsoft.com/en-us/dotnet/api/microsoft.azure.management.compute.models.datadisk.disksizegb?view=azure-dotnet-legacy
-func (d *Disk) SizeGB() int { return int(*d.Disk.DiskSizeGB) }
+func (d *Disk) SizeGB() int { return int(*d.Disk.Properties.DiskSizeGB) }
 
 // SizeBytes returns the size of this Azure compute disk in bytes.
-func (d *Disk) SizeBytes() float64 { return float64(*d.Disk.DiskSizeBytes) }
+func (d *Disk) SizeBytes() float64 { return float64(*d.Disk.Properties.DiskSizeBytes) }
 
 // CreatedAt returns the time when this Azure compute disk was
 // created.
-func (d *Disk) CreatedAt() time.Time { return d.Disk.TimeCreated.ToTime() }
+func (d *Disk) CreatedAt() time.Time { return *d.Disk.Properties.TimeCreated }
 
 // Meta returns the disk metadata.
 func (d *Disk) Meta() unused.Meta { return d.meta }
@@ -47,10 +47,12 @@ func (d *Disk) LastUsedAt() time.Time { return time.Time{} }
 
 // DiskType Type returns the type of this Azure compute disk.
 func (d *Disk) DiskType() unused.DiskType {
-	switch d.Disk.Sku.Name {
-	case compute.StandardLRS:
+	switch *d.Disk.SKU.Name {
+	case compute.DiskStorageAccountTypesStandardLRS:
 		return unused.HDD
-	case compute.PremiumLRS, compute.StandardSSDLRS, compute.UltraSSDLRS:
+	case compute.DiskStorageAccountTypesPremiumLRS,
+		compute.DiskStorageAccountTypesStandardSSDLRS,
+		compute.DiskStorageAccountTypesUltraSSDLRS:
 		return unused.SSD
 	default:
 		return unused.Unknown
