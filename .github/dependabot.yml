@@ -11,7 +11,7 @@ updates:
         patterns:
           - github.com/charmbracelet/bubbles
           - github.com/charmbracelet/bubbletea
-          -	github.com/charmbracelet/lipgloss
+          - github.com/charmbracelet/lipgloss
           - github.com/evertras/bubble-table
       aws-sdk-go:
         patterns:
@@ -19,6 +19,6 @@ updates:
           - github.com/aws/aws-sdk-go-v2/*
       azure:
         patterns:
-          -	github.com/Azure/azure-sdk-for-go
-          -	github.com/Azure/go-autorest/autorest
-          -	github.com/Azure/go-autorest/autorest/*
+          - github.com/Azure/azure-sdk-for-go
+          - github.com/Azure/go-autorest/autorest
+          - github.com/Azure/go-autorest/autorest
