@@ -19,6 +19,20 @@ const (
 	columnType   = "type"
 )
 
+// Custom Kubernetes columns.
+// These constants are copied from the ui package.
+const (
+	KubernetesNS  = "__k8s:ns__"
+	KubernetesPV  = "__k8s:pv__"
+	KubernetesPVC = "__k8s:pvc__"
+)
+
+var k8sHeaders = map[string]string{
+	KubernetesNS:  "Namespace",
+	KubernetesPVC: "PVC",
+	KubernetesPV:  "PV",
+}
+
 var (
 	headerStyle = lipgloss.NewStyle().Align(lipgloss.Center).Bold(true)
 	nameStyle   = lipgloss.NewStyle().Align(lipgloss.Left)
@@ -45,7 +59,11 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 	}
 
 	for _, c := range extraColumns {
-		cols = append(cols, table.NewFlexColumn(c, c, 1).WithStyle(nameStyle))
+		h, ok := k8sHeaders[c]
+		if !ok {
+			h = c
+		}
+		cols = append(cols, table.NewFlexColumn(c, h, 1).WithStyle(nameStyle))
 	}
 
 	table := table.New(cols).
@@ -142,7 +160,18 @@ func (m providerViewModel) WithDisks(disks unused.Disks) providerViewModel {
 
 		meta := d.Meta()
 		for _, c := range m.extraCols {
-			row[c] = meta[c]
+			var v string
+			switch c {
+			case KubernetesNS:
+				v = meta.CreatedForNamespace()
+			case KubernetesPV:
+				v = meta.CreatedForPV()
+			case KubernetesPVC:
+				v = meta.CreatedForPVC()
+			default:
+				v = meta[c]
+			}
+			row[c] = v
 		}
 
 		rows[i] = table.NewRow(row)

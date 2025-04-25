@@ -12,6 +12,12 @@ import (
 	"github.com/grafana/unused/cmd/internal"
 )
 
+var k8sHeaders = map[string]string{
+	KubernetesNS:  "K8S:NS",
+	KubernetesPVC: "K8S:PVC",
+	KubernetesPV:  "K8S:PV",
+}
+
 func Table(ctx context.Context, options Options) error {
 	disks, err := listUnusedDisks(ctx, options.Providers)
 	if err != nil {
@@ -37,7 +43,11 @@ func Table(ctx context.Context, options Options) error {
 
 	headers := []string{"PROVIDER", "DISK", "AGE", "UNUSED", "TYPE", "SIZE_GB"}
 	for _, c := range options.ExtraColumns {
-		headers = append(headers, "META:"+c)
+		h, ok := k8sHeaders[c]
+		if !ok {
+			h = "META:" + c
+		}
+		headers = append(headers, h)
 	}
 	if options.Verbose {
 		headers = append(headers, "PROVIDER_META", "DISK_META")
@@ -51,7 +61,18 @@ func Table(ctx context.Context, options Options) error {
 		row := []string{p.Name(), d.Name(), internal.Age(d.CreatedAt()), internal.Age(d.LastUsedAt()), string(d.DiskType()), fmt.Sprintf("%d", d.SizeGB())}
 		meta := d.Meta()
 		for _, c := range options.ExtraColumns {
-			row = append(row, meta[c])
+			var v string
+			switch c {
+			case KubernetesNS:
+				v = meta.CreatedForNamespace()
+			case KubernetesPV:
+				v = meta.CreatedForPV()
+			case KubernetesPVC:
+				v = meta.CreatedForPVC()
+			default:
+				v = meta[c]
+			}
+			row = append(row, v)
 		}
 		if options.Verbose {
 			row = append(row, p.Meta().String(), d.Meta().String())

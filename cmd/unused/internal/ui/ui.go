@@ -20,3 +20,9 @@ type Options struct {
 }
 
 type DisplayFunc func(ctx context.Context, options Options) error
+
+const (
+	KubernetesNS  = "__k8s:ns__"
+	KubernetesPV  = "__k8s:pv__"
+	KubernetesPVC = "__k8s:pvc__"
+)
