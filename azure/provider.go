@@ -2,6 +2,7 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -17,7 +18,7 @@ const ResourceGroupMetaKey = "resource-group"
 
 // Provider implements [unused.Provider] for Azure.
 type Provider struct {
-	client compute.DisksClient
+	client *compute.DisksClient
 	meta   unused.Meta
 }
 
@@ -28,15 +29,20 @@ func (p *Provider) Name() string { return ProviderName }
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
 // ID returns the subscription for this provider.
-func (p *Provider) ID() string { return p.client.SubscriptionID }
+func (p *Provider) ID() string { return p.meta["SubscriptionID"] }
+
+var ErrInvalidSubscriptionID = errors.New("invalid subscription ID in metadata")
 
 // NewProvider creates a new Azure [unused.Provider].
 //
 // A valid Azure compute disks client must be supplied in order to
 // list the unused resources.
-func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error) {
+func NewProvider(client *compute.DisksClient, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
+	}
+	if sid, ok := meta["SubscriptionID"]; !ok || sid == "" {
+		return nil, ErrInvalidSubscriptionID
 	}
 
 	return &Provider{client: client, meta: meta}, nil
@@ -49,7 +55,7 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 
 	pages := p.client.NewListPager(&compute.DisksClientListOptions{})
 
-	prefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/", p.client.SubscriptionID)
+	prefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/", p.meta["SubscriptionID"])
 
 	for pages.More() {
 		page, err := pages.NextPage(ctx)

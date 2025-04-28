@@ -6,11 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"os"
 
-	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	azcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/grafana/unused"
@@ -51,23 +49,18 @@ func CreateProviders(ctx context.Context, logger *slog.Logger, gcpProjects, awsP
 	}
 
 	if len(azureSubs) > 0 {
-		var a autorest.Authorizer
-		var err error
-
-		if os.Getenv("AZURE_CLIENT_ID") != "" && os.Getenv("AZURE_CLIENT_SECRET") != "" && os.Getenv("AZURE_TENANT_ID") != "" {
-			a, err = auth.NewAuthorizerFromEnvironment()
-		} else {
-			a, err = auth.NewAuthorizerFromCLI()
-		}
+		tc, err := azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
-			return nil, fmt.Errorf("creating Azure authorizer: %w", err)
+			return nil, fmt.Errorf("fetching default Azure credential: %w", err)
 		}
 
 		for _, sub := range azureSubs {
-			c := azcompute.NewDisksClient(sub)
-			c.Authorizer = a
+			c, err := azcompute.NewDisksClient(sub, tc, nil)
+			if err != nil {
+				return nil, fmt.Errorf("creating Azure disks client: %w", err)
+			}
 
-			p, err := azure.NewProvider(c, map[string]string{"subscription": sub})
+			p, err := azure.NewProvider(c, map[string]string{"SubscriptionID": sub})
 			if err != nil {
 				return nil, fmt.Errorf("creating Azure provider for subscription %s: %w", sub, err)
 			}
