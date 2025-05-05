@@ -19,11 +19,11 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/evertras/bubble-table v0.17.1
 	github.com/prometheus/client_golang v1.22.0
-	google.golang.org/api v0.230.0
+	google.golang.org/api v0.231.0
 )
 
 require (
-	cloud.google.com/go/auth v0.16.0 // indirect
+	cloud.google.com/go/auth v0.16.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
