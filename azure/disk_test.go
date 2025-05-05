@@ -4,8 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
-	"github.com/Azure/go-autorest/autorest/date"
+	compute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 	"github.com/grafana/unused"
 )
 
@@ -15,16 +14,17 @@ func TestDisk(t *testing.T) {
 	id := "my-disk-id"
 	sizeGB := int32(10)
 	sizeBytes := int64(10_737_418_240)
+	sku := compute.DiskStorageAccountTypesStandardSSDLRS
 
 	var d unused.Disk = &Disk{
-		compute.Disk{
+		&compute.Disk{
 			ID:   &id,
 			Name: &name,
-			Sku: &compute.DiskSku{
-				Name: compute.StandardSSDLRS,
+			SKU: &compute.DiskSKU{
+				Name: &sku,
 			},
-			DiskProperties: &compute.DiskProperties{
-				TimeCreated:   &date.Time{Time: createdAt},
+			Properties: &compute.DiskProperties{
+				TimeCreated:   &createdAt,
 				DiskSizeGB:    &sizeGB,
 				DiskSizeBytes: &sizeBytes,
 			},

@@ -2,10 +2,11 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	compute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 	"github.com/grafana/unused"
 )
 
@@ -17,7 +18,7 @@ const ResourceGroupMetaKey = "resource-group"
 
 // Provider implements [unused.Provider] for Azure.
 type Provider struct {
-	client compute.DisksClient
+	client *compute.DisksClient
 	meta   unused.Meta
 }
 
@@ -28,15 +29,20 @@ func (p *Provider) Name() string { return ProviderName }
 func (p *Provider) Meta() unused.Meta { return p.meta }
 
 // ID returns the subscription for this provider.
-func (p *Provider) ID() string { return p.client.SubscriptionID }
+func (p *Provider) ID() string { return p.meta["SubscriptionID"] }
+
+var ErrInvalidSubscriptionID = errors.New("invalid subscription ID in metadata")
 
 // NewProvider creates a new Azure [unused.Provider].
 //
 // A valid Azure compute disks client must be supplied in order to
 // list the unused resources.
-func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error) {
+func NewProvider(client *compute.DisksClient, meta unused.Meta) (*Provider, error) {
 	if meta == nil {
 		meta = make(unused.Meta)
+	}
+	if sid, ok := meta["SubscriptionID"]; !ok || sid == "" {
+		return nil, ErrInvalidSubscriptionID
 	}
 
 	return &Provider{client: client, meta: meta}, nil
@@ -47,15 +53,16 @@ func NewProvider(client compute.DisksClient, meta unused.Meta) (*Provider, error
 func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	var upds unused.Disks
 
-	res, err := p.client.List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("listing Azure disks: %w", err)
-	}
+	pages := p.client.NewListPager(&compute.DisksClientListOptions{})
 
-	prefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/", p.client.SubscriptionID)
+	prefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/", p.meta["SubscriptionID"])
 
-	for res.NotDone() {
-		for _, d := range res.Values() {
+	for pages.More() {
+		page, err := pages.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("listing Azure disks: %w", err)
+		}
+		for _, d := range page.Value {
 			if d.ManagedBy != nil {
 				continue
 			}
@@ -73,11 +80,6 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 
 			upds = append(upds, &Disk{d, p, m})
 		}
-
-		err := res.NextWithContext(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("cannot advance page: %w", err)
-		}
 	}
 
 	return upds, nil
@@ -85,9 +87,14 @@ func (p *Provider) ListUnusedDisks(ctx context.Context) (unused.Disks, error) {
 
 // Delete deletes the given disk from Azure.
 func (p *Provider) Delete(ctx context.Context, disk unused.Disk) error {
-	_, err := p.client.Delete(ctx, disk.Meta()[ResourceGroupMetaKey], disk.Name())
+	poller, err := p.client.BeginDelete(ctx, disk.Meta()[ResourceGroupMetaKey], disk.Name(), nil)
 	if err != nil {
+		return fmt.Errorf("cannot delete Azure disk: failed to finish request: %w", err)
+	}
+
+	if _, err := poller.PollUntilDone(ctx, nil); err != nil {
 		return fmt.Errorf("cannot delete Azure disk: %w", err)
 	}
+
 	return nil
 }
