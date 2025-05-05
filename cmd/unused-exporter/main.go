@@ -18,6 +18,9 @@ import (
 	"time"
 
 	"github.com/grafana/unused/cmd/internal"
+	"go.opentelemetry.io/contrib/exporters/autoexport"
+	"go.opentelemetry.io/otel"
+	otelmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 func main() {
@@ -56,9 +59,38 @@ func realMain(ctx context.Context, cfg config) error {
 		return fmt.Errorf("registering exporter: %w", err)
 	}
 
+	if err := setupOTLPExport(cfg.Logger); err != nil {
+		return fmt.Errorf("setting up OTLP exporter: %w", err)
+	}
+
 	if err := runWebServer(ctx, cfg); err != nil {
 		return fmt.Errorf("running web server: %w", err)
 	}
+
+	return nil
+}
+
+func setupOTLPExport(logger *slog.Logger) error {
+	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" && os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT") == "" {
+		logger.Debug("OTLP exporter is not enabled")
+		return nil
+	}
+	os.Setenv("OTEL_METRICS_PRODUCERS", "prometheus")
+
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(cause error) {
+		logger.Error("OTLP exporter error", "err", cause)
+	}))
+
+	if os.Getenv("OTEL_SERVICE_NAME") == "" {
+		os.Setenv("OTEL_SERVICE_NAME", "unused_exporter")
+	}
+
+	reader, err := autoexport.NewMetricReader(context.Background())
+	if err != nil {
+		return err
+	}
+
+	otelmetric.NewMeterProvider(otelmetric.WithReader(reader))
 
 	return nil
 }
