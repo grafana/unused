@@ -54,7 +54,7 @@ It exposes the following metrics:
 | `unused_provider_success` | Static metric indicating if collecting the metrics succeeded or not |
 
 All metrics have the `provider` and `provider_id` labels to identify to which provider instance they belong.
-The `unused_disks_count` and `unused_disks_total_size_bytes` metrics have an additional `k8s_namespace` metric mapped to the `kubernetes.io/created-for/pvc/namespace` annotation assigned to persistent disks created by Kubernetes.
+The `unused_disks_count`, `unused_disk_size_bytes`, and `unused_disks_total_size_bytes` metrics have an additional `k8s_namespace` metric mapped to the `kubernetes.io/created-for/pvc/namespace` annotation assigned to persistent disks created by Kubernetes.
 
 Information about each unused disk is currently logged to stdout given that it contains more changing information that could lead to cardinality explosion.
 
