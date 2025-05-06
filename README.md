@@ -46,15 +46,15 @@ It exposes the following metrics:
 | Metric | Description |
 |-|-|
 | `unused_disks_count` | How many unused disks are in this provider |
-| `unused_disks_size_gb` | Total size of unused disks in this provider in GB |
+| `unused_disks_total_size_bytes` | Total size of unused disks in this provider in bytes |
 | `unused_disk_size_bytes` | Size of each disk in bytes |
-| `unused_disks_last_used_at` | Last timestamp (unix ms) when this disk was used. GCP only! |
-| `unused_provider_duration_ms` | How long in milliseconds took to fetch this provider information |
+| `unused_disks_last_used_timestamp_seconds` | Last timestamp (unix seconds) when this disk was used. GCP only! |
+| `unused_provider_duration_seconds` | How long in seconds took to fetch this provider information |
 | `unused_provider_info` | CSP information |
 | `unused_provider_success` | Static metric indicating if collecting the metrics succeeded or not |
 
 All metrics have the `provider` and `provider_id` labels to identify to which provider instance they belong.
-The `unused_disks_count` and `unused_disks_size_gb` metrics have an additional `k8s_namespace` metric mapped to the `kubernetes.io/created-for/pvc/namespace` annotation assigned to persistent disks created by Kubernetes.
+The `unused_disks_count`, `unused_disk_size_bytes`, and `unused_disks_total_size_bytes` metrics have an additional `k8s_namespace` metric mapped to the `kubernetes.io/created-for/pvc/namespace` annotation assigned to persistent disks created by Kubernetes.
 
 Information about each unused disk is currently logged to stdout given that it contains more changing information that could lead to cardinality explosion.
 
