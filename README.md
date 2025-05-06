@@ -49,7 +49,7 @@ It exposes the following metrics:
 | `unused_disks_total_size_bytes` | Total size of unused disks in this provider in bytes |
 | `unused_disk_size_bytes` | Size of each disk in bytes |
 | `unused_disks_last_used_timestamp_seconds` | Last timestamp (unix seconds) when this disk was used. GCP only! |
-| `unused_provider_duration_seconds` | How long in milliseconds took to fetch this provider information |
+| `unused_provider_duration_seconds` | How long in seconds took to fetch this provider information |
 | `unused_provider_info` | CSP information |
 | `unused_provider_success` | Static metric indicating if collecting the metrics succeeded or not |
 
