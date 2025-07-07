@@ -18,7 +18,7 @@ require (
 	github.com/evertras/bubble-table v0.17.1
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.22.0
-	google.golang.org/api v0.239.0
+	google.golang.org/api v0.240.0
 )
 
 require (
