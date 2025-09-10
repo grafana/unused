@@ -72,6 +72,9 @@ func Table(ctx context.Context, options Options) error {
 			default:
 				v = meta[c]
 			}
+			if v == "" {
+				v = "-"
+			}
 			row = append(row, v)
 		}
 		if options.Verbose {
