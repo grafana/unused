@@ -50,6 +50,14 @@ func (m Meta) Equals(b Meta) bool {
 // Matches returns true when the given key exists in the map with the
 // given value.
 func (m Meta) Matches(key, val string) bool {
+	switch key {
+	case "k8s:pv":
+		return m.CreatedForPV() == val
+	case "k8s:pvc":
+		return m.CreatedForPVC() == val
+	case "k8s:ns":
+		return m.CreatedForNamespace() == val
+	}
 	return m[key] == val
 }
 

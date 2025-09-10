@@ -41,7 +41,7 @@ func main() {
 	flag.BoolVar(&options.Verbose, "v", false, "Verbose mode")
 	flag.BoolVar(&options.DryRun, "n", false, "Do not delete disks in interactive mode")
 
-	flag.Func("filter", "Filter by disk metadata", func(v string) error {
+	flag.Func("filter", "Filter by disk metadata; use k8s:ns, k8s:pvc or k8s:pv for Kubernetes metadata", func(v string) error {
 		ps := strings.SplitN(v, "=", 2)
 
 		if len(ps) == 0 || ps[0] == "" {
