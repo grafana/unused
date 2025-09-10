@@ -48,6 +48,24 @@ func TestMetaMatches(t *testing.T) {
 	if ok := m.Matches("def", "789"); ok {
 		t.Error("expecting no match for different value")
 	}
+
+	t.Run("Kubernetes", func(t *testing.T) {
+		m := &Meta{
+			"kubernetes.io/created-for/pv/name":       "pv-foo",
+			"kubernetes.io/created-for/pvc/name":      "pvc-bar",
+			"kubernetes.io/created-for/pvc/namespace": "ns-quux",
+		}
+
+		if !m.Matches("k8s:pv", "pv-foo") {
+			t.Error("expecting to match PV")
+		}
+		if !m.Matches("k8s:pvc", "pvc-bar") {
+			t.Error("expecting to match PVC")
+		}
+		if !m.Matches("k8s:ns", "ns-quux") {
+			t.Error("expecting to match namespace")
+		}
+	})
 }
 
 func TestCoalesce(t *testing.T) {
