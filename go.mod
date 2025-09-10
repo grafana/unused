@@ -13,9 +13,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.251.1
 	github.com/aws/smithy-go v1.23.0
 	github.com/charmbracelet/bubbles v0.21.0
-	github.com/charmbracelet/bubbletea v1.3.6
+	github.com/charmbracelet/bubbletea v1.3.8
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/evertras/bubble-table v0.17.2
+	github.com/evertras/bubble-table v0.19.2
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
 	google.golang.org/api v0.249.0
@@ -42,7 +42,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
-	github.com/charmbracelet/x/ansi v0.9.3 // indirect
+	github.com/charmbracelet/x/ansi v0.10.1 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
@@ -79,8 +79,7 @@ require (
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
 	google.golang.org/grpc v1.75.0 // indirect
