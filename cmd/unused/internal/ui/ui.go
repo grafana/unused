@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"time"
 
 	"github.com/grafana/unused"
 )
@@ -17,6 +18,7 @@ type Options struct {
 	Group        string
 	Verbose      bool
 	DryRun       bool
+	MinAge       time.Duration
 }
 
 type DisplayFunc func(ctx context.Context, options Options) error

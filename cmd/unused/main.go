@@ -57,6 +57,17 @@ func main() {
 		return nil
 	})
 
+	flag.Func("min-age", "Minimum age of the disk to be listed", func(s string) error {
+		dur, err := internal.ParseAge(s)
+		if err != nil {
+			return err
+		}
+
+		options.MinAge = dur
+
+		return nil
+	})
+
 	flag.Func("add-column", "Display additional column with metadata", func(c string) error {
 		options.ExtraColumns = append(options.ExtraColumns, c)
 		return nil
