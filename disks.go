@@ -5,6 +5,16 @@ import "sort"
 // Disks is a collection of Disk.
 type Disks []Disk
 
+func (d Disks) Filter(fn func(d Disk) bool) Disks {
+	r := make(Disks, 0, len(d))
+	for _, e := range d {
+		if fn(e) {
+			r = append(r, e)
+		}
+	}
+	return r
+}
+
 // ByFunc is the type of sorting functions for Disks.
 type ByFunc func(p, q Disk) bool
 

@@ -70,3 +70,48 @@ func assertEqualDisks(t *testing.T, p, q unused.Disk) {
 		}
 	}
 }
+
+func TestDisksFilter(t *testing.T) {
+	var (
+		now = time.Now()
+
+		foo = unusedtest.NewProvider("foo", nil)
+		baz = unusedtest.NewProvider("baz", nil)
+		bar = unusedtest.NewProvider("bar", nil)
+
+		gcp = unusedtest.NewDisk("ghi", foo, now.Add(-10*time.Minute))
+		aws = unusedtest.NewDisk("abc", baz, now.Add(-5*time.Minute))
+		az  = unusedtest.NewDisk("def", bar, now.Add(-2*time.Minute))
+
+		disks = unused.Disks{gcp, aws, az}
+	)
+
+	tests := []struct {
+		filter func(unused.Disk) bool
+		exp    unused.Disks
+	}{
+		{func(_ unused.Disk) bool { return true }, disks},
+		{func(_ unused.Disk) bool { return false }, nil},
+		{func(d unused.Disk) bool { return d.Provider().Name() == "baz" }, unused.Disks{aws}},
+		{func(d unused.Disk) bool { return d.Provider().Name() != "baz" }, unused.Disks{gcp, az}},
+	}
+
+	eq := func(a, b unused.Disks) bool {
+		if len(a) != len(b) {
+			return false
+		}
+		for i, e := range a {
+			if b[i].Name() != e.Name() {
+				return false
+			}
+		}
+		return true
+	}
+
+	for i, tt := range tests {
+		got := disks.Filter(tt.filter)
+		if !eq(got, tt.exp) {
+			t.Errorf("case %d: slices are not equal\nexp: %v\ngot: %v", i, tt.exp, got)
+		}
+	}
+}
