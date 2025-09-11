@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/grafana/unused"
 )
@@ -24,6 +25,16 @@ func GroupTable(ctx context.Context, options Options) error {
 	disks, err := listUnusedDisks(ctx, options.Providers)
 	if err != nil {
 		return err
+	}
+
+	if options.MinAge > 0 {
+		filtered := make(unused.Disks, 0, len(disks))
+		for _, d := range disks {
+			if time.Since(d.CreatedAt()) >= options.MinAge {
+				filtered = append(filtered, d)
+			}
+		}
+		disks = filtered
 	}
 
 	if options.Filter.Key != "" {
