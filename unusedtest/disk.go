@@ -32,3 +32,5 @@ func (d Disk) LastUsedAt() time.Time     { return d.createdAt.Add(1 * time.Minut
 func (d Disk) SizeGB() int               { return d.size }
 func (d Disk) SizeBytes() float64        { return float64(d.size) * unused.GiBbytes }
 func (d Disk) DiskType() unused.DiskType { return d.diskType }
+
+func (d *Disk) SetMeta(m unused.Meta) { d.meta = m }
