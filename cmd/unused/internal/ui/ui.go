@@ -21,6 +21,13 @@ type Options struct {
 	MinAge       time.Duration
 }
 
+func (o Options) FilterFunc(d unused.Disk) bool {
+	minAge := o.MinAge == 0 || time.Since(d.CreatedAt()) >= o.MinAge
+	keyVal := o.Filter.Key == "" || d.Meta().Matches(o.Filter.Key, o.Filter.Value)
+
+	return minAge && keyVal
+}
+
 type DisplayFunc func(ctx context.Context, options Options) error
 
 const (
