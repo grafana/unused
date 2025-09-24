@@ -57,11 +57,11 @@ func TestUI_Filter(t *testing.T) {
 	for n, tt := range tests {
 		t.Run(n, func(t *testing.T) {
 			opts := UI{
-				MinAge: tt.minAge,
-				Filter: struct {
-					Key   string
-					Value string
-				}{tt.key, tt.val},
+				Filter: Filter{
+					Key:    tt.key,
+					Value:  tt.val,
+					MinAge: tt.minAge,
+				},
 			}
 
 			got := disks.Filter(opts.FilterFunc)
