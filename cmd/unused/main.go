@@ -104,15 +104,7 @@ func main() {
 
 	out.Providers = providers
 
-	var display ui.DisplayFunc = ui.Table
-	if out.Group != "" {
-		display = ui.GroupTable
-	}
-	if out.Interactive {
-		display = ui.Interactive
-	}
-
-	if err := display(ctx, out); err != nil {
+	if err := out.Run(ctx); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, "displaying output:", err)
 		os.Exit(1)
