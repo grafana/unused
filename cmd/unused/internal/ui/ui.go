@@ -23,27 +23,27 @@ type UI struct {
 	Interactive  bool
 }
 
-func (o UI) FilterFunc(d unused.Disk) bool {
-	minAge := o.Filter.MinAge == 0 || time.Since(d.CreatedAt()) >= o.Filter.MinAge
-	keyVal := o.Filter.Key == "" || d.Meta().Matches(o.Filter.Key, o.Filter.Value)
+func (ui UI) FilterFunc(d unused.Disk) bool {
+	minAge := ui.Filter.MinAge == 0 || time.Since(d.CreatedAt()) >= ui.Filter.MinAge
+	keyVal := ui.Filter.Key == "" || d.Meta().Matches(ui.Filter.Key, ui.Filter.Value)
 
 	return minAge && keyVal
 }
 
-func (o UI) Run(ctx context.Context) error {
+func (ui UI) Run(ctx context.Context) error {
 	var display func(ctx context.Context, ui UI) error
 
-	if o.Interactive {
+	if ui.Interactive {
 		display = Interactive
-	} else if o.Group != "" && !o.CSV {
+	} else if ui.Group != "" && !ui.CSV {
 		display = GroupTable
-	} else if o.CSV {
+	} else if ui.CSV {
 		display = CSV
 	} else {
 		display = Table
 	}
 
-	return display(ctx, o)
+	return display(ctx, ui)
 }
 
 const (
