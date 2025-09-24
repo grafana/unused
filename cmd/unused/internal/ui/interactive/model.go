@@ -32,12 +32,12 @@ type Model struct {
 	disks        map[unused.Provider]unused.Disks
 	state        state
 	extraCols    []string
-	key, value   string
+	filter       unused.FilterFunc
 	help         help.Model
 	err          error
 }
 
-func New(providers []unused.Provider, extraColumns []string, key, value string, dryRun bool) Model {
+func New(providers []unused.Provider, extraColumns []string, filter unused.FilterFunc, dryRun bool) Model {
 	m := Model{
 		providerList: newProviderListModel(providers),
 		providerView: newProviderViewModel(extraColumns),
@@ -46,8 +46,7 @@ func New(providers []unused.Provider, extraColumns []string, key, value string, 
 		state:        stateProviderList,
 		spinner:      spinner.New(),
 		extraCols:    extraColumns,
-		key:          key,
-		value:        value,
+		filter:       filter,
 		help:         newHelp(),
 	}
 
@@ -82,7 +81,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case stateDeletingDisks:
 				delete(m.disks, m.provider)
 				m.state = stateFetchingDisks
-				return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
+				return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.filter))
 			}
 
 			return m, nil
@@ -94,7 +93,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.providerView = m.providerView.Empty()
 			m.state = stateFetchingDisks
 
-			return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.key, m.value))
+			return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.filter))
 		}
 
 	case unused.Disks:
@@ -166,7 +165,7 @@ func (m Model) View() string {
 	}
 }
 
-func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks, key, value string) tea.Cmd {
+func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks, filter unused.FilterFunc) tea.Cmd {
 	return func() tea.Msg {
 		if disks, ok := cache[provider]; ok {
 			return disks
@@ -177,15 +176,7 @@ func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks,
 			return err
 		}
 
-		if key != "" {
-			filtered := make(unused.Disks, 0, len(disks))
-			for _, d := range disks {
-				if d.Meta().Matches(key, value) {
-					filtered = append(filtered, d)
-				}
-			}
-			disks = filtered
-		}
+		disks = disks.Filter(filter)
 
 		cache[provider] = disks
 
