@@ -2,6 +2,8 @@ package ui
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/grafana/unused"
@@ -51,3 +53,46 @@ const (
 	KubernetesPV  = "__k8s:pv__"
 	KubernetesPVC = "__k8s:pvc__"
 )
+
+func (ui UI) listUnusedDisks(ctx context.Context) (unused.Disks, error) {
+	var (
+		wg    sync.WaitGroup
+		mu    sync.Mutex
+		total unused.Disks
+	)
+
+	wg.Add(len(ui.Providers))
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	errCh := make(chan error, len(ui.Providers))
+
+	for _, p := range ui.Providers {
+		go func(p unused.Provider) {
+			defer wg.Done()
+
+			disks, err := p.ListUnusedDisks(ctx)
+			if err != nil {
+				cancel()
+				errCh <- fmt.Errorf("%s %s: %w", p.Name(), p.Meta(), err)
+				return
+			}
+
+			mu.Lock()
+			disks = disks.Filter(ui.FilterFunc)
+			total = append(total, disks...)
+			mu.Unlock()
+		}(p)
+	}
+
+	wg.Wait()
+
+	select {
+	case err := <-errCh:
+		return nil, err
+	default:
+	}
+
+	return total, nil
+}

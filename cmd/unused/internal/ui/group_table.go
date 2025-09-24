@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
-
-	"github.com/grafana/unused"
 )
 
 // Disks are aggregated by the key composed by these 3 strings:
@@ -21,24 +19,9 @@ import (
 type groupKey [3]string
 
 func GroupTable(ctx context.Context, ui UI) error {
-	disks, err := listUnusedDisks(ctx, ui.Providers)
+	disks, err := ui.listUnusedDisks(ctx)
 	if err != nil {
 		return err
-	}
-
-	if ui.Filter.Key != "" {
-		filtered := make(unused.Disks, 0, len(disks))
-		for _, d := range disks {
-			if d.Meta().Matches(ui.Filter.Key, ui.Filter.Value) {
-				filtered = append(filtered, d)
-			}
-		}
-		disks = filtered
-	}
-
-	if len(disks) == 0 {
-		fmt.Println("No disks found")
-		return nil
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)

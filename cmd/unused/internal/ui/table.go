@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 	"text/tabwriter"
 
-	"github.com/grafana/unused"
 	"github.com/grafana/unused/cmd/internal"
 )
 
@@ -35,7 +33,7 @@ func buildHeaders(ui UI) []string {
 }
 
 func CSV(ctx context.Context, ui UI) error {
-	disks, err := listUnusedDisks(ctx, ui.Providers)
+	disks, err := ui.listUnusedDisks(ctx)
 	if err != nil {
 		return err
 	}
@@ -101,19 +99,9 @@ func CSV(ctx context.Context, ui UI) error {
 }
 
 func Table(ctx context.Context, ui UI) error {
-	disks, err := listUnusedDisks(ctx, ui.Providers)
+	disks, err := ui.listUnusedDisks(ctx)
 	if err != nil {
 		return err
-	}
-
-	if ui.Filter.Key != "" {
-		filtered := make(unused.Disks, 0, len(disks))
-		for _, d := range disks {
-			if d.Meta().Matches(ui.Filter.Key, ui.Filter.Value) {
-				filtered = append(filtered, d)
-			}
-		}
-		disks = filtered
 	}
 
 	if len(disks) == 0 {
@@ -161,46 +149,4 @@ func Table(ctx context.Context, ui UI) error {
 	}
 
 	return nil
-}
-
-func listUnusedDisks(ctx context.Context, providers []unused.Provider) (unused.Disks, error) {
-	var (
-		wg    sync.WaitGroup
-		mu    sync.Mutex
-		total unused.Disks
-	)
-
-	wg.Add(len(providers))
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	errCh := make(chan error, len(providers))
-
-	for _, p := range providers {
-		go func(p unused.Provider) {
-			defer wg.Done()
-
-			disks, err := p.ListUnusedDisks(ctx)
-			if err != nil {
-				cancel()
-				errCh <- fmt.Errorf("%s %s: %w", p.Name(), p.Meta(), err)
-				return
-			}
-
-			mu.Lock()
-			total = append(total, disks...)
-			mu.Unlock()
-		}(p)
-	}
-
-	wg.Wait()
-
-	select {
-	case err := <-errCh:
-		return nil, err
-	default:
-	}
-
-	return total, nil
 }
