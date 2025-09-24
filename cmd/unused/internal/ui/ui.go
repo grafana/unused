@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/grafana/unused"
+	"golang.org/x/sync/errgroup"
 )
 
 type Filter struct {
@@ -56,42 +57,34 @@ const (
 
 func (ui UI) listUnusedDisks(ctx context.Context) (unused.Disks, error) {
 	var (
-		wg    sync.WaitGroup
 		mu    sync.Mutex
 		total unused.Disks
 	)
 
-	wg.Add(len(ui.Providers))
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	errCh := make(chan error, len(ui.Providers))
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(len(ui.Providers))
 
 	for _, p := range ui.Providers {
-		go func(p unused.Provider) {
-			defer wg.Done()
-
+		g.Go(func() error {
 			disks, err := p.ListUnusedDisks(ctx)
 			if err != nil {
-				cancel()
-				errCh <- fmt.Errorf("%s %s: %w", p.Name(), p.Meta(), err)
-				return
+				return fmt.Errorf("%s %s: %w", p.Name(), p.Meta(), err)
 			}
 
 			mu.Lock()
 			disks = disks.Filter(ui.FilterFunc)
 			total = append(total, disks...)
 			mu.Unlock()
-		}(p)
+
+			return nil
+		})
 	}
 
-	wg.Wait()
-
-	select {
-	case err := <-errCh:
-		return nil, err
-	default:
+	if err := g.Wait(); err != nil {
+		return nil, fmt.Errorf("listing disks: %w", err)
 	}
 
 	return total, nil
