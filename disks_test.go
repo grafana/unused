@@ -94,6 +94,8 @@ func TestDisksFilter(t *testing.T) {
 		{func(_ unused.Disk) bool { return false }, nil},
 		{func(d unused.Disk) bool { return d.Provider().Name() == "baz" }, unused.Disks{aws}},
 		{func(d unused.Disk) bool { return d.Provider().Name() != "baz" }, unused.Disks{gcp, az}},
+		{func(d unused.Disk) bool { return d.CreatedAt().Before(now.Add(-1 * time.Hour)) }, nil},
+		{func(d unused.Disk) bool { return d.CreatedAt().Before(now.Add(-1 * time.Second)) }, unused.Disks{gcp, aws, az}},
 	}
 
 	eq := func(a, b unused.Disks) bool {
