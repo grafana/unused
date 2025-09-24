@@ -7,14 +7,16 @@ import (
 	"github.com/grafana/unused"
 )
 
+type Filter struct {
+	Key, Value string
+	MinAge     time.Duration
+}
+
 type UI struct {
-	Filter struct {
-		Key, Value string
-	}
+	Filter       Filter
 	Group        string
 	Providers    []unused.Provider
 	ExtraColumns []string
-	MinAge       time.Duration
 	Verbose      bool
 	DryRun       bool
 	CSV          bool
@@ -22,7 +24,7 @@ type UI struct {
 }
 
 func (o UI) FilterFunc(d unused.Disk) bool {
-	minAge := o.MinAge == 0 || time.Since(d.CreatedAt()) >= o.MinAge
+	minAge := o.Filter.MinAge == 0 || time.Since(d.CreatedAt()) >= o.Filter.MinAge
 	keyVal := o.Filter.Key == "" || d.Meta().Matches(o.Filter.Key, o.Filter.Value)
 
 	return minAge && keyVal

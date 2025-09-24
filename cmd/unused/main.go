@@ -62,7 +62,7 @@ func main() {
 			return err
 		}
 
-		out.MinAge = dur
+		out.Filter.MinAge = dur
 
 		return nil
 	})
