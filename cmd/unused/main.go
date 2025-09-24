@@ -30,14 +30,12 @@ func main() {
 	var (
 		gcpProjects, awsProfiles, azureSubs internal.StringSliceFlag
 
-		interactiveMode bool
-
 		options ui.Options
 	)
 
 	internal.ProviderFlags(flag.CommandLine, &gcpProjects, &awsProfiles, &azureSubs)
 
-	flag.BoolVar(&interactiveMode, "i", false, "Interactive UI mode")
+	flag.BoolVar(&options.Interactive, "i", false, "Interactive UI mode")
 	flag.BoolVar(&options.Verbose, "v", false, "Verbose mode")
 	flag.BoolVar(&options.DryRun, "n", false, "Do not delete disks in interactive mode")
 	flag.BoolVar(&options.CSV, "csv", false, "Output results in CSV form")
@@ -117,8 +115,7 @@ func main() {
 	if options.Group != "" && !options.CSV {
 		display = ui.GroupTable
 	}
-
-	if interactiveMode {
+	if options.Interactive {
 		display = ui.Interactive
 	}
 

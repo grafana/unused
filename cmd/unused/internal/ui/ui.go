@@ -20,6 +20,7 @@ type Options struct {
 	DryRun       bool
 	MinAge       time.Duration
 	CSV          bool
+	Interactive  bool
 }
 
 func (o Options) FilterFunc(d unused.Disk) bool {
