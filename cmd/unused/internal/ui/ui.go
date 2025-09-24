@@ -7,7 +7,7 @@ import (
 	"github.com/grafana/unused"
 )
 
-type Options struct {
+type UI struct {
 	Filter struct {
 		Key, Value string
 	}
@@ -21,14 +21,14 @@ type Options struct {
 	Interactive  bool
 }
 
-func (o Options) FilterFunc(d unused.Disk) bool {
+func (o UI) FilterFunc(d unused.Disk) bool {
 	minAge := o.MinAge == 0 || time.Since(d.CreatedAt()) >= o.MinAge
 	keyVal := o.Filter.Key == "" || d.Meta().Matches(o.Filter.Key, o.Filter.Value)
 
 	return minAge && keyVal
 }
 
-type DisplayFunc func(ctx context.Context, options Options) error
+type DisplayFunc func(ctx context.Context, ui UI) error
 
 const (
 	KubernetesNS  = "__k8s:ns__"
