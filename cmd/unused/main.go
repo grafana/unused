@@ -57,7 +57,7 @@ func main() {
 		return nil
 	})
 
-	flag.Func("min-age", "Minimum age of the disk to be listed", func(s string) error {
+	flag.Func("min-age", "Minimum age of the disk to be listed (ex: 365d or 36h)", func(s string) error {
 		dur, err := internal.ParseAge(s)
 		if err != nil {
 			return err
