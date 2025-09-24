@@ -7,18 +7,16 @@ import (
 	"github.com/grafana/unused"
 )
 
-type Filter struct {
-	Key, Value string
-}
-
 type Options struct {
+	Filter struct {
+		Key, Value string
+	}
+	Group        string
 	Providers    []unused.Provider
 	ExtraColumns []string
-	Filter       Filter
-	Group        string
+	MinAge       time.Duration
 	Verbose      bool
 	DryRun       bool
-	MinAge       time.Duration
 	CSV          bool
 	Interactive  bool
 }
