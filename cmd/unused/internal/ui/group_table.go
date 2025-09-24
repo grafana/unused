@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/grafana/unused"
 )
 
 // Disks are aggregated by the key composed by these 3 strings:
@@ -18,13 +20,21 @@ import (
 //  3. Disk type: "hdd", "ssd" or "unknown"
 type groupKey [3]string
 
-func GroupTable(ctx context.Context, options Options) error {
-	disks, err := listUnusedDisks(ctx, options.Providers)
+func GroupTable(ctx context.Context, ui UI) error {
+	disks, err := listUnusedDisks(ctx, ui.Providers)
 	if err != nil {
 		return err
 	}
 
-	disks = disks.Filter(options.FilterFunc)
+	if ui.Filter.Key != "" {
+		filtered := make(unused.Disks, 0, len(disks))
+		for _, d := range disks {
+			if d.Meta().Matches(ui.Filter.Key, ui.Filter.Value) {
+				filtered = append(filtered, d)
+			}
+		}
+		disks = filtered
+	}
 
 	if len(disks) == 0 {
 		fmt.Println("No disks found")
@@ -33,7 +43,7 @@ func GroupTable(ctx context.Context, options Options) error {
 
 	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
 
-	headers := []string{"PROVIDER", options.Group, "TYPE", "DISKS_COUNT", "TOTAL_SIZE_GB"}
+	headers := []string{"PROVIDER", ui.Group, "TYPE", "DISKS_COUNT", "TOTAL_SIZE_GB"}
 	totalSize := make(map[groupKey]int)
 	totalCount := make(map[groupKey]int)
 
@@ -42,7 +52,7 @@ func GroupTable(ctx context.Context, options Options) error {
 	var aggrValue string
 	for _, d := range disks {
 		p := d.Provider()
-		if value, ok := d.Meta()[options.Group]; ok {
+		if value, ok := d.Meta()[ui.Group]; ok {
 			aggrValue = value
 		} else {
 			aggrValue = "NONE"
