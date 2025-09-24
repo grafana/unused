@@ -1,6 +1,8 @@
 package unused_test
 
 import (
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -102,6 +104,11 @@ func TestDisksFilter(t *testing.T) {
 		if len(a) != len(b) {
 			return false
 		}
+
+		sortBy := func(a, b unused.Disk) int { return strings.Compare(a.Name(), b.Name()) }
+		slices.SortFunc(a, sortBy)
+		slices.SortFunc(b, sortBy)
+
 		for i, e := range a {
 			if b[i].Name() != e.Name() {
 				return false
