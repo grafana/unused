@@ -28,7 +28,21 @@ func (o UI) FilterFunc(d unused.Disk) bool {
 	return minAge && keyVal
 }
 
-type DisplayFunc func(ctx context.Context, ui UI) error
+func (o UI) Run(ctx context.Context) error {
+	var display func(ctx context.Context, ui UI) error
+
+	if o.Interactive {
+		display = Interactive
+	} else if o.Group != "" && !o.CSV {
+		display = GroupTable
+	} else if o.CSV {
+		display = CSV
+	} else {
+		display = Table
+	}
+
+	return display(ctx, o)
+}
 
 const (
 	KubernetesNS  = "__k8s:ns__"
