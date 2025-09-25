@@ -2,36 +2,87 @@ package ui
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/grafana/unused"
+	"golang.org/x/sync/errgroup"
 )
 
 type Filter struct {
 	Key, Value string
+	MinAge     time.Duration
 }
 
-type Options struct {
-	Providers    []unused.Provider
-	ExtraColumns []string
+type UI struct {
 	Filter       Filter
 	Group        string
+	Providers    []unused.Provider
+	ExtraColumns []string
 	Verbose      bool
 	DryRun       bool
-	MinAge       time.Duration
+	Interactive  bool
 }
 
-func (o Options) FilterFunc(d unused.Disk) bool {
-	minAge := o.MinAge == 0 || time.Since(d.CreatedAt()) >= o.MinAge
-	keyVal := o.Filter.Key == "" || d.Meta().Matches(o.Filter.Key, o.Filter.Value)
+func (ui UI) FilterFunc(d unused.Disk) bool {
+	minAge := ui.Filter.MinAge == 0 || time.Since(d.CreatedAt()) >= ui.Filter.MinAge
+	keyVal := ui.Filter.Key == "" || d.Meta().Matches(ui.Filter.Key, ui.Filter.Value)
 
 	return minAge && keyVal
 }
 
-type DisplayFunc func(ctx context.Context, options Options) error
+func (ui UI) Run(ctx context.Context) error {
+	var display func(ctx context.Context, ui UI) error
+
+	if ui.Interactive {
+		display = Interactive
+	} else if ui.Group != "" {
+		display = GroupTable
+	} else {
+		display = Table
+	}
+
+	return display(ctx, ui)
+}
 
 const (
 	KubernetesNS  = "__k8s:ns__"
 	KubernetesPV  = "__k8s:pv__"
 	KubernetesPVC = "__k8s:pvc__"
 )
+
+func (ui UI) listUnusedDisks(ctx context.Context) (unused.Disks, error) {
+	var (
+		mu    sync.Mutex
+		total unused.Disks
+	)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(len(ui.Providers))
+
+	for _, p := range ui.Providers {
+		g.Go(func() error {
+			disks, err := p.ListUnusedDisks(ctx)
+			if err != nil {
+				return fmt.Errorf("%s %s: %w", p.Name(), p.Meta(), err)
+			}
+
+			mu.Lock()
+			disks = disks.Filter(ui.FilterFunc)
+			total = append(total, disks...)
+			mu.Unlock()
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, fmt.Errorf("listing disks: %w", err)
+	}
+
+	return total, nil
+}
