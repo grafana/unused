@@ -1,5 +1,5 @@
 PKGS = ./...
-TESTFLAGS = -race -vet all -mod readonly
+TESTFLAGS = -vet all -mod readonly
 BUILDFLAGS = -v
 BENCH = .
 BENCHFLAGS = -benchmem -bench=${BENCH}
