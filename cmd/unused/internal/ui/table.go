@@ -24,15 +24,7 @@ func Table(ctx context.Context, options Options) error {
 		return err
 	}
 
-	if options.Filter.Key != "" {
-		filtered := make(unused.Disks, 0, len(disks))
-		for _, d := range disks {
-			if d.Meta().Matches(options.Filter.Key, options.Filter.Value) {
-				filtered = append(filtered, d)
-			}
-		}
-		disks = filtered
-	}
+	disks = disks.Filter(options.FilterFunc)
 
 	if len(disks) == 0 {
 		fmt.Println("No disks found")

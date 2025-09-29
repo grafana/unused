@@ -1,6 +1,7 @@
 package internal_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -30,5 +31,27 @@ func TestAge(t *testing.T) {
 				t.Errorf("expecting Age(%s) = %s, got %s", tt.in.Format(time.RFC3339), tt.exp, got)
 			}
 		})
+	}
+}
+
+func TestParseAge(t *testing.T) {
+	tests := []struct {
+		in  string
+		exp time.Duration
+		err error
+	}{
+		{"23d", 23 * 24 * time.Hour, nil},
+		{"0d3h", 3 * time.Hour, nil},
+		{"d3h", 0, internal.ErrInvalidAge},
+		{"23dh", 0, internal.ErrInvalidAge},
+		{"23d3", 0, internal.ErrInvalidAge},
+		{"", 0, internal.ErrInvalidAge},
+	}
+
+	for _, tt := range tests {
+		got, err := internal.ParseAge(tt.in)
+		if !errors.Is(err, tt.err) || got != tt.exp {
+			t.Errorf("expecting ParseAge(%q) = (%v, %v), got (%v, %v)", tt.in, tt.exp, tt.err, got, err)
+		}
 	}
 }

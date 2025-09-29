@@ -9,7 +9,7 @@ import (
 )
 
 func Interactive(ctx context.Context, options Options) error {
-	m := interactive.New(options.Providers, options.ExtraColumns, options.Filter.Key, options.Filter.Value, options.DryRun)
+	m := interactive.New(options.Providers, options.ExtraColumns, options.FilterFunc, options.DryRun)
 
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		return fmt.Errorf("cannot start interactive UI: %w", err)
