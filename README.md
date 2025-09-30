@@ -7,7 +7,7 @@ These leaked resources cost money, and because these are resources that are not 
 This library and its companion tools should help you out to identify these resources and clean them up.
 
 ## Go module `github.com/grafana/unused`
-This module exports some interfaces and implementations to easily list all your unsed persistent disks in GCP, AWS, and Azure.
+This module exports some interfaces and implementations to easily list all your unused persistent disks in GCP, AWS, and Azure.
 You can find the API in the [Go package documentation](https://pkg.go.dev/github.com/grafana/unused).
 
 ## Binaries
