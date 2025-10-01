@@ -30,16 +30,14 @@ func main() {
 	var (
 		gcpProjects, awsProfiles, azureSubs internal.StringSliceFlag
 
-		interactiveMode bool
-
-		options ui.Options
+		out ui.UI
 	)
 
 	internal.ProviderFlags(flag.CommandLine, &gcpProjects, &awsProfiles, &azureSubs)
 
-	flag.BoolVar(&interactiveMode, "i", false, "Interactive UI mode")
-	flag.BoolVar(&options.Verbose, "v", false, "Verbose mode")
-	flag.BoolVar(&options.DryRun, "n", false, "Do not delete disks in interactive mode")
+	flag.BoolVar(&out.Interactive, "i", false, "Interactive UI mode")
+	flag.BoolVar(&out.Verbose, "v", false, "Verbose mode")
+	flag.BoolVar(&out.DryRun, "n", false, "Do not delete disks in interactive mode")
 
 	flag.Func("filter", "Filter by disk metadata; use k8s:ns, k8s:pvc or k8s:pv for Kubernetes metadata", func(v string) error {
 		ps := strings.SplitN(v, "=", 2)
@@ -48,10 +46,10 @@ func main() {
 			return errors.New("invalid filter format")
 		}
 
-		options.Filter.Key = ps[0]
+		out.Filter.Key = ps[0]
 
 		if len(ps) == 2 {
-			options.Filter.Value = ps[1]
+			out.Filter.Value = ps[1]
 		}
 
 		return nil
@@ -63,24 +61,24 @@ func main() {
 			return err
 		}
 
-		options.MinAge = dur
+		out.Filter.MinAge = dur
 
 		return nil
 	})
 
 	flag.Func("add-column", "Display additional column with metadata", func(c string) error {
-		options.ExtraColumns = append(options.ExtraColumns, c)
+		out.ExtraColumns = append(out.ExtraColumns, c)
 		return nil
 	})
 
 	flag.Func("add-k8s-column", "Add Kubernetes metadata column; valid values are: ns, pvc, pv", func(c string) error {
 		switch c {
 		case "ns":
-			options.ExtraColumns = append(options.ExtraColumns, ui.KubernetesNS)
+			out.ExtraColumns = append(out.ExtraColumns, ui.KubernetesNS)
 		case "pvc":
-			options.ExtraColumns = append(options.ExtraColumns, ui.KubernetesPVC)
+			out.ExtraColumns = append(out.ExtraColumns, ui.KubernetesPVC)
 		case "pv":
-			options.ExtraColumns = append(options.ExtraColumns, ui.KubernetesPV)
+			out.ExtraColumns = append(out.ExtraColumns, ui.KubernetesPV)
 		default:
 			return errors.New("valid values are ns, pvc, pv")
 		}
@@ -88,7 +86,7 @@ func main() {
 		return nil
 	})
 
-	flag.StringVar(&options.Group, "group-by", "", "Group by disk metadata values")
+	flag.StringVar(&out.Group, "group-by", "", "Group by disk metadata values")
 
 	flag.Parse()
 
@@ -104,17 +102,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	options.Providers = providers
+	out.Providers = providers
 
-	var display ui.DisplayFunc = ui.Table
-	if options.Group != "" {
-		display = ui.GroupTable
-	}
-	if interactiveMode {
-		display = ui.Interactive
-	}
-
-	if err := display(ctx, options); err != nil {
+	if err := out.Run(ctx); err != nil {
 		cancel() // cleanup resources
 		fmt.Fprintln(os.Stderr, "displaying output:", err)
 		os.Exit(1)
