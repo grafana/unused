@@ -14,9 +14,9 @@ import (
 )
 
 var k8sHeaders = map[string]string{
-	KubernetesNS:  "K8S:NS",
-	KubernetesPVC: "K8S:PVC",
-	KubernetesPV:  "K8S:PV",
+	KubernetesNS:  "K8S_NS",
+	KubernetesPVC: "K8S_PVC",
+	KubernetesPV:  "K8S_PV",
 }
 
 func buildHeaders(options Options) []string {
@@ -24,7 +24,7 @@ func buildHeaders(options Options) []string {
 	for _, c := range options.ExtraColumns {
 		h, ok := k8sHeaders[c]
 		if !ok {
-			h = "META:" + c
+			h = "META_" + c
 		}
 		headers = append(headers, h)
 	}
@@ -81,8 +81,6 @@ func CSV(ctx context.Context, options Options) error {
 			default:
 				v = meta[c]
 			}
-
-			// If v == "" then we want it to stay that way in this case
 
 			row = append(row, v)
 		}

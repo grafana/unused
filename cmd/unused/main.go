@@ -117,7 +117,7 @@ func main() {
 	if options.Group != "" && !options.CSV {
 		display = ui.GroupTable
 	}
-	
+
 	if interactiveMode {
 		display = ui.Interactive
 	}
