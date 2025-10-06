@@ -40,6 +40,7 @@ func main() {
 	flag.BoolVar(&interactiveMode, "i", false, "Interactive UI mode")
 	flag.BoolVar(&options.Verbose, "v", false, "Verbose mode")
 	flag.BoolVar(&options.DryRun, "n", false, "Do not delete disks in interactive mode")
+	flag.BoolVar(&options.CSV, "csv", false, "Output results in CSV form")
 
 	flag.Func("filter", "Filter by disk metadata; use k8s:ns, k8s:pvc or k8s:pv for Kubernetes metadata", func(v string) error {
 		ps := strings.SplitN(v, "=", 2)
@@ -106,10 +107,17 @@ func main() {
 
 	options.Providers = providers
 
-	var display ui.DisplayFunc = ui.Table
-	if options.Group != "" {
+	var display ui.DisplayFunc
+	if options.CSV {
+		display = ui.CSV
+	} else {
+		display = ui.Table
+	}
+
+	if options.Group != "" && !options.CSV {
 		display = ui.GroupTable
 	}
+
 	if interactiveMode {
 		display = ui.Interactive
 	}
