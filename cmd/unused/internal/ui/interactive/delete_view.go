@@ -19,7 +19,6 @@ import (
 type deleteViewModel struct {
 	output   viewport.Model
 	help     help.Model
-	w, h     int
 	confirm  key.Binding
 	toggle   key.Binding
 	provider unused.Provider
@@ -203,14 +202,9 @@ func (m deleteViewModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{m.ShortHelp()}
 }
 
-func (m *deleteViewModel) resetSize() {
-	hh := lipgloss.Height(m.help.View(m))
-	m.output.Width, m.output.Height = m.w, m.h-hh
-	m.progress.Width = m.w / 2
-	m.help.Width = m.w
-}
-
 func (m *deleteViewModel) SetSize(w, h int) {
-	m.w, m.h = w, h
-	m.resetSize()
+	hh := lipgloss.Height(m.help.View(m))
+	m.output.Width, m.output.Height = w, h-hh
+	m.progress.Width = w / 2
+	m.help.Width = w
 }
