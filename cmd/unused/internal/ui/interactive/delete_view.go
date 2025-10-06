@@ -26,9 +26,8 @@ type deleteViewModel struct {
 	spinner  spinner.Model
 	progress progress.Model
 	delete   bool
-	disks    unused.Disks
+	disks    []diskToDelete
 	cur      int
-	status   []*deleteStatus
 	dryRun   bool
 	start    time.Time
 }
@@ -48,9 +47,13 @@ func newDeleteViewModel(dryRun bool) deleteViewModel {
 
 func (m deleteViewModel) WithDisks(provider unused.Provider, disks unused.Disks) deleteViewModel {
 	m.provider = provider
-	m.disks = disks
-	m.status = make([]*deleteStatus, len(disks))
 	m.cur = 0
+
+	m.disks = make([]diskToDelete, len(disks))
+	for i, d := range disks {
+		m.disks[i] = diskToDelete{disk: d}
+	}
+
 	return m
 }
 
@@ -77,12 +80,11 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			return m, nil
 		}
 
-		ds := m.status[m.cur]
+		ds := m.disks[m.cur].status
 		if ds == nil {
-			ds = &deleteStatus{}
-			m.status[m.cur] = ds
+			m.disks[m.cur].status = &deleteStatus{}
 
-			return m, deleteDisk(m.disks[m.cur], ds, m.dryRun)
+			return m, deleteDisk(&m.disks[m.cur], m.dryRun)
 		} else if ds.done {
 			m.cur++
 		}
@@ -96,18 +98,23 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 	return m, cmd
 }
 
+type diskToDelete struct {
+	disk   unused.Disk
+	status *deleteStatus
+}
+
 type deleteStatus struct {
 	done bool
 	err  error
 }
 
-func deleteDisk(d unused.Disk, s *deleteStatus, dryRun bool) tea.Cmd {
+func deleteDisk(d *diskToDelete, dryRun bool) tea.Cmd {
 	return func() tea.Msg {
 		if !dryRun {
-			s.err = d.Provider().Delete(context.TODO(), d)
+			d.status.err = d.disk.Provider().Delete(context.TODO(), d.disk)
 		}
 
-		s.done = true
+		d.status.done = true
 
 		return deleteNextMsg{}
 	}
@@ -131,10 +138,9 @@ func (m deleteViewModel) View() string {
 		sb.WriteString("\n")
 
 		if m.cur < len(m.disks) {
-			s, d := m.status[m.cur], m.disks[m.cur]
-			if s != nil {
+			if s := m.disks[m.cur].status; s != nil {
 				sb.WriteString("➤ ")
-				sb.WriteString(d.Name())
+				sb.WriteString(m.disks[m.cur].disk.Name())
 				sb.WriteString(" ")
 				sb.WriteString(m.spinner.View())
 				sb.WriteString("\n")
@@ -145,9 +151,9 @@ func (m deleteViewModel) View() string {
 		fmt.Fprintf(sb, "Deleted %d disks from %s %s\n\n", len(m.disks), m.provider.Name(), m.provider.Meta().String())
 
 		// TODO show table of deleted disks
-		for i, s := range m.status {
-			if s != nil && s.err == nil && s.done {
-				fmt.Fprintf(sb, "\n✓ %s", m.disks[i].Name())
+		for _, d := range m.disks {
+			if s := d.status; s != nil && s.err == nil && s.done {
+				fmt.Fprintf(sb, "\n✓ %s", d.disk.Name())
 			}
 		}
 	default:
@@ -161,14 +167,14 @@ func (m deleteViewModel) View() string {
 
 		// TODO show table of disks to be deleted
 		for _, d := range m.disks {
-			fmt.Fprintf(sb, "\n %s", d.Name())
+			fmt.Fprintf(sb, "\n %s", d.disk.Name())
 		}
 	}
 
 	// Print failed disks, if any
 	var failed bool
-	for _, s := range m.status {
-		if s != nil && s.err != nil {
+	for _, d := range m.disks {
+		if s := d.status; s != nil && s.err != nil {
 			failed = true
 			break
 		}
@@ -176,10 +182,10 @@ func (m deleteViewModel) View() string {
 
 	if failed {
 		sb.WriteString("\n\nThe following disks failed to be deleted:\n\n")
-		for i := range len(m.disks) {
+		for _, d := range m.disks {
 			// Print current disk being deleted
-			if s := m.status[i]; s != nil && s.err != nil {
-				fmt.Fprintf(sb, "𐄂 %s\n  %s\n", m.disks[i].Name(), errorStyle.Render(s.err.Error()))
+			if s := d.status; s != nil && s.err != nil {
+				fmt.Fprintf(sb, "𐄂 %s\n  %s\n", d.disk.Name(), errorStyle.Render(s.err.Error()))
 			}
 		}
 	}
