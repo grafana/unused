@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
@@ -23,7 +22,6 @@ type deleteViewModel struct {
 	confirm  key.Binding
 	toggle   key.Binding
 	disks    []diskToDelete
-	output   viewport.Model
 	spinner  spinner.Model
 	progress progress.Model
 	cur      int
@@ -189,9 +187,7 @@ func (m deleteViewModel) View() string {
 		}
 	}
 
-	m.output.SetContent(sb.String())
-
-	return lipgloss.JoinVertical(lipgloss.Left, m.output.View(), m.help.View(m))
+	return lipgloss.JoinVertical(lipgloss.Left, sb.String(), m.help.View(m))
 }
 
 func (m deleteViewModel) ShortHelp() []key.Binding {
@@ -203,8 +199,6 @@ func (m deleteViewModel) FullHelp() [][]key.Binding {
 }
 
 func (m *deleteViewModel) SetSize(w, h int) {
-	hh := lipgloss.Height(m.help.View(m))
-	m.output.Width, m.output.Height = w, h-hh
 	m.progress.Width = w / 2
 	m.help.Width = w
 }
