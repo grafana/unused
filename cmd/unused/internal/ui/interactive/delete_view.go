@@ -17,18 +17,18 @@ import (
 )
 
 type deleteViewModel struct {
-	output   viewport.Model
 	help     help.Model
+	start    time.Time
+	provider unused.Provider
 	confirm  key.Binding
 	toggle   key.Binding
-	provider unused.Provider
+	disks    []diskToDelete
+	output   viewport.Model
 	spinner  spinner.Model
 	progress progress.Model
-	delete   bool
-	disks    []diskToDelete
 	cur      int
+	delete   bool
 	dryRun   bool
-	start    time.Time
 }
 
 func newDeleteViewModel(dryRun bool) deleteViewModel {
@@ -103,8 +103,8 @@ type diskToDelete struct {
 }
 
 type deleteStatus struct {
-	done bool
 	err  error
+	done bool
 }
 
 func deleteDisk(d *diskToDelete, dryRun bool) tea.Cmd {
