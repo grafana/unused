@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,11 +24,13 @@ type deleteViewModel struct {
 	toggle   key.Binding
 	provider unused.Provider
 	spinner  spinner.Model
+	progress progress.Model
 	delete   bool
 	disks    unused.Disks
 	cur      int
 	status   []*deleteStatus
 	dryRun   bool
+	start    time.Time
 }
 
 func newDeleteViewModel(dryRun bool) deleteViewModel {
@@ -36,6 +40,9 @@ func newDeleteViewModel(dryRun bool) deleteViewModel {
 		toggle:  key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "toggle dry-run")),
 		spinner: spinner.New(),
 		dryRun:  dryRun,
+		progress: progress.New(
+			progress.WithDefaultGradient(),
+		),
 	}
 }
 
@@ -57,6 +64,7 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.confirm):
 			m.delete = true
+			m.start = time.Now()
 			cmd = tea.Batch(m.spinner.Tick, sendMsg(deleteNextMsg{}))
 
 		case key.Matches(msg, m.toggle):
@@ -110,11 +118,39 @@ var bold = lipgloss.NewStyle().Bold(true)
 func (m deleteViewModel) View() string {
 	sb := &strings.Builder{}
 
-	if m.delete {
-		fmt.Fprintf(sb, "Deleting %d/%d disks from %s %s\n\n", m.cur+1, len(m.disks), m.provider.Name(), m.provider.Meta().String())
-	} else if m.cur == len(m.disks) {
+	switch {
+	case m.delete:
+		fmt.Fprintf(sb, "Deleting %d/%d disks from %s %s\n", m.cur+1, len(m.disks), m.provider.Name(), m.provider.Meta().String())
+
+		sb.WriteString(m.progress.ViewAs(float64(m.cur) / float64(len(m.disks))))
+		if m.cur > 0 {
+			eta := (time.Since(m.start) * time.Duration(len(m.disks)) / time.Duration(m.cur)).Truncate(time.Second)
+			fmt.Fprintf(sb, " ETA %v", eta)
+		}
+
+		sb.WriteString("\n")
+
+		if m.cur < len(m.disks) {
+			s, d := m.status[m.cur], m.disks[m.cur]
+			if s != nil {
+				sb.WriteString("➤ ")
+				sb.WriteString(d.Name())
+				sb.WriteString(" ")
+				sb.WriteString(m.spinner.View())
+				sb.WriteString("\n")
+			}
+		}
+
+	case m.cur == len(m.disks):
 		fmt.Fprintf(sb, "Deleted %d disks from %s %s\n\n", len(m.disks), m.provider.Name(), m.provider.Meta().String())
-	} else {
+
+		// TODO show table of deleted disks
+		for i, s := range m.status {
+			if s != nil && s.err == nil && s.done {
+				fmt.Fprintf(sb, "\n✓ %s", m.disks[i].Name())
+			}
+		}
+	default:
 		fmt.Fprintf(sb, "You're about to delete %d disks from %s %s\n\n", len(m.disks), m.provider.Name(), m.provider.Meta())
 
 		if m.dryRun {
@@ -123,26 +159,28 @@ func (m deleteViewModel) View() string {
 			fmt.Fprintln(sb, bold.Render("Press `x` to start deleting the following disks:"))
 		}
 
-		fmt.Fprintf(sb, "\n")
+		// TODO show table of disks to be deleted
+		for _, d := range m.disks {
+			fmt.Fprintf(sb, "\n %s", d.Name())
+		}
 	}
 
-	for i, d := range m.disks {
-		s := m.status[i]
+	// Print failed disks, if any
+	var failed bool
+	for _, s := range m.status {
+		if s != nil && s.err != nil {
+			failed = true
+			break
+		}
+	}
 
-		switch {
-		case s == nil:
-			fmt.Fprintf(sb, "  %s\n", d.Name())
-
-		case m.cur == i:
-			fmt.Fprintf(sb, "➤ %s %s\n", d.Name(), m.spinner.View())
-
-		case !s.done:
-
-		case s.err != nil:
-			fmt.Fprintf(sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
-
-		default:
-			fmt.Fprintf(sb, "✓ %s\n", d.Name())
+	if failed {
+		sb.WriteString("\n\nThe following disks failed to be deleted:\n\n")
+		for i := range len(m.disks) {
+			// Print current disk being deleted
+			if s := m.status[i]; s != nil && s.err != nil {
+				fmt.Fprintf(sb, "𐄂 %s\n  %s\n", m.disks[i].Name(), errorStyle.Render(s.err.Error()))
+			}
 		}
 	}
 
@@ -162,6 +200,7 @@ func (m deleteViewModel) FullHelp() [][]key.Binding {
 func (m *deleteViewModel) resetSize() {
 	hh := lipgloss.Height(m.help.View(m))
 	m.output.Width, m.output.Height = m.w, m.h-hh
+	m.progress.Width = m.w / 2
 	m.help.Width = m.w
 }
 
