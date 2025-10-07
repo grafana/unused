@@ -81,6 +81,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case stateDeletingDisks:
 				delete(m.disks, m.provider)
 				m.state = stateFetchingDisks
+				m.providerView = m.providerView.Empty()
 				return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.filter))
 			}
 
