@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -46,7 +47,9 @@ type providerViewModel struct {
 	help      help.Model
 	toggle    key.Binding
 	delete    key.Binding
+	toggleCur key.Binding
 	selAll    key.Binding
+	unselAll  key.Binding
 	extraCols []string
 	table     table.Model
 	w         int
@@ -83,6 +86,10 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 		toggle: key.NewBinding(key.WithKeys(" "), key.WithHelp("space", "toggle mark")),
 		delete: key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "delete marked")),
 
+		toggleCur: key.NewBinding(key.WithKeys("*"), key.WithHelp("*", "toggle current page")),
+		selAll:    key.NewBinding(key.WithKeys("A"), key.WithHelp("A", "select all")),
+		unselAll:  key.NewBinding(key.WithKeys("N"), key.WithHelp("N", "deselect all")),
+
 		extraCols: extraColumns,
 	}
 }
@@ -101,6 +108,28 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 				}
 				cmd = sendMsg(disks)
 			}
+
+		case key.Matches(msg, m.toggleCur):
+			rows := m.table.GetVisibleRows()
+			sel := m.table.SelectedRows()
+			s := (m.table.CurrentPage() - 1) * m.table.PageSize()
+			e := min(s+m.table.PageSize(), len(rows))
+			for i := s; i < e; i++ {
+				rows[i] = rows[i].Selected(!slices.ContainsFunc(sel, func(r table.Row) bool {
+					a := r.Data[columnDisk].(unused.Disk)
+					b := rows[i].Data[columnDisk].(unused.Disk)
+					return a.ID() == b.ID()
+				}))
+			}
+			m.table = m.table.WithRows(rows)
+
+		case key.Matches(msg, m.selAll, m.unselAll):
+			sel := key.Matches(msg, m.selAll)
+			rows := m.table.GetVisibleRows()
+			for i := range rows {
+				rows[i] = rows[i].Selected(sel)
+			}
+			m.table = m.table.WithRows(rows)
 
 		case msg.String() == "?":
 			m.help.ShowAll = !m.help.ShowAll
@@ -124,13 +153,13 @@ func (m providerViewModel) View() string {
 }
 
 func (m providerViewModel) ShortHelp() []key.Binding {
-	return []key.Binding{navKeys.Quit, navKeys.Back, m.toggle, m.delete, navKeys.Up, navKeys.Down}
+	return []key.Binding{navKeys.Quit, navKeys.Back, m.toggle, m.toggleCur, m.delete, navKeys.Up, navKeys.Down}
 }
 
 func (m providerViewModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		m.ShortHelp(),
-		{navKeys.PageUp, navKeys.PageDown, navKeys.Home, navKeys.End},
+		{m.selAll, m.unselAll, navKeys.PageUp, navKeys.PageDown, navKeys.Home, navKeys.End},
 	}
 }
 
@@ -193,6 +222,6 @@ func (m providerViewModel) WithDisks(disks unused.Disks) providerViewModel {
 		rows[i] = table.NewRow(row)
 	}
 
-	m.table = m.table.WithRows(rows)
+	m.table = m.table.WithRows(rows).WithAllRowsDeselected()
 	return m
 }
