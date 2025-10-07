@@ -40,13 +40,14 @@ var (
 )
 
 type providerViewModel struct {
-	table  table.Model
-	help   help.Model
-	toggle key.Binding
-	delete key.Binding
-	w, h   int
-
+	help      help.Model
+	toggle    key.Binding
+	delete    key.Binding
+	selAll    key.Binding
 	extraCols []string
+	table     table.Model
+	w         int
+	h         int
 }
 
 func newProviderViewModel(extraColumns []string) providerViewModel {
