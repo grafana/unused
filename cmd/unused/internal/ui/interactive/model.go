@@ -24,17 +24,17 @@ const (
 var _ tea.Model = Model{}
 
 type Model struct {
-	providerList providerListModel
-	providerView providerViewModel
 	deleteView   deleteViewModel
-	provider     unused.Provider
-	spinner      spinner.Model
-	disks        map[unused.Provider]unused.Disks
-	state        state
-	extraCols    []string
-	filter       unused.FilterFunc
 	help         help.Model
+	provider     unused.Provider
 	err          error
+	disks        map[unused.Provider]unused.Disks
+	filter       unused.FilterFunc
+	providerView providerViewModel
+	extraCols    []string
+	spinner      spinner.Model
+	providerList providerListModel
+	state        state
 }
 
 func New(providers []unused.Provider, extraColumns []string, filter unused.FilterFunc, dryRun bool) Model {
