@@ -17,7 +17,23 @@ var k8sHeaders = map[string]string{
 	KubernetesPV:  "K8S_PV",
 }
 
-func buildHeaders(ui UI) []string {
+type textWriter interface {
+	Headers(hdrs []string)
+	AddRow(cols []string)
+	Flush() error
+}
+
+func text(ctx context.Context, ui UI, w textWriter) error {
+	disks, err := ui.listUnusedDisks(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(disks) == 0 {
+		fmt.Println("No disks found")
+		return nil
+	}
+
 	headers := []string{"PROVIDER", "DISK", "AGE", "UNUSED", "TYPE", "SIZE_GB"}
 	for _, c := range ui.ExtraColumns {
 		h, ok := k8sHeaders[c]
@@ -29,29 +45,8 @@ func buildHeaders(ui UI) []string {
 	if ui.Verbose {
 		headers = append(headers, "PROVIDER_META", "DISK_META")
 	}
-	return headers
-}
 
-func CSV(ctx context.Context, ui UI) error {
-	disks, err := ui.listUnusedDisks(ctx)
-	if err != nil {
-		return err
-	}
-
-	disks = disks.Filter(ui.Filter)
-
-	if len(disks) == 0 {
-		fmt.Println("No disks found")
-		return nil
-	}
-
-	w := csv.NewWriter(os.Stdout)
-
-	headers := buildHeaders(ui)
-
-	if err := w.Write(headers); err != nil {
-		return fmt.Errorf("writing headers: %w", err)
-	}
+	w.Headers(headers)
 
 	for _, d := range disks {
 		p := d.Provider()
@@ -65,60 +60,6 @@ func CSV(ctx context.Context, ui UI) error {
 			fmt.Sprintf("%d", d.SizeGB()),
 		}
 
-		meta := d.Meta()
-
-		for _, c := range ui.ExtraColumns {
-			var v string
-			switch c {
-			case KubernetesNS:
-				v = meta.CreatedForNamespace()
-			case KubernetesPV:
-				v = meta.CreatedForPV()
-			case KubernetesPVC:
-				v = meta.CreatedForPVC()
-			default:
-				v = meta[c]
-			}
-
-			row = append(row, v)
-		}
-
-		if ui.Verbose {
-			row = append(row, p.Meta().String(), d.Meta().String())
-		}
-
-		if err := w.Write(row); err != nil {
-			return fmt.Errorf("writing row for disk %q: %w", d.Name(), err)
-		}
-	}
-	w.Flush()
-	if err := w.Error(); err != nil {
-		return fmt.Errorf("flushing CSV contents: %w", err)
-	}
-	return nil
-}
-
-func Table(ctx context.Context, ui UI) error {
-	disks, err := ui.listUnusedDisks(ctx)
-	if err != nil {
-		return err
-	}
-
-	if len(disks) == 0 {
-		fmt.Println("No disks found")
-		return nil
-	}
-
-	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
-
-	headers := buildHeaders(ui)
-
-	fmt.Fprintln(w, strings.Join(headers, "\t")) // nolint:errcheck
-
-	for _, d := range disks {
-		p := d.Provider()
-
-		row := []string{p.Name(), d.Name(), internal.Age(d.CreatedAt()), internal.Age(d.LastUsedAt()), string(d.DiskType()), fmt.Sprintf("%d", d.SizeGB())}
 		meta := d.Meta()
 		for _, c := range ui.ExtraColumns {
 			var v string
@@ -137,16 +78,64 @@ func Table(ctx context.Context, ui UI) error {
 			}
 			row = append(row, v)
 		}
+
 		if ui.Verbose {
 			row = append(row, p.Meta().String(), d.Meta().String())
 		}
 
-		fmt.Fprintln(w, strings.Join(row, "\t")) // nolint:errcheck
+		w.AddRow(row)
 	}
 
 	if err := w.Flush(); err != nil {
-		return fmt.Errorf("flushing table contents: %w", err)
+		return fmt.Errorf("flushing contents: %w", err)
 	}
 
 	return nil
+}
+
+type csvWriter struct {
+	w *csv.Writer
+}
+
+func (w csvWriter) Headers(hdrs []string) {
+	w.w.Write(hdrs) // nolint:errcheck
+}
+
+func (w csvWriter) AddRow(cols []string) {
+	w.w.Write(cols) // nolint:errcheck
+}
+
+func (w csvWriter) Flush() error {
+	w.w.Flush()
+	return w.w.Error()
+}
+
+func CSV(ctx context.Context, ui UI) error {
+	w := csvWriter{
+		w: csv.NewWriter(os.Stdout),
+	}
+
+	return text(ctx, ui, w)
+}
+
+type tableWriter struct {
+	w *tabwriter.Writer
+}
+
+func (w tableWriter) Headers(hdrs []string) {
+	fmt.Fprintln(w.w, strings.Join(hdrs, "\t")) // nolint:errcheck
+}
+
+func (w tableWriter) AddRow(cols []string) {
+	fmt.Fprintln(w.w, strings.Join(cols, "\t")) // nolint:errcheck
+}
+
+func (w tableWriter) Flush() error { return w.w.Flush() }
+
+func Table(ctx context.Context, ui UI) error {
+	w := tableWriter{
+		w: tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0),
+	}
+
+	return text(ctx, ui, w)
 }
