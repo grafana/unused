@@ -1,6 +1,9 @@
 package interactive
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -71,7 +74,7 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 		HeaderStyle(headerStyle).
 		Focused(true).
 		WithSelectedText(" ", "✔").
-		WithFooterVisibility(false).
+		WithFooterVisibility(true).
 		SelectableRows(true)
 
 	return providerViewModel{
@@ -85,6 +88,8 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 }
 
 func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
@@ -94,25 +99,24 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 				for i, r := range rows {
 					disks[i] = r.Data[columnDisk].(unused.Disk)
 				}
-				return m, sendMsg(disks)
+				cmd = sendMsg(disks)
 			}
 
 		case msg.String() == "?":
 			m.help.ShowAll = !m.help.ShowAll
 			m.resetSize()
-			return m, nil
 
 		case key.Matches(msg, navKeys.Quit):
-			return m, tea.Quit
+			cmd = tea.Quit
 
 		default:
-			var cmd tea.Cmd
 			m.table, cmd = m.table.Update(msg)
-			return m, cmd
 		}
 	}
 
-	return m, nil
+	m.updateTableFooter()
+
+	return m, cmd
 }
 
 func (m providerViewModel) View() string {
@@ -130,9 +134,20 @@ func (m providerViewModel) FullHelp() [][]key.Binding {
 	}
 }
 
+func (m *providerViewModel) updateTableFooter() {
+	var (
+		t    = m.table
+		sel  = fmt.Sprintf(" %d of %d disks selected", len(t.SelectedRows()), t.TotalRows())
+		page = fmt.Sprintf("Page %d of %d ", t.CurrentPage(), t.MaxPages())
+		f    = sel + strings.Repeat(" ", m.w-2-len(sel)-len(page)) + page
+	)
+
+	m.table = t.WithStaticFooter(f)
+}
+
 func (m *providerViewModel) resetSize() {
 	hh := lipgloss.Height(m.help.View(m))
-	m.table = m.table.WithTargetWidth(m.w).WithPageSize(m.h - 4 - hh)
+	m.table = m.table.WithTargetWidth(m.w).WithPageSize(m.h - 4 - hh - 2)
 	m.help.Width = m.w
 }
 
