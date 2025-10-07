@@ -1,2 +1,4 @@
 .vscode
 .air.toml
+data/*.csv
+data/*.txt

@@ -36,3 +36,9 @@ docker: ## Builds docker image and applies a tag
 push: docker ## Pushes docker image (runs build first)
 	docker push $(IMAGE_PREFIX)/unused:$(GIT_VERSION)
 	docker push $(IMAGE_PREFIX)/unused:latest
+
+unused-disk-report:
+	./scripts/run-unused-disk.sh ../deployment_tools/ksonnet/lib/meta/raw/clusters.json csv
+
+clean-data:
+	rm ./data/*.csv
