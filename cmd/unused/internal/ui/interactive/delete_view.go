@@ -121,7 +121,7 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			rows[m.cur].Data = data
 			rows[m.cur] = rows[m.cur].Selected(false)
 
-			m.table = m.table.WithCurrentPage((m.cur / 10) + 1)
+			m.table = m.table.WithCurrentPage((m.cur / m.table.PageSize()) + 1)
 
 			m.cur++
 		}
@@ -215,5 +215,6 @@ func (m deleteViewModel) FullHelp() [][]key.Binding {
 func (m *deleteViewModel) SetSize(w, h int) {
 	m.progress.Width = w / 2
 	m.help.Width = w
-	m.table = m.table.WithMaxTotalWidth(w - 2).WithTargetWidth(w - 4)
+	hh := lipgloss.Height(m.help.View(m))
+	m.table = m.table.WithMaxTotalWidth(w - 2).WithTargetWidth(w - 4).WithPageSize(h - hh - 3 - 6)
 }
