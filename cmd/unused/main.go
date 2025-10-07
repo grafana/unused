@@ -47,10 +47,10 @@ func main() {
 			return errors.New("invalid filter format")
 		}
 
-		out.Filter.Key = ps[0]
+		out.Filters.Key = ps[0]
 
 		if len(ps) == 2 {
-			out.Filter.Value = ps[1]
+			out.Filters.Value = ps[1]
 		}
 
 		return nil
@@ -62,7 +62,7 @@ func main() {
 			return err
 		}
 
-		out.Filter.MinAge = dur
+		out.Filters.MinAge = dur
 
 		return nil
 	})

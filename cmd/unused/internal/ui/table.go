@@ -38,7 +38,7 @@ func CSV(ctx context.Context, ui UI) error {
 		return err
 	}
 
-	disks = disks.Filter(ui.FilterFunc)
+	disks = disks.Filter(ui.Filter)
 
 	if len(disks) == 0 {
 		fmt.Println("No disks found")

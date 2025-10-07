@@ -10,13 +10,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type Filter struct {
+type Filters struct {
 	Key, Value string
 	MinAge     time.Duration
 }
 
 type UI struct {
-	Filter       Filter
+	Filters      Filters
 	Group        string
 	Providers    []unused.Provider
 	ExtraColumns []string
@@ -26,9 +26,9 @@ type UI struct {
 	Interactive  bool
 }
 
-func (ui UI) FilterFunc(d unused.Disk) bool {
-	minAge := ui.Filter.MinAge == 0 || time.Since(d.CreatedAt()) >= ui.Filter.MinAge
-	keyVal := ui.Filter.Key == "" || d.Meta().Matches(ui.Filter.Key, ui.Filter.Value)
+func (ui UI) Filter(d unused.Disk) bool {
+	minAge := ui.Filters.MinAge == 0 || time.Since(d.CreatedAt()) >= ui.Filters.MinAge
+	keyVal := ui.Filters.Key == "" || d.Meta().Matches(ui.Filters.Key, ui.Filters.Value)
 
 	return minAge && keyVal
 }
@@ -75,7 +75,7 @@ func (ui UI) listUnusedDisks(ctx context.Context) (unused.Disks, error) {
 			}
 
 			mu.Lock()
-			disks = disks.Filter(ui.FilterFunc)
+			disks = disks.Filter(ui.Filter)
 			total = append(total, disks...)
 			mu.Unlock()
 

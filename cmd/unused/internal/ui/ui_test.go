@@ -57,14 +57,14 @@ func TestUI_Filter(t *testing.T) {
 	for n, tt := range tests {
 		t.Run(n, func(t *testing.T) {
 			opts := UI{
-				Filter: Filter{
+				Filters: Filters{
 					Key:    tt.key,
 					Value:  tt.val,
 					MinAge: tt.minAge,
 				},
 			}
 
-			got := disks.Filter(opts.FilterFunc)
+			got := disks.Filter(opts.Filter)
 			if !eq(got, tt.exp) {
 				for _, d := range disks {
 					t.Error(tt.key, tt.val, d.Meta())
