@@ -8,7 +8,7 @@ import (
 	"github.com/grafana/unused/unusedtest"
 )
 
-func TestOptions_Filter(t *testing.T) {
+func TestUI_Filter(t *testing.T) {
 	var (
 		csp1 = unusedtest.NewProvider("foo", nil)
 		csp2 = unusedtest.NewProvider("bar", nil)
@@ -56,15 +56,15 @@ func TestOptions_Filter(t *testing.T) {
 
 	for n, tt := range tests {
 		t.Run(n, func(t *testing.T) {
-			opts := Options{
-				MinAge: tt.minAge,
-				Filter: Filter{
-					Key:   tt.key,
-					Value: tt.val,
+			opts := UI{
+				Filters: Filters{
+					Key:    tt.key,
+					Value:  tt.val,
+					MinAge: tt.minAge,
 				},
 			}
 
-			got := disks.Filter(opts.FilterFunc)
+			got := disks.Filter(opts.Filter)
 			if !eq(got, tt.exp) {
 				for _, d := range disks {
 					t.Error(tt.key, tt.val, d.Meta())

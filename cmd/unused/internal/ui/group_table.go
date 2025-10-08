@@ -18,22 +18,15 @@ import (
 //  3. Disk type: "hdd", "ssd" or "unknown"
 type groupKey [3]string
 
-func GroupTable(ctx context.Context, options Options) error {
-	disks, err := listUnusedDisks(ctx, options.Providers)
+func GroupTable(ctx context.Context, ui UI) error {
+	disks, err := ui.listUnusedDisks(ctx)
 	if err != nil {
 		return err
 	}
 
-	disks = disks.Filter(options.FilterFunc)
-
-	if len(disks) == 0 {
-		fmt.Println("No disks found")
-		return nil
-	}
-
 	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
 
-	headers := []string{"PROVIDER", options.Group, "TYPE", "DISKS_COUNT", "TOTAL_SIZE_GB"}
+	headers := []string{"PROVIDER", ui.Group, "TYPE", "DISKS_COUNT", "TOTAL_SIZE_GB"}
 	totalSize := make(map[groupKey]int)
 	totalCount := make(map[groupKey]int)
 
@@ -42,7 +35,7 @@ func GroupTable(ctx context.Context, options Options) error {
 	var aggrValue string
 	for _, d := range disks {
 		p := d.Provider()
-		if value, ok := d.Meta()[options.Group]; ok {
+		if value, ok := d.Meta()[ui.Group]; ok {
 			aggrValue = value
 		} else {
 			aggrValue = "NONE"
