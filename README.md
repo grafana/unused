@@ -61,3 +61,30 @@ Information about each unused disk is currently logged to stdout given that it c
 ```
 go install github.com/grafana/unused/cmd/unused-exporter@latest
 ```
+
+## Testing against fake providers
+In order to make E2E and UI testing easier, we implemented a fake provider that is only available when running `go` with the `-tags=fake` flag.
+Usage of this flag should produce a deterministic output of fake unused disks for different providers.
+For example, the following runs the `unused` binary using the fake provider:
+
+```
+➜ go run -tags=fake ./cmd/unused
+time=2025-10-08T15:06:22.926-03:00 level=WARN msg="Using fake provider"
+PROVIDER  DISK                                               AGE     UNUSED  TYPE    SIZE_GB
+Medium    pvc-000-11371241257079532652-14470142590855381128  1y      210d    ssd     79
+Medium    pvc-001-760102831717374652-9221744211007427193     128d    64d     ssd     44
+Medium    pvc-002-3389241988064777392-12210202232702069999   72d     36d     ssd     44
+Medium    pvc-003-2240328155279531677-7311121042813227358    1y      257d    ssd     78
+Medium    pvc-004-9381769212557126946-1350674201389090105    1y      199d    ssd     33
+Medium    pvc-005-11814882063598695543-3824056318896229933   26d     13d     ssd     2
+Medium    pvc-006-13037077871211764336-13617661536098221011  182d    91d     ssd     82
+Medium    pvc-007-8499734460532927466-10917103977888096435   1y      262d    ssd     67
+Medium    pvc-008-137166597355566241-11349393104106307790    274d    137d    ssd     94
+Medium    pvc-009-1873294050595685917-6999251097555031736    1y      191d    hdd     90
+Medium    pvc-010-7129530298895469460-12892292024388140256   1y      230d    hdd     5
+Medium    pvc-011-7832170631747924588-17404438405895559565   345d    172d    hdd     55
+Medium    pvc-012-15199846812963376007-15282558343396517750  1y      243d    ssd     89
+Medium    pvc-013-5425635553360250513-2558341386968588437    356d    178d    ssd     58
+```
+
+This flag is also available for running tests: `go test -tags=fake ./...`
