@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,7 +23,7 @@ func GroupTable(ctx context.Context, ui UI) error {
 		return err
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
+	w := tabwriter.NewWriter(ui.Out, 8, 4, 2, ' ', 0)
 
 	headers := []string{"PROVIDER", ui.Group, "TYPE", "DISKS_COUNT", "TOTAL_SIZE_GB"}
 	totalSize := make(map[groupKey]int)

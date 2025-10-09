@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"os"
 	"strings"
 	"text/tabwriter"
 
@@ -112,7 +111,7 @@ func (w csvWriter) Flush() error {
 
 func CSV(ctx context.Context, ui UI) error {
 	w := csvWriter{
-		w: csv.NewWriter(os.Stdout),
+		w: csv.NewWriter(ui.Out),
 	}
 
 	return text(ctx, ui, w)
@@ -134,7 +133,7 @@ func (w tableWriter) Flush() error { return w.w.Flush() }
 
 func Table(ctx context.Context, ui UI) error {
 	w := tableWriter{
-		w: tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0),
+		w: tabwriter.NewWriter(ui.Out, 8, 4, 2, ' ', 0),
 	}
 
 	return text(ctx, ui, w)
