@@ -24,17 +24,17 @@ const (
 var _ tea.Model = Model{}
 
 type Model struct {
-	providerList providerListModel
-	providerView providerViewModel
 	deleteView   deleteViewModel
-	provider     unused.Provider
-	spinner      spinner.Model
-	disks        map[unused.Provider]unused.Disks
-	state        state
-	extraCols    []string
-	filter       unused.FilterFunc
 	help         help.Model
+	provider     unused.Provider
 	err          error
+	disks        map[unused.Provider]unused.Disks
+	filter       unused.FilterFunc
+	providerView providerViewModel
+	extraCols    []string
+	spinner      spinner.Model
+	providerList providerListModel
+	state        state
 }
 
 func New(providers []unused.Provider, extraColumns []string, filter unused.FilterFunc, dryRun bool) Model {
@@ -81,6 +81,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case stateDeletingDisks:
 				delete(m.disks, m.provider)
 				m.state = stateFetchingDisks
+				m.providerView = m.providerView.Empty()
 				return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.filter))
 			}
 
