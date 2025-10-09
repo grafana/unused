@@ -52,8 +52,6 @@ func ParseAge(s string) (time.Duration, error) {
 			}
 			age += time.Duration(n) * ud.d
 			s = after
-		} else {
-			s = before
 		}
 	}
 

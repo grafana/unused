@@ -50,6 +50,8 @@ func TestParseAge(t *testing.T) {
 		{"2x4d6h", 0, internal.ErrInvalidAge},
 		{"1y", 365 * 24 * time.Hour, nil},
 		{"3y7d14h", 3*365*24*time.Hour + 7*24*time.Hour + 14*time.Hour, nil},
+		{"1y2y3d", 0, internal.ErrInvalidAge},
+		{"1d2d3h", 0, internal.ErrInvalidAge},
 	}
 
 	for _, tt := range tests {
