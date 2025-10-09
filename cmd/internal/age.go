@@ -37,6 +37,18 @@ func ParseAge(s string) (time.Duration, error) {
 
 	var age time.Duration
 
+	years, s, ok := strings.Cut(s, "y")
+	if ok {
+		year, err := strconv.Atoi(years)
+		if err != nil {
+			return 0, fmt.Errorf("%w: %w", ErrInvalidAge, err)
+		}
+
+		age = time.Duration(year) * 365 * 24 * time.Hour
+	} else {
+		s = years
+	}
+
 	days, s, ok := strings.Cut(s, "d")
 	if ok {
 		days, err := strconv.Atoi(days)
