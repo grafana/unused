@@ -46,6 +46,12 @@ func TestParseAge(t *testing.T) {
 		{"23dh", 0, internal.ErrInvalidAge},
 		{"23d3", 0, internal.ErrInvalidAge},
 		{"", 0, internal.ErrInvalidAge},
+		{"3x", 0, internal.ErrInvalidAge},
+		{"2x4d6h", 0, internal.ErrInvalidAge},
+		{"1y", 365 * 24 * time.Hour, nil},
+		{"3y7d14h", 3*365*24*time.Hour + 7*24*time.Hour + 14*time.Hour, nil},
+		{"1y2y3d", 0, internal.ErrInvalidAge},
+		{"1d2d3h", 0, internal.ErrInvalidAge},
 	}
 
 	for _, tt := range tests {
@@ -53,5 +59,6 @@ func TestParseAge(t *testing.T) {
 		if !errors.Is(err, tt.err) || got != tt.exp {
 			t.Errorf("expecting ParseAge(%q) = (%v, %v), got (%v, %v)", tt.in, tt.exp, tt.err, got, err)
 		}
+		t.Logf("s: %q, dur: %v, err: %v", tt.in, got, err)
 	}
 }
