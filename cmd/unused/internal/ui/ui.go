@@ -3,6 +3,8 @@ package ui
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -24,6 +26,7 @@ type UI struct {
 	DryRun       bool
 	CSV          bool
 	Interactive  bool
+	Out          io.Writer
 }
 
 func (ui UI) Filter(d unused.Disk) bool {
@@ -34,6 +37,10 @@ func (ui UI) Filter(d unused.Disk) bool {
 }
 
 func (ui UI) Run(ctx context.Context) error {
+	if ui.Out == nil {
+		ui.Out = os.Stdout
+	}
+
 	var display func(ctx context.Context, ui UI) error
 
 	if ui.Interactive {
