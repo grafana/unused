@@ -45,6 +45,8 @@ func ParseAge(s string) (time.Duration, error) {
 		}
 
 		age = time.Duration(days) * 24 * time.Hour
+	} else {
+		s = days
 	}
 
 	if s != "" {
