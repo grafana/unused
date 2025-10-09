@@ -37,28 +37,24 @@ func ParseAge(s string) (time.Duration, error) {
 
 	var age time.Duration
 
-	years, s, ok := strings.Cut(s, "y")
-	if ok {
-		year, err := strconv.Atoi(years)
-		if err != nil {
-			return 0, fmt.Errorf("%w: %w", ErrInvalidAge, err)
+	for _, ud := range []struct {
+		u string
+		d time.Duration
+	}{
+		{"y", 365 * 24 * time.Hour},
+		{"d", 24 * time.Hour},
+	} {
+		before, after, found := strings.Cut(s, ud.u)
+		if found {
+			n, err := strconv.Atoi(before)
+			if err != nil {
+				return 0, fmt.Errorf("%w: parsing %s: %w", ErrInvalidAge, ud.u, err)
+			}
+			age += time.Duration(n) * ud.d
+			s = after
+		} else {
+			s = before
 		}
-
-		age = time.Duration(year) * 365 * 24 * time.Hour
-	} else {
-		s = years
-	}
-
-	days, s, ok := strings.Cut(s, "d")
-	if ok {
-		days, err := strconv.Atoi(days)
-		if err != nil {
-			return 0, fmt.Errorf("%w: %w", ErrInvalidAge, err)
-		}
-
-		age = time.Duration(days) * 24 * time.Hour
-	} else {
-		s = days
 	}
 
 	if s != "" {
