@@ -33,13 +33,6 @@ func newProviderList(providers []unused.Provider) list.Model {
 
 	m := list.New(items, list.NewDefaultDelegate(), 0, 0)
 	m.Title = "Please select which provider to use for checking unused disks"
-	m.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "select provider"),
-		)}
-	}
-	m.AdditionalShortHelpKeys = m.AdditionalFullHelpKeys
 	m.SetFilteringEnabled(false)
 	m.SetShowHelp(false)
 	m.DisableQuitKeybindings()
