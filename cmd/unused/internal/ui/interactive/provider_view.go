@@ -181,6 +181,7 @@ func (m *providerViewModel) updateTableFooter() {
 
 func (m *providerViewModel) resetSize() {
 	hh := lipgloss.Height(m.help.View(m))
+	// 4 is the table borders plus header height, 2 is the footer height.
 	m.table = m.table.WithTargetWidth(m.w).WithPageSize(m.h - 4 - hh - 2)
 	m.help.Width = m.w
 }
