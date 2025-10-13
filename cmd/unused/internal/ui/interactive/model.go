@@ -189,7 +189,7 @@ func (m Model) loadDisks() tea.Cmd {
 
 		disks, err := m.provider.ListUnusedDisks(context.TODO())
 		if err != nil {
-			return err
+			return fmt.Errorf("listing unused disks for %s %s: %w", m.provider.Name(), m.provider.Meta(), err)
 		}
 
 		disks = disks.Filter(m.filter)
