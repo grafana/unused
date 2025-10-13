@@ -88,7 +88,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				delete(m.cache, m.provider)
 				m.state = stateFetchingDisks
 				m.providerView = m.providerView.Empty()
-				return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.cache, m.filter))
+				return m, tea.Batch(m.spinner.Tick, m.loadDisks())
 			}
 
 			return m, nil
@@ -100,7 +100,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.providerView = m.providerView.Empty()
 			m.state = stateFetchingDisks
 
-			return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.cache, m.filter))
+			return m, tea.Batch(m.spinner.Tick, m.loadDisks())
 		}
 
 	case unused.Disks:
@@ -176,20 +176,19 @@ func (m Model) View() string {
 	}
 }
 
-func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks, filter unused.FilterFunc) tea.Cmd {
+func (m Model) loadDisks() tea.Cmd {
 	return func() tea.Msg {
-		if disks, ok := cache[provider]; ok {
+		if disks, ok := m.cache[m.provider]; ok {
 			return disks
 		}
 
-		disks, err := provider.ListUnusedDisks(context.TODO())
+		disks, err := m.provider.ListUnusedDisks(context.TODO())
 		if err != nil {
 			return err
 		}
 
-		disks = disks.Filter(filter)
-
-		cache[provider] = disks
+		disks = disks.Filter(m.filter)
+		m.cache[m.provider] = disks
 
 		return disks
 	}
