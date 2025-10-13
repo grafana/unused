@@ -32,7 +32,7 @@ type Model struct {
 	help         help.Model
 	provider     unused.Provider
 	err          error
-	disks        map[unused.Provider]unused.Disks
+	cache        map[unused.Provider]unused.Disks
 	filter       unused.FilterFunc
 	extraCols    []string
 	spinner      spinner.Model
@@ -48,7 +48,7 @@ func New(providers []unused.Provider, extraColumns []string, filter unused.Filte
 		providerList: newProviderListModel(providers),
 		providerView: newProviderViewModel(extraColumns),
 		deleteView:   newDeleteViewModel(dryRun),
-		disks:        make(map[unused.Provider]unused.Disks),
+		cache:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 		spinner:      spinner.New(),
 		extraCols:    extraColumns,
@@ -85,10 +85,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case stateDeletingDisks:
-				delete(m.disks, m.provider)
+				delete(m.cache, m.provider)
 				m.state = stateFetchingDisks
 				m.providerView = m.providerView.Empty()
-				return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.filter))
+				return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.cache, m.filter))
 			}
 
 			return m, nil
@@ -100,7 +100,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.providerView = m.providerView.Empty()
 			m.state = stateFetchingDisks
 
-			return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.filter))
+			return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.cache, m.filter))
 		}
 
 	case unused.Disks:
