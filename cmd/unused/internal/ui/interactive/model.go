@@ -109,6 +109,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case unused.Disks:
 		switch m.state {
 		case stateFetchingDisks:
+			m.cache[m.provider] = msg
 			m.providerView = m.providerView.WithDisks(msg)
 			m.state = stateProviderView
 
@@ -198,10 +199,7 @@ func (m Model) loadDisks() tea.Cmd {
 			return fmt.Errorf("listing unused disks for %s %s: %w", m.provider.Name(), m.provider.Meta(), err)
 		}
 
-		disks = disks.Filter(m.filter)
-		m.cache[m.provider] = disks
-
-		return disks
+		return disks.Filter(m.filter)
 	}
 }
 
