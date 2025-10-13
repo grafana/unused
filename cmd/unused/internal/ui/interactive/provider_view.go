@@ -158,13 +158,13 @@ func (m providerViewModel) View() string {
 }
 
 func (m providerViewModel) ShortHelp() []key.Binding {
-	return []key.Binding{navKeys.Quit, navKeys.Back, m.toggle, m.toggleCur, m.delete, m.refresh, navKeys.Up, navKeys.Down}
+	return []key.Binding{navKeys.Quit, navKeys.Back, m.toggle, m.toggleCur, m.delete, m.refresh}
 }
 
 func (m providerViewModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		m.ShortHelp(),
-		{m.selAll, m.unselAll, navKeys.PageUp, navKeys.PageDown, navKeys.Home, navKeys.End},
+		{m.selAll, m.unselAll, navKeys.Up, navKeys.Down, navKeys.PageUp, navKeys.PageDown, navKeys.Home, navKeys.End},
 	}
 }
 
