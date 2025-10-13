@@ -12,6 +12,11 @@ import (
 	"github.com/grafana/unused"
 )
 
+const (
+	minWidth  = 100
+	minHeight = 30
+)
+
 type state int
 
 const (
@@ -35,6 +40,7 @@ type Model struct {
 	providerView providerViewModel
 	deleteView   deleteViewModel
 	state        state
+	w, h         int
 }
 
 func New(providers []unused.Provider, extraColumns []string, filter unused.FilterFunc, dryRun bool) Model {
@@ -116,6 +122,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
+		m.w, m.h = msg.Width, msg.Height
 		m.providerList.SetSize(msg.Width, msg.Height)
 		m.providerView.SetSize(msg.Width, msg.Height)
 		m.deleteView.SetSize(msg.Width, msg.Height)
@@ -144,6 +151,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
 
 func (m Model) View() string {
+	if m.w < minWidth || m.h < minHeight {
+		return errorStyle.Render(fmt.Sprintf("invalid window size %dx%d, expecting at least %dx%d", m.w, m.h, minWidth, minHeight))
+	}
 	if m.err != nil {
 		return errorStyle.Render(m.err.Error())
 	}
