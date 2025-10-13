@@ -24,16 +24,16 @@ const (
 var _ tea.Model = Model{}
 
 type Model struct {
-	deleteView   deleteViewModel
 	help         help.Model
 	provider     unused.Provider
 	err          error
 	disks        map[unused.Provider]unused.Disks
 	filter       unused.FilterFunc
-	providerView providerViewModel
 	extraCols    []string
 	spinner      spinner.Model
 	providerList providerListModel
+	providerView providerViewModel
+	deleteView   deleteViewModel
 	state        state
 }
 
