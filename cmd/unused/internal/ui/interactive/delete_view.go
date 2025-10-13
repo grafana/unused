@@ -148,7 +148,10 @@ type deleteStatus struct {
 func deleteDisk(d *diskToDelete, dryRun bool) tea.Cmd {
 	return func() tea.Msg {
 		if !dryRun {
-			d.status.err = d.disk.Provider().Delete(context.TODO(), d.disk)
+			ctx, cancel := context.WithTimeout(context.TODO(), timeout)
+			defer cancel()
+
+			d.status.err = d.disk.Provider().Delete(ctx, d.disk)
 		}
 
 		d.status.done = true

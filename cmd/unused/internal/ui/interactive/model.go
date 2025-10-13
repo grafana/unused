@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -15,6 +16,8 @@ import (
 const (
 	minWidth  = 100
 	minHeight = 30
+
+	timeout = 1 * time.Minute
 )
 
 type state int
@@ -187,7 +190,10 @@ func (m Model) loadDisks() tea.Cmd {
 			return disks
 		}
 
-		disks, err := m.provider.ListUnusedDisks(context.TODO())
+		ctx, cancel := context.WithTimeout(context.TODO(), timeout)
+		defer cancel()
+
+		disks, err := m.provider.ListUnusedDisks(ctx)
 		if err != nil {
 			return fmt.Errorf("listing unused disks for %s %s: %w", m.provider.Name(), m.provider.Meta(), err)
 		}
