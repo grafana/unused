@@ -170,11 +170,12 @@ func (m deleteViewModel) View() string {
 		fmt.Fprintf(sb, "Deleting %d/%d disks from %s %s\n", m.cur+1, len(m.disks), m.provider.Name(), m.provider.Meta().String())
 
 		sb.WriteString(m.progress.ViewAs(float64(m.cur) / float64(len(m.disks))))
+		eta := "N/A"
 		if m.cur > 0 {
-			eta := (time.Since(m.start) * time.Duration(len(m.disks)) / time.Duration(m.cur)).Truncate(time.Second)
-			fmt.Fprintf(sb, " ETA %v", eta)
+			eta = (time.Since(m.start) * time.Duration(len(m.disks)) / time.Duration(m.cur)).Truncate(time.Second).String()
 		}
 
+		sb.WriteString(" ETA " + eta)
 		sb.WriteString("\n")
 
 		if m.cur < len(m.disks) {
