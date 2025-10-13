@@ -3,8 +3,8 @@ package ui
 import (
 	"context"
 	"fmt"
-	"os"
-	"sort"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -24,9 +24,17 @@ func GroupTable(ctx context.Context, ui UI) error {
 		return err
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 8, 4, 2, ' ', 0)
+	w := tabwriter.NewWriter(ui.Out, 8, 4, 2, ' ', 0)
 
-	headers := []string{"PROVIDER", ui.Group, "TYPE", "DISKS_COUNT", "TOTAL_SIZE_GB"}
+	var groupByHeader string
+	switch ui.Group {
+	case "k8s:ns", "k8s:pvc", "k8s:pv":
+		groupByHeader = strings.ToUpper(ui.Group)
+	default:
+		groupByHeader = ui.Group
+	}
+
+	headers := []string{"PROVIDER", groupByHeader, "TYPE", "DISKS_COUNT", "TOTAL_SIZE_GB"}
 	totalSize := make(map[groupKey]int)
 	totalCount := make(map[groupKey]int)
 
@@ -34,29 +42,44 @@ func GroupTable(ctx context.Context, ui UI) error {
 
 	var aggrValue string
 	for _, d := range disks {
-		p := d.Provider()
-		if value, ok := d.Meta()[ui.Group]; ok {
+		var (
+			value string
+			ok    bool
+			meta  = d.Meta()
+		)
+
+		switch ui.Group {
+		case "k8s:ns":
+			value = meta.CreatedForNamespace()
+			ok = value != ""
+		case "k8s:pvc":
+			value = meta.CreatedForPVC()
+			ok = value != ""
+		case "k8s:pv":
+			value = meta.CreatedForPV()
+			ok = value != ""
+		default:
+			value, ok = meta[ui.Group]
+		}
+
+		if ok {
 			aggrValue = value
 		} else {
 			aggrValue = "NONE"
 		}
-		aggrKey := groupKey{p.Name(), aggrValue, string(d.DiskType())}
+
+		aggrKey := groupKey{d.Provider().Name(), aggrValue, string(d.DiskType())}
 		totalSize[aggrKey] += d.SizeGB()
 		totalCount[aggrKey] += 1
 	}
 
-	keys := make([]groupKey, 0, len(totalSize))
-	for k := range totalSize {
-		keys = append(keys, k)
-	}
-
-	sort.Slice(keys, func(i, j int) bool {
-		for k := 0; k < len(keys[i]); k++ {
-			if keys[i][k] != keys[j][k] {
-				return keys[i][k] < keys[j][k]
+	keys := slices.SortedFunc(maps.Keys(totalSize), func(a, b groupKey) int {
+		for k := range b {
+			if c := strings.Compare(a[k], b[k]); c != 0 {
+				return c
 			}
 		}
-		return true
+		return 0
 	})
 
 	for _, aggrKey := range keys {

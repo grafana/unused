@@ -87,7 +87,10 @@ func main() {
 		return nil
 	})
 
-	flag.StringVar(&out.Group, "group-by", "", "Group by disk metadata values")
+	flag.Func("group-by", "Group by disk metadata values; use k8s:ns, k8s:pvc, or k8s:pv for Kubernetes metadata", func(s string) error {
+		out.Group = s
+		return nil
+	})
 
 	flag.Parse()
 
