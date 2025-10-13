@@ -3,7 +3,8 @@ package ui
 import (
 	"context"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -44,18 +45,13 @@ func GroupTable(ctx context.Context, ui UI) error {
 		totalCount[aggrKey] += 1
 	}
 
-	keys := make([]groupKey, 0, len(totalSize))
-	for k := range totalSize {
-		keys = append(keys, k)
-	}
-
-	sort.Slice(keys, func(i, j int) bool {
-		for k := 0; k < len(keys[i]); k++ {
-			if keys[i][k] != keys[j][k] {
-				return keys[i][k] < keys[j][k]
+	keys := slices.SortedFunc(maps.Keys(totalSize), func(a, b groupKey) int {
+		for k := range b {
+			if c := strings.Compare(a[k], b[k]); c != 0 {
+				return c
 			}
 		}
-		return true
+		return 0
 	})
 
 	for _, aggrKey := range keys {
