@@ -50,6 +50,7 @@ type providerViewModel struct {
 	toggleCur key.Binding
 	selAll    key.Binding
 	unselAll  key.Binding
+	refresh   key.Binding
 	extraCols []string
 	table     table.Model
 	w         int
@@ -89,6 +90,7 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 		toggleCur: key.NewBinding(key.WithKeys("*"), key.WithHelp("*", "toggle current page")),
 		selAll:    key.NewBinding(key.WithKeys("A"), key.WithHelp("A", "select all")),
 		unselAll:  key.NewBinding(key.WithKeys("N"), key.WithHelp("N", "deselect all")),
+		refresh:   key.NewBinding(key.WithKeys("g"), key.WithHelp("g", "refresh disks")),
 
 		extraCols: extraColumns,
 	}
@@ -131,6 +133,9 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 			}
 			m.table = m.table.WithRows(rows)
 
+		case key.Matches(msg, m.refresh):
+			return m, sendMsg(refreshMsg{})
+
 		case msg.String() == "?":
 			m.help.ShowAll = !m.help.ShowAll
 			m.resetSize()
@@ -153,7 +158,7 @@ func (m providerViewModel) View() string {
 }
 
 func (m providerViewModel) ShortHelp() []key.Binding {
-	return []key.Binding{navKeys.Quit, navKeys.Back, m.toggle, m.toggleCur, m.delete, navKeys.Up, navKeys.Down}
+	return []key.Binding{navKeys.Quit, navKeys.Back, m.toggle, m.toggleCur, m.delete, m.refresh, navKeys.Up, navKeys.Down}
 }
 
 func (m providerViewModel) FullHelp() [][]key.Binding {

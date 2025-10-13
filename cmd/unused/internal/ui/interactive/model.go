@@ -114,6 +114,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = stateDeletingDisks
 		}
 
+	case refreshMsg:
+		delete(m.cache, m.provider)
+		m.state = stateFetchingDisks
+		return m, tea.Batch(m.spinner.Tick, m.loadDisks())
+
 	case spinner.TickMsg:
 		if m.state == stateFetchingDisks {
 			var cmd tea.Cmd
@@ -227,3 +232,7 @@ func newHelp() help.Model {
 
 	return m
 }
+
+// refreshMsg is a message used to mark that we need to clear the
+// cache for the current provider and reload its unused disks.
+type refreshMsg struct{}
