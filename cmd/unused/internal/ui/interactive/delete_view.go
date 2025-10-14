@@ -4,30 +4,37 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
 )
 
 type deleteViewModel struct {
-	output   viewport.Model
 	help     help.Model
-	w, h     int
+	start    time.Time
+	provider unused.Provider
 	confirm  key.Binding
 	toggle   key.Binding
-	provider unused.Provider
+	disks    []diskToDelete
 	spinner  spinner.Model
-	delete   bool
-	disks    unused.Disks
+	table    table.Model
+	progress progress.Model
 	cur      int
-	status   []*deleteStatus
+	delete   bool
 	dryRun   bool
 }
+
+const (
+	columnMark   = "mark"
+	columnStatus = "status"
+)
 
 func newDeleteViewModel(dryRun bool) deleteViewModel {
 	return deleteViewModel{
@@ -36,14 +43,36 @@ func newDeleteViewModel(dryRun bool) deleteViewModel {
 		toggle:  key.NewBinding(key.WithKeys("D"), key.WithHelp("D", "toggle dry-run")),
 		spinner: spinner.New(),
 		dryRun:  dryRun,
+		progress: progress.New(
+			progress.WithDefaultGradient(),
+		),
+		table: table.New([]table.Column{
+			table.NewColumn(columnMark, " ", 2),
+			table.NewFlexColumn(columnName, "Name", 1).WithStyle(nameStyle),
+			table.NewFlexColumn(columnStatus, "Status", 2).WithStyle(nameStyle),
+		}).
+			HeaderStyle(headerStyle).
+			Focused(true).
+			WithPageSize(10).WithPaginationWrapping(true).
+			WithFooterVisibility(true),
 	}
 }
 
 func (m deleteViewModel) WithDisks(provider unused.Provider, disks unused.Disks) deleteViewModel {
 	m.provider = provider
-	m.disks = disks
-	m.status = make([]*deleteStatus, len(disks))
 	m.cur = 0
+
+	m.disks = make([]diskToDelete, len(disks))
+	rows := make([]table.Row, len(disks))
+	for i, d := range disks {
+		m.disks[i] = diskToDelete{disk: d}
+		rows[i] = table.NewRow(table.RowData{
+			columnName: d.Name(),
+		})
+	}
+
+	m.table = m.table.WithRows(rows)
+
 	return m
 }
 
@@ -57,10 +86,14 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.confirm):
 			m.delete = true
+			m.start = time.Now()
 			cmd = tea.Batch(m.spinner.Tick, sendMsg(deleteNextMsg{}))
 
 		case key.Matches(msg, m.toggle):
 			m.dryRun = !m.dryRun
+
+		default:
+			m.table, cmd = m.table.Update(msg)
 		}
 
 	case deleteNextMsg:
@@ -69,13 +102,27 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			return m, nil
 		}
 
-		ds := m.status[m.cur]
-		if ds == nil {
-			ds = &deleteStatus{}
-			m.status[m.cur] = ds
+		rows := m.table.GetVisibleRows()
 
-			return m, deleteDisk(m.disks[m.cur], ds, m.dryRun)
+		ds := m.disks[m.cur].status
+		if ds == nil {
+			m.disks[m.cur].status = &deleteStatus{}
+			rows[m.cur] = rows[m.cur].Selected(true)
+
+			return m, deleteDisk(&m.disks[m.cur], m.dryRun)
 		} else if ds.done {
+			data := rows[m.cur].Data
+			if ds.err == nil {
+				data[columnMark] = "✔"
+			} else {
+				data[columnMark] = "❌"
+				data[columnStatus] = errorStyle.Render(ds.err.Error())
+			}
+			rows[m.cur].Data = data
+			rows[m.cur] = rows[m.cur].Selected(false)
+
+			m.table = m.table.WithCurrentPage((m.cur / m.table.PageSize()) + 1)
+
 			m.cur++
 		}
 
@@ -88,18 +135,26 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 	return m, cmd
 }
 
-type deleteStatus struct {
-	done bool
-	err  error
+type diskToDelete struct {
+	disk   unused.Disk
+	status *deleteStatus
 }
 
-func deleteDisk(d unused.Disk, s *deleteStatus, dryRun bool) tea.Cmd {
+type deleteStatus struct {
+	err  error
+	done bool
+}
+
+func deleteDisk(d *diskToDelete, dryRun bool) tea.Cmd {
 	return func() tea.Msg {
 		if !dryRun {
-			s.err = d.Provider().Delete(context.TODO(), d)
+			ctx, cancel := context.WithTimeout(context.TODO(), timeout)
+			defer cancel()
+
+			d.status.err = d.disk.Provider().Delete(ctx, d.disk)
 		}
 
-		s.done = true
+		d.status.done = true
 
 		return deleteNextMsg{}
 	}
@@ -110,11 +165,34 @@ var bold = lipgloss.NewStyle().Bold(true)
 func (m deleteViewModel) View() string {
 	sb := &strings.Builder{}
 
-	if m.delete {
-		fmt.Fprintf(sb, "Deleting %d/%d disks from %s %s\n\n", m.cur+1, len(m.disks), m.provider.Name(), m.provider.Meta().String())
-	} else if m.cur == len(m.disks) {
-		fmt.Fprintf(sb, "Deleted %d disks from %s %s\n\n", len(m.disks), m.provider.Name(), m.provider.Meta().String())
-	} else {
+	switch {
+	case m.delete:
+		fmt.Fprintf(sb, "Deleting %d/%d disks from %s %s\n", m.cur+1, len(m.disks), m.provider.Name(), m.provider.Meta().String())
+
+		sb.WriteString(m.progress.ViewAs(float64(m.cur) / float64(len(m.disks))))
+		eta := "N/A"
+		if m.cur > 0 {
+			eta = (time.Since(m.start) * time.Duration(len(m.disks)) / time.Duration(m.cur)).Truncate(time.Second).String()
+		}
+
+		sb.WriteString(" ETA " + eta)
+		sb.WriteString("\n")
+
+		if m.cur < len(m.disks) {
+			if s := m.disks[m.cur].status; s != nil {
+				sb.WriteString("➤ ")
+				sb.WriteString(m.disks[m.cur].disk.Name())
+				sb.WriteString(" ")
+				sb.WriteString(m.spinner.View())
+			}
+		}
+
+		sb.WriteString("\n")
+
+	case m.cur == len(m.disks):
+		fmt.Fprintf(sb, "Deleted %d disks from %s %s\n\n\n", len(m.disks), m.provider.Name(), m.provider.Meta().String())
+
+	default:
 		fmt.Fprintf(sb, "You're about to delete %d disks from %s %s\n\n", len(m.disks), m.provider.Name(), m.provider.Meta())
 
 		if m.dryRun {
@@ -123,32 +201,11 @@ func (m deleteViewModel) View() string {
 			fmt.Fprintln(sb, bold.Render("Press `x` to start deleting the following disks:"))
 		}
 
-		fmt.Fprintf(sb, "\n")
 	}
 
-	for i, d := range m.disks {
-		s := m.status[i]
+	sb.WriteString(m.table.View())
 
-		switch {
-		case s == nil:
-			fmt.Fprintf(sb, "  %s\n", d.Name())
-
-		case m.cur == i:
-			fmt.Fprintf(sb, "➤ %s %s\n", d.Name(), m.spinner.View())
-
-		case !s.done:
-
-		case s.err != nil:
-			fmt.Fprintf(sb, "𐄂 %s\n  %s\n", d.Name(), errorStyle.Render(s.err.Error()))
-
-		default:
-			fmt.Fprintf(sb, "✓ %s\n", d.Name())
-		}
-	}
-
-	m.output.SetContent(sb.String())
-
-	return lipgloss.JoinVertical(lipgloss.Left, m.output.View(), m.help.View(m))
+	return lipgloss.JoinVertical(lipgloss.Left, sb.String(), m.help.View(m))
 }
 
 func (m deleteViewModel) ShortHelp() []key.Binding {
@@ -159,13 +216,9 @@ func (m deleteViewModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{m.ShortHelp()}
 }
 
-func (m *deleteViewModel) resetSize() {
-	hh := lipgloss.Height(m.help.View(m))
-	m.output.Width, m.output.Height = m.w, m.h-hh
-	m.help.Width = m.w
-}
-
 func (m *deleteViewModel) SetSize(w, h int) {
-	m.w, m.h = w, h
-	m.resetSize()
+	m.progress.Width = w / 2
+	m.help.Width = w
+	hh := lipgloss.Height(m.help.View(m))
+	m.table = m.table.WithMaxTotalWidth(w - 2).WithTargetWidth(w - 4).WithPageSize(h - hh - 3 - 6)
 }

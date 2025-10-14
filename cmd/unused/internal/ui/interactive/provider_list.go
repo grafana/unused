@@ -33,16 +33,10 @@ func newProviderList(providers []unused.Provider) list.Model {
 
 	m := list.New(items, list.NewDefaultDelegate(), 0, 0)
 	m.Title = "Please select which provider to use for checking unused disks"
-	m.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "select provider"),
-		)}
-	}
-	m.AdditionalShortHelpKeys = m.AdditionalFullHelpKeys
 	m.SetFilteringEnabled(false)
 	m.SetShowHelp(false)
 	m.DisableQuitKeybindings()
+	m.SetShowStatusBar(false)
 
 	return m
 }
@@ -87,14 +81,18 @@ func (m providerListModel) Update(msg tea.Msg) (providerListModel, tea.Cmd) {
 	return m, nil
 }
 
+var dialog = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+
 func (m providerListModel) View() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(m))
+	v := lipgloss.JoinVertical(lipgloss.Left, m.list.View(), m.help.View(m))
+	return dialog.Width(m.w - 2).Render(v)
 }
 
 func (m *providerListModel) resetSize() {
 	hh := lipgloss.Height(m.help.View(m))
-	m.list.SetSize(m.w, m.h-hh)
-	m.help.Width = m.w
+	lh := (len(m.list.Items()) + 3) * 3
+	m.list.SetSize(m.w-2, lh-hh)
+	m.help.Width = m.w - 2
 }
 
 func (m *providerListModel) SetSize(w, h int) {

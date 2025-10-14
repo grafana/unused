@@ -1,6 +1,10 @@
 package interactive
 
 import (
+	"fmt"
+	"slices"
+	"strings"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -40,13 +44,17 @@ var (
 )
 
 type providerViewModel struct {
-	table  table.Model
-	help   help.Model
-	toggle key.Binding
-	delete key.Binding
-	w, h   int
-
+	help      help.Model
+	toggle    key.Binding
+	delete    key.Binding
+	toggleCur key.Binding
+	selAll    key.Binding
+	unselAll  key.Binding
+	refresh   key.Binding
 	extraCols []string
+	table     table.Model
+	w         int
+	h         int
 }
 
 func newProviderViewModel(extraColumns []string) providerViewModel {
@@ -70,7 +78,7 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 		HeaderStyle(headerStyle).
 		Focused(true).
 		WithSelectedText(" ", "✔").
-		WithFooterVisibility(false).
+		WithFooterVisibility(true).
 		SelectableRows(true)
 
 	return providerViewModel{
@@ -79,11 +87,18 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 		toggle: key.NewBinding(key.WithKeys(" "), key.WithHelp("space", "toggle mark")),
 		delete: key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "delete marked")),
 
+		toggleCur: key.NewBinding(key.WithKeys("*"), key.WithHelp("*", "toggle current page")),
+		selAll:    key.NewBinding(key.WithKeys("A"), key.WithHelp("A", "select all")),
+		unselAll:  key.NewBinding(key.WithKeys("N"), key.WithHelp("N", "deselect all")),
+		refresh:   key.NewBinding(key.WithKeys("g"), key.WithHelp("g", "refresh disks")),
+
 		extraCols: extraColumns,
 	}
 }
 
 func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
@@ -93,25 +108,49 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 				for i, r := range rows {
 					disks[i] = r.Data[columnDisk].(unused.Disk)
 				}
-				return m, sendMsg(disks)
+				cmd = sendMsg(disks)
 			}
+
+		case key.Matches(msg, m.toggleCur):
+			rows := m.table.GetVisibleRows()
+			sel := m.table.SelectedRows()
+			s := (m.table.CurrentPage() - 1) * m.table.PageSize()
+			e := min(s+m.table.PageSize(), len(rows))
+			for i := s; i < e; i++ {
+				rows[i] = rows[i].Selected(!slices.ContainsFunc(sel, func(r table.Row) bool {
+					a := r.Data[columnDisk].(unused.Disk)
+					b := rows[i].Data[columnDisk].(unused.Disk)
+					return a.ID() == b.ID()
+				}))
+			}
+			m.table = m.table.WithRows(rows)
+
+		case key.Matches(msg, m.selAll, m.unselAll):
+			sel := key.Matches(msg, m.selAll)
+			rows := m.table.GetVisibleRows()
+			for i := range rows {
+				rows[i] = rows[i].Selected(sel)
+			}
+			m.table = m.table.WithRows(rows)
+
+		case key.Matches(msg, m.refresh):
+			return m, sendMsg(refreshMsg{})
 
 		case msg.String() == "?":
 			m.help.ShowAll = !m.help.ShowAll
 			m.resetSize()
-			return m, nil
 
 		case key.Matches(msg, navKeys.Quit):
-			return m, tea.Quit
+			cmd = tea.Quit
 
 		default:
-			var cmd tea.Cmd
 			m.table, cmd = m.table.Update(msg)
-			return m, cmd
 		}
 	}
 
-	return m, nil
+	m.updateTableFooter()
+
+	return m, cmd
 }
 
 func (m providerViewModel) View() string {
@@ -119,19 +158,31 @@ func (m providerViewModel) View() string {
 }
 
 func (m providerViewModel) ShortHelp() []key.Binding {
-	return []key.Binding{navKeys.Quit, navKeys.Back, m.toggle, m.delete, navKeys.Up, navKeys.Down}
+	return []key.Binding{navKeys.Quit, navKeys.Back, m.toggle, m.toggleCur, m.delete, m.refresh}
 }
 
 func (m providerViewModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		m.ShortHelp(),
-		{navKeys.PageUp, navKeys.PageDown, navKeys.Home, navKeys.End},
+		{m.selAll, m.unselAll, navKeys.Up, navKeys.Down, navKeys.PageUp, navKeys.PageDown, navKeys.Home, navKeys.End},
 	}
+}
+
+func (m *providerViewModel) updateTableFooter() {
+	var (
+		t    = m.table
+		sel  = fmt.Sprintf(" %d of %d disks selected", len(t.SelectedRows()), t.TotalRows())
+		page = fmt.Sprintf("Page %d of %d ", t.CurrentPage(), t.MaxPages())
+		f    = sel + strings.Repeat(" ", m.w-2-len(sel)-len(page)) + page
+	)
+
+	m.table = t.WithStaticFooter(f)
 }
 
 func (m *providerViewModel) resetSize() {
 	hh := lipgloss.Height(m.help.View(m))
-	m.table = m.table.WithTargetWidth(m.w).WithPageSize(m.h - 4 - hh)
+	// 4 is the table borders plus header height, 2 is the footer height.
+	m.table = m.table.WithTargetWidth(m.w).WithPageSize(m.h - 4 - hh - 2)
 	m.help.Width = m.w
 }
 
@@ -177,6 +228,6 @@ func (m providerViewModel) WithDisks(disks unused.Disks) providerViewModel {
 		rows[i] = table.NewRow(row)
 	}
 
-	m.table = m.table.WithRows(rows)
+	m.table = m.table.WithRows(rows).WithAllRowsDeselected()
 	return m
 }

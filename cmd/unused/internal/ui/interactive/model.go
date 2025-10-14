@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -10,6 +11,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/grafana/unused"
+)
+
+const (
+	minWidth  = 100
+	minHeight = 30
+
+	timeout = 1 * time.Minute
 )
 
 type state int
@@ -24,17 +32,18 @@ const (
 var _ tea.Model = Model{}
 
 type Model struct {
+	help         help.Model
+	provider     unused.Provider
+	err          error
+	cache        map[unused.Provider]unused.Disks
+	filter       unused.FilterFunc
+	extraCols    []string
+	spinner      spinner.Model
 	providerList providerListModel
 	providerView providerViewModel
 	deleteView   deleteViewModel
-	provider     unused.Provider
-	spinner      spinner.Model
-	disks        map[unused.Provider]unused.Disks
 	state        state
-	extraCols    []string
-	filter       unused.FilterFunc
-	help         help.Model
-	err          error
+	w, h         int
 }
 
 func New(providers []unused.Provider, extraColumns []string, filter unused.FilterFunc, dryRun bool) Model {
@@ -42,7 +51,7 @@ func New(providers []unused.Provider, extraColumns []string, filter unused.Filte
 		providerList: newProviderListModel(providers),
 		providerView: newProviderViewModel(extraColumns),
 		deleteView:   newDeleteViewModel(dryRun),
-		disks:        make(map[unused.Provider]unused.Disks),
+		cache:        make(map[unused.Provider]unused.Disks),
 		state:        stateProviderList,
 		spinner:      spinner.New(),
 		extraCols:    extraColumns,
@@ -79,9 +88,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case stateDeletingDisks:
-				delete(m.disks, m.provider)
+				delete(m.cache, m.provider)
 				m.state = stateFetchingDisks
-				return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.filter))
+				m.providerView = m.providerView.Empty()
+				return m, tea.Batch(m.spinner.Tick, m.loadDisks())
 			}
 
 			return m, nil
@@ -93,12 +103,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.providerView = m.providerView.Empty()
 			m.state = stateFetchingDisks
 
-			return m, tea.Batch(m.spinner.Tick, loadDisks(m.provider, m.disks, m.filter))
+			return m, tea.Batch(m.spinner.Tick, m.loadDisks())
 		}
 
 	case unused.Disks:
 		switch m.state {
 		case stateFetchingDisks:
+			m.cache[m.provider] = msg
 			m.providerView = m.providerView.WithDisks(msg)
 			m.state = stateProviderView
 
@@ -106,6 +117,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.deleteView = m.deleteView.WithDisks(m.provider, msg)
 			m.state = stateDeletingDisks
 		}
+
+	case refreshMsg:
+		delete(m.cache, m.provider)
+		m.state = stateFetchingDisks
+		return m, tea.Batch(m.spinner.Tick, m.loadDisks())
 
 	case spinner.TickMsg:
 		if m.state == stateFetchingDisks {
@@ -115,6 +131,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
+		m.w, m.h = msg.Width, msg.Height
 		m.providerList.SetSize(msg.Width, msg.Height)
 		m.providerView.SetSize(msg.Width, msg.Height)
 		m.deleteView.SetSize(msg.Width, msg.Height)
@@ -143,6 +160,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
 
 func (m Model) View() string {
+	if m.w < minWidth || m.h < minHeight {
+		return errorStyle.Render(fmt.Sprintf("invalid window size %dx%d, expecting at least %dx%d", m.w, m.h, minWidth, minHeight))
+	}
 	if m.err != nil {
 		return errorStyle.Render(m.err.Error())
 	}
@@ -165,22 +185,21 @@ func (m Model) View() string {
 	}
 }
 
-func loadDisks(provider unused.Provider, cache map[unused.Provider]unused.Disks, filter unused.FilterFunc) tea.Cmd {
+func (m Model) loadDisks() tea.Cmd {
 	return func() tea.Msg {
-		if disks, ok := cache[provider]; ok {
+		if disks, ok := m.cache[m.provider]; ok {
 			return disks
 		}
 
-		disks, err := provider.ListUnusedDisks(context.TODO())
+		ctx, cancel := context.WithTimeout(context.TODO(), timeout)
+		defer cancel()
+
+		disks, err := m.provider.ListUnusedDisks(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("listing unused disks for %s %s: %w", m.provider.Name(), m.provider.Meta(), err)
 		}
 
-		disks = disks.Filter(filter)
-
-		cache[provider] = disks
-
-		return disks
+		return disks.Filter(m.filter)
 	}
 }
 
@@ -217,3 +236,7 @@ func newHelp() help.Model {
 
 	return m
 }
+
+// refreshMsg is a message used to mark that we need to clear the
+// cache for the current provider and reload its unused disks.
+type refreshMsg struct{}
