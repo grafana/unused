@@ -41,9 +41,9 @@ func (d *Disk) CreatedAt() time.Time { return *d.Disk.Properties.TimeCreated }
 // Meta returns the disk metadata.
 func (d *Disk) Meta() unused.Meta { return d.meta }
 
-// LastUsedAt returns a zero [time.Time] value, as Azure does not
-// provide this information.
-func (d *Disk) LastUsedAt() time.Time { return time.Time{} }
+// LastUsedAt returns the time when the Azure compute disk was last
+// detached.
+func (d *Disk) LastUsedAt() time.Time { return *d.Disk.Properties.LastOwnershipUpdateTime }
 
 // DiskType Type returns the type of this Azure compute disk.
 func (d *Disk) DiskType() unused.DiskType {

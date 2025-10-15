@@ -15,6 +15,7 @@ func TestDisk(t *testing.T) {
 	sizeGB := int32(10)
 	sizeBytes := int64(10_737_418_240)
 	sku := compute.DiskStorageAccountTypesStandardSSDLRS
+	lastUsedAt := createdAt.Add(3 * 24 * time.Hour)
 
 	var d unused.Disk = &Disk{
 		&compute.Disk{
@@ -27,6 +28,8 @@ func TestDisk(t *testing.T) {
 				TimeCreated:   &createdAt,
 				DiskSizeGB:    &sizeGB,
 				DiskSizeBytes: &sizeBytes,
+
+				LastOwnershipUpdateTime: &lastUsedAt,
 			},
 		},
 		nil,
@@ -53,15 +56,15 @@ func TestDisk(t *testing.T) {
 		t.Errorf("expecting CreatedAt() %v, got %v", createdAt, d.CreatedAt())
 	}
 
+	if !lastUsedAt.Equal(d.LastUsedAt()) {
+		t.Errorf("expecting LastUsedAt() %v, got %v", lastUsedAt, d.LastUsedAt())
+	}
+
 	if exp, got := int(sizeGB), d.SizeGB(); exp != got {
 		t.Errorf("expecting SizeGB() %d, got %d", exp, got)
 	}
 
 	if exp, got := float64(sizeBytes), d.SizeBytes(); exp != got {
 		t.Errorf("expecting SizeBytes() %f, got %f", exp, got)
-	}
-
-	if !d.LastUsedAt().IsZero() {
-		t.Errorf("Azure doesn't provide a last usage timestamp for disks, got %v", d.LastUsedAt())
 	}
 }
