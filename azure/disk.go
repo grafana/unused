@@ -43,7 +43,14 @@ func (d *Disk) Meta() unused.Meta { return d.meta }
 
 // LastUsedAt returns the time when the Azure compute disk was last
 // detached.
-func (d *Disk) LastUsedAt() time.Time { return *d.Disk.Properties.LastOwnershipUpdateTime }
+func (d *Disk) LastUsedAt() time.Time {
+	if d.Disk.Properties.LastOwnershipUpdateTime == nil {
+		// Special case: disk was created manually and never used,
+		// return the creation time.
+		return d.CreatedAt()
+	}
+	return *d.Disk.Properties.LastOwnershipUpdateTime
+}
 
 // DiskType Type returns the type of this Azure compute disk.
 func (d *Disk) DiskType() unused.DiskType {

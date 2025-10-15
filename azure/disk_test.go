@@ -67,4 +67,13 @@ func TestDisk(t *testing.T) {
 	if exp, got := float64(sizeBytes), d.SizeBytes(); exp != got {
 		t.Errorf("expecting SizeBytes() %f, got %f", exp, got)
 	}
+
+	t.Run("special case disk never used", func(t *testing.T) {
+		dd := d.(*Disk)
+		dd.Disk.Properties.LastOwnershipUpdateTime = nil
+
+		if !d.CreatedAt().Equal(d.LastUsedAt()) {
+			t.Errorf("expecting LastUsedAt() to be the same as CreatedAt() %v, got %v", d.CreatedAt(), d.LastUsedAt())
+		}
+	})
 }
