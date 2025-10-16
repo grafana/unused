@@ -58,4 +58,13 @@ func TestDisk(t *testing.T) {
 	if err != nil {
 		t.Fatalf("metadata doesn't match: %v", err)
 	}
+
+	t.Run("special case disk never used", func(t *testing.T) {
+		dd := d.(*Disk)
+		dd.Disk.LastDetachTimestamp = ""
+
+		if !d.CreatedAt().Equal(d.LastUsedAt()) {
+			t.Errorf("expecting LastUsedAt() to be the same as CreatedAt() %v, got %v", d.CreatedAt(), d.LastUsedAt())
+		}
+	})
 }
