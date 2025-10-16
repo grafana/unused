@@ -43,6 +43,12 @@ func (d *Disk) Meta() unused.Meta { return d.meta }
 // LastUsedAt returns the time when the GCP compute disk was last
 // detached.
 func (d *Disk) LastUsedAt() time.Time {
+	if d.Disk.LastDetachTimestamp == "" {
+		// Special case: disk was created manually and never used,
+		// return the creation time.
+		return d.CreatedAt()
+	}
+
 	// it's safe to assume GCP will send a valid timestamp
 	t, _ := time.Parse(time.RFC3339, d.Disk.LastDetachTimestamp)
 	return t
