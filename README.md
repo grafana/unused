@@ -1,4 +1,4 @@
-# CLI tool, Prometheus exporter, and Go module to list your unused disks in all cloud providers
+# CLI Tool, Prometheus Exporter, and Go Module to List Your Unused Disks in All Cloud Providers
 This repository contains a Go library to list your unused persistent disks in different cloud providers, and binaries for displaying them at the CLI or exporting Prometheus metrics.
 
 At Grafana Labs we host our workloads in multiple cloud providers.
@@ -6,7 +6,7 @@ Our workloads orchestration is managed by Kubernetes, and we've found that due t
 These leaked resources cost money, and because these are resources that are not in use anymore, it translates into wasted money.
 This library and its companion tools should help you out to identify these resources and clean them up.
 
-## Go module `github.com/grafana/unused`
+## Go Module `github.com/grafana/unused`
 This module exports some interfaces and implementations to easily list all your unused persistent disks in GCP, AWS, and Azure.
 You can find the API in the [Go package documentation](https://pkg.go.dev/github.com/grafana/unused).
 
@@ -22,7 +22,7 @@ Both programs can authenticate against the following providers using the listed 
 
 These flags can be specified more than once, allowing to have different configurations for each provider.
 
-#### Notes on authentication
+#### Notes on Authentication
 Both binaries are opinionated on how to authenticate against each Cloud Service Provider (CSP).
 
 | Provider | Notes |
@@ -31,7 +31,7 @@ Both binaries are opinionated on how to authenticate against each Cloud Service 
 | AWS | Uses profile names from your [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) or `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` env variables |
 | Azure | Either specify an `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, and `AZURE_TENANT_ID`, or requires [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/) installed on the host and [signed in](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) |
 
-### `unused` binary
+### `unused` Binary
 TUI tool to query all given providers and list them as a neat table.
 It also supports an interactive mode which allows to select and delete disks in an easy way.
 
@@ -39,7 +39,7 @@ It also supports an interactive mode which allows to select and delete disks in 
 go install github.com/grafana/unused/cmd/unused@latest
 ```
 
-### `unused-exporter` Prometheus exporter
+### `unused-exporter` Prometheus Exporter
 Web server exposing Prometheus metrics about each providers count of unused disks.
 It exposes the following metrics:
 
@@ -62,7 +62,7 @@ Information about each unused disk is currently logged to stdout given that it c
 go install github.com/grafana/unused/cmd/unused-exporter@latest
 ```
 
-## Testing against fake providers
+## Testing Against Fake Providers
 In order to make E2E and UI testing easier, we implemented a fake provider that is only available when running `go` with the `-tags=fake` flag.
 Usage of this flag should produce a deterministic output of fake unused disks for different providers.
 For example, the following runs the `unused` binary using the fake provider:
