@@ -39,6 +39,31 @@ It also supports an interactive mode which allows to select and delete disks in 
 go install github.com/grafana/unused/cmd/unused@latest
 ```
 
+#### Example Usage of `unused`
+
+Below are examples of using the tool for Azure, GCP, and AWS.
+
+```shell
+unused -azure.sub=AZURE_SUBSCRIPTION -add-k8s-column=ns -add-k8s-column=pvc -add-k8s-column=pv -v -csv
+
+unused -gcp.project=GCP_PROJECT_NAME -add-k8s-column=ns -add-k8s-column=pvc -add-k8s-column=pv -v -csv
+
+unused -aws.profile=AWS_PROFILE -add-k8s-column=ns -add-k8s-column=pvc -add-k8s-column=pv -v -csv
+
+```
+
+##### Output (Table or CSV)
+
+Saving the results as a CSV can ease import into other tools but viewing the data as a human readable table can also be nice. The CLI interface provides both options as shown below.
+
+```shell
+# output as table to STDOUT
+./unused -gcp.project=GCP_PROJECT_NAME -add-k8s-column=ns -add-k8s-column=pvc -add-k8s-column=pv -v
+
+# output as CSV to STDOUT
+./unused -gcp.project=GCP_PROJECT_NAME -add-k8s-column=ns -add-k8s-column=pvc -add-k8s-column=pv -v -csv
+```
+
 ### `unused-exporter` Prometheus Exporter
 Web server exposing Prometheus metrics about each providers count of unused disks.
 It exposes the following metrics:
