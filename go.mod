@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.31.16
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.20
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.260.0
-	github.com/aws/smithy-go v1.23.1
+	github.com/aws/smithy-go v1.23.2
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
