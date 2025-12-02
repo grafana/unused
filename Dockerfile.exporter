@@ -14,7 +14,7 @@ ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
 RUN ["go", "build", "-v", "-o", "unused-exporter", "./cmd/unused-exporter"]
 
-FROM alpine:3.16.2@sha256:65a2763f593ae85fab3b5406dc9e80f744ec5b449f269b699b5efd37a07ad32e
+FROM alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
 
 COPY --from=builder /app/unused-exporter /app/
 
