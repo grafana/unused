@@ -10,7 +10,7 @@ import (
 	"log/slog"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	azcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
+	azcompute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v7"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/grafana/unused"
