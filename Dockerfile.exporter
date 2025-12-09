@@ -1,4 +1,4 @@
-FROM golang:1.24@sha256:cf1272dbf972a94f39a81dcb9dc243a8d2f981e5dd3b5a5c965f6d9ab9268b26 AS builder
+FROM golang:1.25@sha256:0ece421d4bb2525b7c0b4cad5791d52be38edf4807582407525ca353a429eccc AS builder
 
 ENV GO11MODULE=on
 
