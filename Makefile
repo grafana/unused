@@ -30,7 +30,7 @@ lint: ## Runs linting checks
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run -c .golangci.yml
 
 docker: ## Builds docker image and applies a tag
-	docker build --build-arg=GIT_VERSION=$(GIT_VERSION) -t $(IMAGE_PREFIX)/unused -f Dockerfile.exporter . --load
+	docker buildx build --build-arg=GIT_VERSION=$(GIT_VERSION) --platform linux/amd64 -t $(IMAGE_PREFIX)/unused -f Dockerfile.exporter . --load
 	docker tag $(IMAGE_PREFIX)/unused $(IMAGE_PREFIX)/unused:$(GIT_VERSION)
 
 push: docker ## Pushes docker image (runs build first)
