@@ -29,14 +29,14 @@ func (d *Disk) Name() string { return *d.Disk.Name }
 // SizeGB returns the size of this Azure compute disk in GB.
 // Note that Azure uses binary GB, aka, GiB
 // https://learn.microsoft.com/en-us/dotnet/api/microsoft.azure.management.compute.models.datadisk.disksizegb?view=azure-dotnet-legacy
-func (d *Disk) SizeGB() int { return int(*d.Disk.Properties.DiskSizeGB) }
+func (d *Disk) SizeGB() int { return int(*d.Properties.DiskSizeGB) }
 
 // SizeBytes returns the size of this Azure compute disk in bytes.
-func (d *Disk) SizeBytes() float64 { return float64(*d.Disk.Properties.DiskSizeBytes) }
+func (d *Disk) SizeBytes() float64 { return float64(*d.Properties.DiskSizeBytes) }
 
 // CreatedAt returns the time when this Azure compute disk was
 // created.
-func (d *Disk) CreatedAt() time.Time { return *d.Disk.Properties.TimeCreated }
+func (d *Disk) CreatedAt() time.Time { return *d.Properties.TimeCreated }
 
 // Meta returns the disk metadata.
 func (d *Disk) Meta() unused.Meta { return d.meta }
@@ -44,17 +44,17 @@ func (d *Disk) Meta() unused.Meta { return d.meta }
 // LastUsedAt returns the time when the Azure compute disk was last
 // detached.
 func (d *Disk) LastUsedAt() time.Time {
-	if d.Disk.Properties.LastOwnershipUpdateTime == nil {
+	if d.Properties.LastOwnershipUpdateTime == nil {
 		// Special case: disk was created manually and never used,
 		// return the creation time.
 		return d.CreatedAt()
 	}
-	return *d.Disk.Properties.LastOwnershipUpdateTime
+	return *d.Properties.LastOwnershipUpdateTime
 }
 
 // DiskType Type returns the type of this Azure compute disk.
 func (d *Disk) DiskType() unused.DiskType {
-	switch *d.Disk.SKU.Name {
+	switch *d.SKU.Name {
 	case compute.DiskStorageAccountTypesStandardLRS:
 		return unused.HDD
 	case compute.DiskStorageAccountTypesPremiumLRS,

@@ -58,6 +58,7 @@ type providerViewModel struct {
 }
 
 func newProviderViewModel(extraColumns []string) providerViewModel {
+	// nolint:prealloc
 	cols := []table.Column{
 		table.NewFlexColumn(columnName, "Name", 2).WithStyle(nameStyle),
 		table.NewColumn(columnAge, "Age", 6).WithStyle(ageStyle),

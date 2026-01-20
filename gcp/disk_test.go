@@ -61,7 +61,7 @@ func TestDisk(t *testing.T) {
 
 	t.Run("special case disk never used", func(t *testing.T) {
 		dd := d.(*Disk)
-		dd.Disk.LastDetachTimestamp = ""
+		dd.LastDetachTimestamp = ""
 
 		if !d.CreatedAt().Equal(d.LastUsedAt()) {
 			t.Errorf("expecting LastUsedAt() to be the same as CreatedAt() %v, got %v", d.CreatedAt(), d.LastUsedAt())
