@@ -27,7 +27,7 @@ checks: ## Runs vetting, static checks, and linting checks
 	make lint
 
 lint: ## Runs linting checks
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run -c .golangci.yml
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0 run -c .golangci.yml
 
 docker: ## Builds docker image and applies a tag
 	docker buildx build --build-arg=GIT_VERSION=$(GIT_VERSION) --platform linux/amd64 -t $(IMAGE_PREFIX)/unused -f Dockerfile.exporter . --load
