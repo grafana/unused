@@ -14,11 +14,11 @@ type providerItem struct {
 }
 
 func (i providerItem) FilterValue() string {
-	return i.Provider.Name() + " " + i.Provider.Meta().String()
+	return i.Name() + " " + i.Provider.Meta().String()
 }
 
 func (i providerItem) Title() string {
-	return i.Provider.Name()
+	return i.Name()
 }
 
 func (i providerItem) Description() string {
