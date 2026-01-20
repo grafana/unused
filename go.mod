@@ -2,7 +2,7 @@ module github.com/grafana/unused
 
 go 1.24.0
 
-toolchain go1.24.1
+toolchain go1.25.6
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
