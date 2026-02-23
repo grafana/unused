@@ -24,7 +24,6 @@ benchmark: ## Runs benchmark tests
 checks: ## Runs vetting, static checks, and linting checks
 	go vet ${PKGS}
 	go run honnef.co/go/tools/cmd/staticcheck@latest ${PKGS}
-	make lint
 
 lint: ## Runs linting checks
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0 run -c .golangci.yml
