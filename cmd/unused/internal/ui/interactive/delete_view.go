@@ -93,7 +93,8 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			m.dryRun = !m.dryRun
 
 		default:
-			m.table, cmd = m.table.Update(msg)
+			// HACK we have to convert the message to a v1 format
+			m.table, _ = m.table.Update(keyMsgV1toV2(msg))
 		}
 
 	case deleteNextMsg:
