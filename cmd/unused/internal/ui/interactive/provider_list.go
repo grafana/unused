@@ -92,7 +92,7 @@ func (m *providerListModel) resetSize() {
 	hh := lipgloss.Height(m.help.View(m))
 	lh := (len(m.list.Items()) + 3) * 3
 	m.list.SetSize(m.w-2, lh-hh)
-	m.help.Width = m.w - 2
+	m.help.SetWidth(m.w - 2)
 }
 
 func (m *providerListModel) SetSize(w, h int) {
