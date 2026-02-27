@@ -44,7 +44,7 @@ func newDeleteViewModel(dryRun bool) deleteViewModel {
 		spinner: spinner.New(),
 		dryRun:  dryRun,
 		progress: progress.New(
-			progress.WithDefaultGradient(),
+			progress.WithDefaultBlend(),
 		),
 		table: table.New([]table.Column{
 			table.NewColumn(columnMark, " ", 2),
@@ -217,7 +217,7 @@ func (m deleteViewModel) FullHelp() [][]key.Binding {
 }
 
 func (m *deleteViewModel) SetSize(w, h int) {
-	m.progress.Width = w / 2
+	m.progress.SetWidth(w / 2)
 	m.help.Width = w
 	hh := lipgloss.Height(m.help.View(m))
 	m.table = m.table.WithMaxTotalWidth(w - 2).WithTargetWidth(w - 4).WithPageSize(h - hh - 3 - 6)
