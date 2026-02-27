@@ -218,7 +218,7 @@ func (m deleteViewModel) FullHelp() [][]key.Binding {
 
 func (m *deleteViewModel) SetSize(w, h int) {
 	m.progress.SetWidth(w / 2)
-	m.help.Width = w
+	m.help.SetWidth(w)
 	hh := lipgloss.Height(m.help.View(m))
 	m.table = m.table.WithMaxTotalWidth(w - 2).WithTargetWidth(w - 4).WithPageSize(h - hh - 3 - 6)
 }
