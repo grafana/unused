@@ -1,6 +1,6 @@
 module github.com/grafana/unused
 
-go 1.24.2
+go 1.25.0
 
 toolchain go1.26.0
 
@@ -19,7 +19,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
 	golang.org/x/sync v0.19.0
-	google.golang.org/api v0.267.0
+	google.golang.org/api v0.268.0
 )
 
 require (
