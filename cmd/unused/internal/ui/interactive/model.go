@@ -10,6 +10,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/compat"
 	"github.com/grafana/unused"
 )
 
@@ -156,7 +157,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
+var errorStyle = lipgloss.NewStyle().Foreground(compat.AdaptiveColor{Light: lipgloss.Color("#cb4b16"), Dark: lipgloss.Color("#d87979")})
 
 func (m Model) View() tea.View {
 	v := tea.View{
@@ -213,19 +214,19 @@ func (m Model) loadDisks() tea.Cmd {
 func sendMsg(msg tea.Msg) tea.Cmd { return func() tea.Msg { return msg } }
 
 func newHelp() help.Model {
-	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
-		Light: "#909090",
-		Dark:  "#FFFF00",
+	keyStyle := lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+		Light: lipgloss.Color("#909090"),
+		Dark:  lipgloss.Color("#FFFF00"),
 	})
 
-	descStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
-		Light: "#B2B2B2",
-		Dark:  "#999999",
+	descStyle := lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+		Light: lipgloss.Color("#B2B2B2"),
+		Dark:  lipgloss.Color("#999999"),
 	})
 
-	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
-		Light: "#DDDADA",
-		Dark:  "#3C3C3C",
+	sepStyle := lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+		Light: lipgloss.Color("#DDDADA"),
+		Dark:  lipgloss.Color("#3C3C3C"),
 	})
 
 	m := help.New()
