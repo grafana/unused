@@ -67,11 +67,10 @@ func New(providers []unused.Provider, extraColumns []string, filter unused.Filte
 }
 
 func (m Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{tea.EnterAltScreen}
 	if m.provider != nil { // No need to show the providers list if there's only one provider
-		cmds = append(cmds, sendMsg(m.provider))
+		return sendMsg(m.provider)
 	}
-	return tea.Batch(cmds...)
+	return nil
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -160,7 +159,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
 
 func (m Model) View() tea.View {
-	var v tea.View
+	v := tea.View{
+		AltScreen: true,
+	}
 
 	if m.w < minWidth || m.h < minHeight {
 		v.Content = errorStyle.Render(fmt.Sprintf("invalid window size %dx%d, expecting at least %dx%d", m.w, m.h, minWidth, minHeight))
