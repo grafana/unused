@@ -32,6 +32,14 @@ func keyMsgV2toV1(msg tea.KeyMsg) teav1.KeyMsg {
 		msgv1.Type = teav1.KeyLeft
 	case "right":
 		msgv1.Type = teav1.KeyRight
+	case "home":
+		msgv1.Type = teav1.KeyHome
+	case "end":
+		msgv1.Type = teav1.KeyEnd
+	case "pgup":
+		msgv1.Type = teav1.KeyPgUp
+	case "pgdown":
+		msgv1.Type = teav1.KeyPgDown
 	}
 	return msgv1
 }
