@@ -86,7 +86,7 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 	return providerViewModel{
 		table:  table,
 		help:   newHelp(),
-		toggle: key.NewBinding(key.WithKeys(" "), key.WithHelp("space", "toggle mark")),
+		toggle: key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "toggle mark")),
 		delete: key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "delete marked")),
 
 		toggleCur: key.NewBinding(key.WithKeys("*"), key.WithHelp("*", "toggle current page")),
@@ -146,7 +146,8 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 			cmd = tea.Quit
 
 		default:
-			m.table, cmd = m.table.Update(msg)
+			// HACK we have to convert the message to a v1 format
+			m.table, _ = m.table.Update(keyMsgV1toV2(msg))
 		}
 	}
 
