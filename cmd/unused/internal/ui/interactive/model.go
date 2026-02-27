@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/compat"
 	"github.com/grafana/unused"
 )
 
@@ -67,11 +68,10 @@ func New(providers []unused.Provider, extraColumns []string, filter unused.Filte
 }
 
 func (m Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{tea.EnterAltScreen}
 	if m.provider != nil { // No need to show the providers list if there's only one provider
-		cmds = append(cmds, sendMsg(m.provider))
+		return sendMsg(m.provider)
 	}
-	return tea.Batch(cmds...)
+	return nil
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -157,32 +157,42 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
+var errorStyle = lipgloss.NewStyle().Foreground(compat.AdaptiveColor{Light: lipgloss.Color("#cb4b16"), Dark: lipgloss.Color("#d87979")})
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
+	v := tea.View{
+		AltScreen: true,
+	}
+
 	if m.w < minWidth || m.h < minHeight {
-		return errorStyle.Render(fmt.Sprintf("invalid window size %dx%d, expecting at least %dx%d", m.w, m.h, minWidth, minHeight))
+		v.Content = errorStyle.Render(fmt.Sprintf("invalid window size %dx%d, expecting at least %dx%d", m.w, m.h, minWidth, minHeight))
 	}
 	if m.err != nil {
-		return errorStyle.Render(m.err.Error())
+		v.Content = errorStyle.Render(m.err.Error())
+	}
+
+	if v.Content != "" {
+		return v
 	}
 
 	switch m.state {
 	case stateProviderList:
-		return m.providerList.View()
+		v.Content = m.providerList.View()
 
 	case stateProviderView:
-		return m.providerView.View()
+		v.Content = m.providerView.View()
 
 	case stateFetchingDisks:
-		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
+		v.Content = fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	case stateDeletingDisks:
-		return m.deleteView.View()
+		v.Content = m.deleteView.View()
 
 	default:
-		return "WHAT"
+		v.Content = "WHAT"
 	}
+
+	return v
 }
 
 func (m Model) loadDisks() tea.Cmd {
@@ -208,19 +218,19 @@ func (m Model) loadDisks() tea.Cmd {
 func sendMsg(msg tea.Msg) tea.Cmd { return func() tea.Msg { return msg } }
 
 func newHelp() help.Model {
-	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
-		Light: "#909090",
-		Dark:  "#FFFF00",
+	keyStyle := lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+		Light: lipgloss.Color("#909090"),
+		Dark:  lipgloss.Color("#FFFF00"),
 	})
 
-	descStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
-		Light: "#B2B2B2",
-		Dark:  "#999999",
+	descStyle := lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+		Light: lipgloss.Color("#B2B2B2"),
+		Dark:  lipgloss.Color("#999999"),
 	})
 
-	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
-		Light: "#DDDADA",
-		Dark:  "#3C3C3C",
+	sepStyle := lipgloss.NewStyle().Foreground(compat.AdaptiveColor{
+		Light: lipgloss.Color("#DDDADA"),
+		Dark:  lipgloss.Color("#3C3C3C"),
 	})
 
 	m := help.New()

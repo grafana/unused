@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
 )
@@ -44,7 +44,7 @@ func newDeleteViewModel(dryRun bool) deleteViewModel {
 		spinner: spinner.New(),
 		dryRun:  dryRun,
 		progress: progress.New(
-			progress.WithDefaultGradient(),
+			progress.WithDefaultBlend(),
 		),
 		table: table.New([]table.Column{
 			table.NewColumn(columnMark, " ", 2),
@@ -93,7 +93,8 @@ func (m deleteViewModel) Update(msg tea.Msg) (deleteViewModel, tea.Cmd) {
 			m.dryRun = !m.dryRun
 
 		default:
-			m.table, cmd = m.table.Update(msg)
+			// HACK we have to convert the message to a v1 format
+			m.table, _ = m.table.Update(keyMsgV2toV1(msg))
 		}
 
 	case deleteNextMsg:
@@ -217,8 +218,8 @@ func (m deleteViewModel) FullHelp() [][]key.Binding {
 }
 
 func (m *deleteViewModel) SetSize(w, h int) {
-	m.progress.Width = w / 2
-	m.help.Width = w
+	m.progress.SetWidth(w / 2)
+	m.help.SetWidth(w)
 	hh := lipgloss.Height(m.help.View(m))
 	m.table = m.table.WithMaxTotalWidth(w - 2).WithTargetWidth(w - 4).WithPageSize(h - hh - 3 - 6)
 }

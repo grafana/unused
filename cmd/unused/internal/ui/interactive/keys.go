@@ -1,6 +1,10 @@
 package interactive
 
-import "github.com/charmbracelet/bubbles/key"
+import (
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	teav1 "github.com/charmbracelet/bubbletea"
+)
 
 var navKeys = struct {
 	Quit, Up, Down, PageUp, PageDown, Home, End, Back key.Binding
@@ -13,4 +17,29 @@ var navKeys = struct {
 	Home:     key.NewBinding(key.WithKeys("home"), key.WithHelp("home", "first")),
 	End:      key.NewBinding(key.WithKeys("end"), key.WithHelp("end", "last")),
 	Back:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("<esc>", "back")),
+}
+
+func keyMsgV2toV1(msg tea.KeyMsg) teav1.KeyMsg {
+	var msgv1 teav1.KeyMsg
+	switch msg.Key().String() {
+	case "space":
+		msgv1.Type = teav1.KeySpace
+	case "up":
+		msgv1.Type = teav1.KeyUp
+	case "down":
+		msgv1.Type = teav1.KeyDown
+	case "left":
+		msgv1.Type = teav1.KeyLeft
+	case "right":
+		msgv1.Type = teav1.KeyRight
+	case "home":
+		msgv1.Type = teav1.KeyHome
+	case "end":
+		msgv1.Type = teav1.KeyEnd
+	case "pgup":
+		msgv1.Type = teav1.KeyPgUp
+	case "pgdown":
+		msgv1.Type = teav1.KeyPgDown
+	}
+	return msgv1
 }
