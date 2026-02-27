@@ -171,6 +171,10 @@ func (m Model) View() tea.View {
 		v.Content = errorStyle.Render(m.err.Error())
 	}
 
+	if v.Content != "" {
+		return v
+	}
+
 	switch m.state {
 	case stateProviderList:
 		v.Content = m.providerList.View()
