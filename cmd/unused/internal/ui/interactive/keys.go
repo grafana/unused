@@ -19,7 +19,7 @@ var navKeys = struct {
 	Back:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("<esc>", "back")),
 }
 
-func keyMsgV1toV2(msg tea.KeyMsg) teav1.KeyMsg {
+func keyMsgV2toV1(msg tea.KeyMsg) teav1.KeyMsg {
 	var msgv1 teav1.KeyMsg
 	switch msg.Key().String() {
 	case "space":

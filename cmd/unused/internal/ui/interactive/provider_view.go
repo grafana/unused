@@ -147,7 +147,7 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 
 		default:
 			// HACK we have to convert the message to a v1 format
-			m.table, _ = m.table.Update(keyMsgV1toV2(msg))
+			m.table, _ = m.table.Update(keyMsgV2toV1(msg))
 		}
 	}
 
