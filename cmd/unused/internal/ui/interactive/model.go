@@ -159,30 +159,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#cb4b16", Dark: "#d87979"})
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
+	var v tea.View
+
 	if m.w < minWidth || m.h < minHeight {
-		return errorStyle.Render(fmt.Sprintf("invalid window size %dx%d, expecting at least %dx%d", m.w, m.h, minWidth, minHeight))
+		v.Content = errorStyle.Render(fmt.Sprintf("invalid window size %dx%d, expecting at least %dx%d", m.w, m.h, minWidth, minHeight))
 	}
 	if m.err != nil {
-		return errorStyle.Render(m.err.Error())
+		v.Content = errorStyle.Render(m.err.Error())
 	}
 
 	switch m.state {
 	case stateProviderList:
-		return m.providerList.View()
+		v.Content = m.providerList.View()
 
 	case stateProviderView:
-		return m.providerView.View()
+		v.Content = m.providerView.View()
 
 	case stateFetchingDisks:
-		return fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
+		v.Content = fmt.Sprintf("Fetching disks for %s %s %s\n", m.provider.Name(), m.provider.Meta().String(), m.spinner.View())
 
 	case stateDeletingDisks:
-		return m.deleteView.View()
+		v.Content = m.deleteView.View()
 
 	default:
-		return "WHAT"
+		v.Content = "WHAT"
 	}
+
+	return v
 }
 
 func (m Model) loadDisks() tea.Cmd {
