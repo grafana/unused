@@ -5,10 +5,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	lipglossv1 "github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/cmd/internal"
@@ -38,9 +39,9 @@ var k8sHeaders = map[string]string{
 }
 
 var (
-	headerStyle = lipgloss.NewStyle().Align(lipgloss.Center).Bold(true)
-	nameStyle   = lipgloss.NewStyle().Align(lipgloss.Left)
-	ageStyle    = lipgloss.NewStyle().Align(lipgloss.Right)
+	headerStyle = lipglossv1.NewStyle().Align(lipglossv1.Center).Bold(true)
+	nameStyle   = lipglossv1.NewStyle().Align(lipglossv1.Left)
+	ageStyle    = lipglossv1.NewStyle().Align(lipglossv1.Right)
 )
 
 type providerViewModel struct {
@@ -85,7 +86,7 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 	return providerViewModel{
 		table:  table,
 		help:   newHelp(),
-		toggle: key.NewBinding(key.WithKeys(" "), key.WithHelp("space", "toggle mark")),
+		toggle: key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "toggle mark")),
 		delete: key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "delete marked")),
 
 		toggleCur: key.NewBinding(key.WithKeys("*"), key.WithHelp("*", "toggle current page")),
@@ -145,7 +146,8 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 			cmd = tea.Quit
 
 		default:
-			m.table, cmd = m.table.Update(msg)
+			// HACK we have to convert the message to a v1 format
+			m.table, _ = m.table.Update(keyMsgV2toV1(msg))
 		}
 	}
 
@@ -184,7 +186,7 @@ func (m *providerViewModel) resetSize() {
 	hh := lipgloss.Height(m.help.View(m))
 	// 4 is the table borders plus header height, 2 is the footer height.
 	m.table = m.table.WithTargetWidth(m.w).WithPageSize(m.h - 4 - hh - 2)
-	m.help.Width = m.w
+	m.help.SetWidth(m.w)
 }
 
 func (m *providerViewModel) SetSize(w, h int) {
