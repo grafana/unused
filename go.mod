@@ -2,7 +2,7 @@ module github.com/grafana/unused
 
 go 1.25.0
 
-toolchain go1.26.1
+toolchain go1.26.2
 
 require (
 	charm.land/bubbles/v2 v2.1.0
