@@ -15,9 +15,9 @@ func TestUI_Filter(t *testing.T) {
 
 		now = time.Now()
 
-		foo = unusedtest.NewDisk("foo", csp1, now.Add(-5*time.Hour))
-		bar = unusedtest.NewDisk("bar", csp2, now.Add(-5*time.Hour))
-		baz = unusedtest.NewDisk("baz", csp1, now.Add(-2*time.Hour))
+		foo = unusedtest.NewDisk("foo", csp1, now.Add(-5*time.Hour), now.Add(-3*time.Hour))
+		bar = unusedtest.NewDisk("bar", csp2, now.Add(-5*time.Hour), now.Add(-10*time.Second))
+		baz = unusedtest.NewDisk("baz", csp1, now.Add(-2*time.Hour), now.Add(-1*time.Hour-30&time.Minute))
 	)
 
 	foo.SetMeta(unused.Meta{"lorem": "ipsum"})
@@ -40,27 +40,32 @@ func TestUI_Filter(t *testing.T) {
 
 	tests := map[string]struct {
 		minAge   time.Duration
+		unused   time.Duration
 		key, val string
 		exp      unused.Disks
 	}{
-		"no filter": {0, "", "", disks},
+		"no filter": {0, 0, "", "", disks},
 
-		"minage": {3 * time.Hour, "", "", unused.Disks{foo, bar}},
-		"keyval": {0, "dolor", "sit amet", unused.Disks{bar}},
-		"both":   {2 * time.Hour, "dolor", "", unused.Disks{foo, baz}},
+		"minage": {3 * time.Hour, 0, "", "", unused.Disks{foo, bar}},
+		"keyval": {0, 0, "dolor", "sit amet", unused.Disks{bar}},
+		"both":   {2 * time.Hour, 0, "dolor", "", unused.Disks{foo, baz}},
 
-		"!minage": {10 * time.Hour, "", "", nil},
-		"!keyval": {0, "foo", "bar", nil},
-		"!both":   {10 * time.Hour, "foo", "bar", nil},
+		"!minage": {10 * time.Hour, 0, "", "", nil},
+		"!keyval": {0, 0, "foo", "bar", nil},
+		"!both":   {10 * time.Hour, 0, "foo", "bar", nil},
+
+		"unused":  {0, 1 * time.Hour, "", "", unused.Disks{foo, baz}},
+		"!unused": {0, 6 * time.Hour, "", "", nil},
 	}
 
 	for n, tt := range tests {
 		t.Run(n, func(t *testing.T) {
 			opts := UI{
 				Filters: Filters{
-					Key:    tt.key,
-					Value:  tt.val,
-					MinAge: tt.minAge,
+					Key:       tt.key,
+					Value:     tt.val,
+					MinAge:    tt.minAge,
+					MinUnused: tt.unused,
 				},
 			}
 

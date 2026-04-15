@@ -18,9 +18,9 @@ func TestDisksSort(t *testing.T) {
 		baz = unusedtest.NewProvider("baz", nil)
 		bar = unusedtest.NewProvider("bar", nil)
 
-		gcp = unusedtest.NewDisk("ghi", foo, now.Add(-10*time.Minute))
-		aws = unusedtest.NewDisk("abc", baz, now.Add(-5*time.Minute))
-		az  = unusedtest.NewDisk("def", bar, now.Add(-2*time.Minute))
+		gcp = unusedtest.NewDisk("ghi", foo, now.Add(-10*time.Minute), now.Add(-8*time.Minute))
+		aws = unusedtest.NewDisk("abc", baz, now.Add(-5*time.Minute), now.Add(-110*time.Second))
+		az  = unusedtest.NewDisk("def", bar, now.Add(-2*time.Minute), now.Add(-1*time.Minute-30*time.Second))
 
 		disks = unused.Disks{gcp, aws, az}
 	)
@@ -81,9 +81,9 @@ func TestDisksFilter(t *testing.T) {
 		baz = unusedtest.NewProvider("baz", nil)
 		bar = unusedtest.NewProvider("bar", nil)
 
-		gcp = unusedtest.NewDisk("ghi", foo, now.Add(-10*time.Minute))
-		aws = unusedtest.NewDisk("abc", baz, now.Add(-5*time.Minute))
-		az  = unusedtest.NewDisk("def", bar, now.Add(-2*time.Minute))
+		gcp = unusedtest.NewDisk("ghi", foo, now.Add(-10*time.Minute), now.Add(-8*time.Minute))
+		aws = unusedtest.NewDisk("abc", baz, now.Add(-5*time.Minute), now.Add(-10*time.Second))
+		az  = unusedtest.NewDisk("def", bar, now.Add(-2*time.Minute), now.Add(-1*time.Minute-30*time.Second))
 
 		disks = unused.Disks{gcp, aws, az}
 	)

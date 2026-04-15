@@ -59,7 +59,7 @@ func TestProviderDelete(t *testing.T) {
 		disks := make(unused.Disks, 10)
 		p := unusedtest.NewProvider("my-provider", nil, disks...)
 		for i := 0; i < cap(disks); i++ {
-			disks[i] = unusedtest.NewDisk(fmt.Sprintf("disk-%03d", i), p, now)
+			disks[i] = unusedtest.NewDisk(fmt.Sprintf("disk-%03d", i), p, now, now.Add(-5*time.Minute))
 		}
 
 		return p, disks
@@ -110,8 +110,8 @@ func TestProviderDelete(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		p, _ := setup()
-
-		if err := p.Delete(ctx, unusedtest.NewDisk("foo-bar-baz", p, time.Now())); !errors.Is(err, unusedtest.ErrDiskNotFound) {
+		now := time.Now()
+		if err := p.Delete(ctx, unusedtest.NewDisk("foo-bar-baz", p, now, now.Add(-5*time.Minute))); !errors.Is(err, unusedtest.ErrDiskNotFound) {
 			t.Fatalf("expecting error %v, got %v", unusedtest.ErrDiskNotFound, err)
 		}
 	})

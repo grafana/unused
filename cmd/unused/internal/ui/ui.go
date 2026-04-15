@@ -15,6 +15,7 @@ import (
 type Filters struct {
 	Key, Value string
 	MinAge     time.Duration
+	MinUnused  time.Duration
 }
 
 type UI struct {
@@ -32,8 +33,9 @@ type UI struct {
 func (ui UI) Filter(d unused.Disk) bool {
 	minAge := ui.Filters.MinAge == 0 || time.Since(d.CreatedAt()) >= ui.Filters.MinAge
 	keyVal := ui.Filters.Key == "" || d.Meta().Matches(ui.Filters.Key, ui.Filters.Value)
+	minUnused := ui.Filters.MinUnused == 0 || time.Since(d.LastUsedAt()) >= ui.Filters.MinUnused
 
-	return minAge && keyVal
+	return minAge && keyVal && minUnused
 }
 
 func (ui UI) Run(ctx context.Context) error {
