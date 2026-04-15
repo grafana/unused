@@ -18,13 +18,9 @@ import (
 )
 
 func TestNewProvider(t *testing.T) {
-	ctx := context.Background()
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		t.Fatalf("cannot load AWS config: %v", err)
-	}
+	cfg := awsutil.NewConfig()
 
-	p, err := aws.NewProvider(nil, ec2.NewFromConfig(cfg), map[string]string{"profile": "my-profile"})
+	p, err := aws.NewProvider(nil, ec2.NewFromConfig(*cfg), map[string]string{"profile": "my-profile"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -40,13 +36,9 @@ func TestNewProvider(t *testing.T) {
 
 func TestProviderMeta(t *testing.T) {
 	err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
-		ctx := context.Background()
-		cfg, err := config.LoadDefaultConfig(ctx)
-		if err != nil {
-			t.Fatalf("cannot load AWS config: %v", err)
-		}
+		cfg := awsutil.NewConfig()
 
-		return aws.NewProvider(nil, ec2.NewFromConfig(cfg), meta)
+		return aws.NewProvider(nil, ec2.NewFromConfig(*cfg), meta)
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
