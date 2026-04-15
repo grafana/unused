@@ -67,6 +67,18 @@ func main() {
 		return nil
 	})
 
+	flag.Func("min-unused", "Minimum unused age of the disk to be listed (ex: 365d or 36h). Sets min-age to the same value", func(s string) error {
+		dur, err := internal.ParseAge(s)
+		if err != nil {
+			return err
+		}
+
+		out.Filters.MinUnused = dur
+		out.Filters.MinAge = dur
+
+		return nil
+	})
+
 	flag.Func("add-column", "Display additional column with metadata", func(c string) error {
 		out.ExtraColumns = append(out.ExtraColumns, c)
 		return nil
