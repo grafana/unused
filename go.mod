@@ -16,7 +16,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.304.1
 	github.com/aws/smithy-go v1.26.0
 	github.com/charmbracelet/bubbletea v1.3.10
-	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/charmbracelet/lipgloss/v2 v2.0.3
 	github.com/evertras/bubble-table v0.19.2
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
