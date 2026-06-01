@@ -9,7 +9,6 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	lipglossv1 "github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/cmd/internal"
@@ -39,9 +38,9 @@ var k8sHeaders = map[string]string{
 }
 
 var (
-	headerStyle = lipglossv1.NewStyle().Align(lipglossv1.Center).Bold(true)
-	nameStyle   = lipglossv1.NewStyle().Align(lipglossv1.Left)
-	ageStyle    = lipglossv1.NewStyle().Align(lipglossv1.Right)
+	headerStyle = lipgloss.NewStyle().Align(lipgloss.Center).Bold(true)
+	nameStyle   = lipgloss.NewStyle().Align(lipgloss.Left)
+	ageStyle    = lipgloss.NewStyle().Align(lipgloss.Right)
 )
 
 type providerViewModel struct {
