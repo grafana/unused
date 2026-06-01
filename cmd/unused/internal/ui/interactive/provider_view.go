@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"fmt"
+	"image/color"
 	"slices"
 	"strings"
 
@@ -9,7 +10,6 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	lipglossv1 "github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/cmd/internal"
@@ -39,9 +39,11 @@ var k8sHeaders = map[string]string{
 }
 
 var (
-	headerStyle = lipglossv1.NewStyle().Align(lipglossv1.Center).Bold(true)
-	nameStyle   = lipglossv1.NewStyle().Align(lipglossv1.Left)
-	ageStyle    = lipglossv1.NewStyle().Align(lipglossv1.Right)
+	headerStyle = lipgloss.NewStyle().Align(lipgloss.Center).Bold(true)
+	nameStyle   = lipgloss.NewStyle().Align(lipgloss.Left)
+	ageStyle    = lipgloss.NewStyle().Align(lipgloss.Right)
+
+	highlightStyle = lipgloss.NewStyle().Background(color.Gray16{0x5555}).Bold(true)
 )
 
 type providerViewModel struct {
@@ -81,6 +83,7 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 		Focused(true).
 		WithSelectedText(" ", "✔").
 		WithFooterVisibility(true).
+		HighlightStyle(highlightStyle).
 		SelectableRows(true)
 
 	return providerViewModel{
@@ -146,8 +149,7 @@ func (m providerViewModel) Update(msg tea.Msg) (providerViewModel, tea.Cmd) {
 			cmd = tea.Quit
 
 		default:
-			// HACK we have to convert the message to a v1 format
-			m.table, _ = m.table.Update(keyMsgV2toV1(msg))
+			m.table, cmd = m.table.Update(msg)
 		}
 	}
 
