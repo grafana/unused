@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"fmt"
+	"image/color"
 	"slices"
 	"strings"
 
@@ -41,6 +42,8 @@ var (
 	headerStyle = lipgloss.NewStyle().Align(lipgloss.Center).Bold(true)
 	nameStyle   = lipgloss.NewStyle().Align(lipgloss.Left)
 	ageStyle    = lipgloss.NewStyle().Align(lipgloss.Right)
+
+	highlightStyle = lipgloss.NewStyle().Background(color.Gray16{0x5555}).Bold(true)
 )
 
 type providerViewModel struct {
@@ -80,6 +83,7 @@ func newProviderViewModel(extraColumns []string) providerViewModel {
 		Focused(true).
 		WithSelectedText(" ", "✔").
 		WithFooterVisibility(true).
+		HighlightStyle(highlightStyle).
 		SelectableRows(true)
 
 	return providerViewModel{
