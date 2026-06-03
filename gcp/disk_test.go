@@ -68,3 +68,32 @@ func TestDisk(t *testing.T) {
 		}
 	})
 }
+
+func TestDiskType(t *testing.T) {
+	tests := []struct {
+		name     string
+		diskType string
+		expected unused.DiskType
+	}{
+		{"pd-ssd", "https://www.googleapis.com/compute/v1/projects/my-project/zones/us-central1-a/diskTypes/pd-ssd", unused.SSD},
+		{"pd-standard", "https://www.googleapis.com/compute/v1/projects/my-project/zones/us-central1-a/diskTypes/pd-standard", unused.HDD},
+		{"pd-balanced", "https://www.googleapis.com/compute/v1/projects/my-project/zones/us-central1-a/diskTypes/pd-balanced", unused.Unknown},
+		{"unknown type", "https://www.googleapis.com/compute/v1/projects/my-project/zones/us-central1-a/diskTypes/pd-extreme", unused.Unknown},
+		{"simple pd-ssd", "pd-ssd", unused.SSD},
+		{"simple pd-standard", "pd-standard", unused.HDD},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &Disk{
+				Disk: &compute.Disk{
+					Type: tt.diskType,
+				},
+			}
+
+			if got := d.DiskType(); got != tt.expected {
+				t.Errorf("DiskType() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}

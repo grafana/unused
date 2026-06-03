@@ -6,11 +6,13 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	awsutil "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	endpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/aws"
@@ -158,4 +160,147 @@ func TestListUnusedDisks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("metadata doesn't match: %v", err)
 	}
+}
+
+func TestProviderDelete(t *testing.T) {
+	t.Run("successful deletion", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<DeleteVolumeResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
+    <requestId>test-request-id</requestId>
+    <return>true</return>
+</DeleteVolumeResponse>`))
+		}))
+		defer ts.Close()
+
+		ctx := context.Background()
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("AKID", "SECRET", "SESSION")),
+		)
+		if err != nil {
+			t.Fatalf("cannot load AWS config: %v", err)
+		}
+
+		u, err := url.Parse(ts.URL)
+		if err != nil {
+			t.Fatalf("cannot parse test server URL: %v", err)
+		}
+
+		client := ec2.NewFromConfig(cfg, func(o *ec2.Options) {
+			o.BaseEndpoint = &u.Host
+			o.EndpointResolverV2 = mockEndpointResolver(*u)
+		})
+
+		provider, err := aws.NewProvider(nil, client, map[string]string{"profile": "test-profile"})
+		if err != nil {
+			t.Fatalf("cannot create provider: %v", err)
+		}
+
+		disk := &aws.Disk{
+			Volume: types.Volume{
+				VolumeId: awsutil.String("vol-12345"),
+			},
+		}
+
+		err = provider.Delete(ctx, disk)
+		if err != nil {
+			t.Errorf("Delete() unexpected error: %v", err)
+		}
+	})
+
+	t.Run("deletion error", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Errors>
+        <Error>
+            <Code>InvalidVolume.NotFound</Code>
+            <Message>The volume does not exist.</Message>
+        </Error>
+    </Errors>
+</Response>`))
+		}))
+		defer ts.Close()
+
+		ctx := context.Background()
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("AKID", "SECRET", "SESSION")),
+		)
+		if err != nil {
+			t.Fatalf("cannot load AWS config: %v", err)
+		}
+
+		u, err := url.Parse(ts.URL)
+		if err != nil {
+			t.Fatalf("cannot parse test server URL: %v", err)
+		}
+
+		client := ec2.NewFromConfig(cfg, func(o *ec2.Options) {
+			o.BaseEndpoint = &u.Host
+			o.EndpointResolverV2 = mockEndpointResolver(*u)
+		})
+
+		provider, err := aws.NewProvider(nil, client, map[string]string{"profile": "test-profile"})
+		if err != nil {
+			t.Fatalf("cannot create provider: %v", err)
+		}
+
+		disk := &aws.Disk{
+			Volume: types.Volume{
+				VolumeId: awsutil.String("vol-invalid"),
+			},
+		}
+
+		err = provider.Delete(ctx, disk)
+		if err == nil {
+			t.Error("Delete() expected error, got nil")
+		}
+	})
+
+	t.Run("context cancelled", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Simulate slow response
+			time.Sleep(100 * time.Millisecond)
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		cfg, err := config.LoadDefaultConfig(context.Background(),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("AKID", "SECRET", "SESSION")),
+		)
+		if err != nil {
+			t.Fatalf("cannot load AWS config: %v", err)
+		}
+
+		u, err := url.Parse(ts.URL)
+		if err != nil {
+			t.Fatalf("cannot parse test server URL: %v", err)
+		}
+
+		client := ec2.NewFromConfig(cfg, func(o *ec2.Options) {
+			o.BaseEndpoint = &u.Host
+			o.EndpointResolverV2 = mockEndpointResolver(*u)
+		})
+
+		provider, err := aws.NewProvider(nil, client, map[string]string{"profile": "test-profile"})
+		if err != nil {
+			t.Fatalf("cannot create provider: %v", err)
+		}
+
+		disk := &aws.Disk{
+			Volume: types.Volume{
+				VolumeId: awsutil.String("vol-12345"),
+			},
+		}
+
+		err = provider.Delete(ctx, disk)
+		if err == nil {
+			t.Error("Delete() expected context cancellation error, got nil")
+		}
+	})
 }

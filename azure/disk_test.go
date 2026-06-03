@@ -77,3 +77,48 @@ func TestDisk(t *testing.T) {
 		}
 	})
 }
+
+func TestDiskType(t *testing.T) {
+	tests := []struct {
+		name     string
+		diskSKU  compute.DiskStorageAccountTypes
+		expected unused.DiskType
+	}{
+		{"Standard HDD", compute.DiskStorageAccountTypesStandardLRS, unused.HDD},
+		{"Standard SSD", compute.DiskStorageAccountTypesStandardSSDLRS, unused.SSD},
+		{"Premium SSD", compute.DiskStorageAccountTypesPremiumLRS, unused.SSD},
+		{"Ultra SSD", compute.DiskStorageAccountTypesUltraSSDLRS, unused.SSD},
+		{"Premium V2 SSD", compute.DiskStorageAccountTypesPremiumV2LRS, unused.Unknown},
+		{"Unknown type", compute.DiskStorageAccountTypes("UnknownType_LRS"), unused.Unknown},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sku := tt.diskSKU
+			d := &Disk{
+				&compute.Disk{
+					SKU: &compute.DiskSKU{Name: &sku},
+				},
+				nil,
+				nil,
+			}
+
+			if got := d.DiskType(); got != tt.expected {
+				t.Errorf("DiskType() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDiskMeta(t *testing.T) {
+	meta := unused.Meta{"key": "value"}
+	d := &Disk{
+		&compute.Disk{},
+		nil,
+		meta,
+	}
+
+	if got := d.Meta(); !got.Equals(meta) {
+		t.Errorf("Meta() = %v, want %v", got, meta)
+	}
+}

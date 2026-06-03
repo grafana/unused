@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/gcp"
@@ -18,6 +19,22 @@ import (
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 )
+
+// mockDisk implements unused.Disk for testing purposes
+type mockDisk struct {
+	name string
+	meta unused.Meta
+}
+
+func (m mockDisk) ID() string                { return m.name }
+func (m mockDisk) Provider() unused.Provider { return nil }
+func (m mockDisk) Name() string              { return m.name }
+func (m mockDisk) CreatedAt() time.Time      { return time.Time{} }
+func (m mockDisk) Meta() unused.Meta         { return m.meta }
+func (m mockDisk) LastUsedAt() time.Time     { return time.Time{} }
+func (m mockDisk) SizeGB() int               { return 0 }
+func (m mockDisk) SizeBytes() float64        { return 0 }
+func (m mockDisk) DiskType() unused.DiskType { return unused.Unknown }
 
 func TestNewProvider(t *testing.T) {
 	l := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -174,6 +191,77 @@ func TestProviderListUnusedDisks(t *testing.T) {
 		m, _ := regexp.MatchString(`msg="cannot parse disk metadata".+disk=disk-2`, buf.String())
 		if !m {
 			t.Fatal("expecting a log line to be emitted")
+		}
+	})
+}
+
+func TestProviderDelete(t *testing.T) {
+	ctx := context.Background()
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	t.Run("successful deletion", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if req.Method != "DELETE" {
+				t.Fatalf("expecting DELETE request, got %s", req.Method)
+			}
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{
+				"status": "DONE",
+			})
+		}))
+		defer ts.Close()
+
+		svc, err := compute.NewService(context.Background(), option.WithAPIKey("123abc"), option.WithEndpoint(ts.URL))
+		if err != nil {
+			t.Fatalf("unexpected error creating GCP compute service: %v", err)
+		}
+
+		p, err := gcp.NewProvider(l, svc, "my-project", nil)
+		if err != nil {
+			t.Fatal("unexpected error creating provider:", err)
+		}
+
+		disk := mockDisk{
+			name: "test-disk",
+			meta: unused.Meta{"zone": "us-central1-a"},
+		}
+
+		err = p.Delete(ctx, disk)
+		if err != nil {
+			t.Errorf("Delete() unexpected error: %v", err)
+		}
+	})
+
+	t.Run("deletion error", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": map[string]string{
+					"code":    "404",
+					"message": "Disk not found",
+				},
+			})
+		}))
+		defer ts.Close()
+
+		svc, err := compute.NewService(context.Background(), option.WithAPIKey("123abc"), option.WithEndpoint(ts.URL))
+		if err != nil {
+			t.Fatalf("unexpected error creating GCP compute service: %v", err)
+		}
+
+		p, err := gcp.NewProvider(l, svc, "my-project", nil)
+		if err != nil {
+			t.Fatal("unexpected error creating provider:", err)
+		}
+
+		disk := mockDisk{
+			name: "nonexistent-disk",
+			meta: unused.Meta{"zone": "us-central1-a"},
+		}
+
+		err = p.Delete(ctx, disk)
+		if err == nil {
+			t.Error("Delete() expected error, got nil")
 		}
 	})
 }
