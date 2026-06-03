@@ -225,7 +225,7 @@ func TestProviderDelete(t *testing.T) {
 			}
 			// Return 200 OK to indicate synchronous completion (no polling needed)
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{}`))            
+			_, _ = w.Write([]byte(`{}`))
 		}
 
 		ctx := context.Background()
