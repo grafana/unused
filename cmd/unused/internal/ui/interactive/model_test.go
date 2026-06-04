@@ -6,7 +6,6 @@ import (
 	"errors"
 	"strings"
 	"testing"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/grafana/unused"
@@ -238,17 +237,3 @@ func TestModel_View(t *testing.T) {
 func noFilter(d unused.Disk) bool {
 	return true
 }
-
-type testDisk struct {
-	name string
-}
-
-func (d *testDisk) Name() string              { return d.name }
-func (d *testDisk) ID() string                { return d.name }
-func (d *testDisk) Provider() unused.Provider { return nil }
-func (d *testDisk) SizeGB() int               { return 10 }
-func (d *testDisk) SizeBytes() float64        { return 10 * 1024 * 1024 * 1024 }
-func (d *testDisk) DiskType() unused.DiskType { return unused.SSD }
-func (d *testDisk) Meta() unused.Meta         { return unused.Meta{} }
-func (d *testDisk) CreatedAt() time.Time      { return time.Now() }
-func (d *testDisk) LastUsedAt() time.Time     { return time.Now() }
