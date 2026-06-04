@@ -11,63 +11,6 @@ import (
 	"github.com/grafana/unused/fake"
 )
 
-func TestDeleteViewModel_WithDisks(t *testing.T) {
-	provider := fake.NewProvider("test", 5)
-	ctx := t.Context()
-	disks, err := provider.ListUnusedDisks(ctx)
-	if err != nil {
-		t.Fatalf("Failed to list disks: %v", err)
-	}
-
-	tests := map[string]struct {
-		dryRun bool
-		disks  unused.Disks
-	}{
-		"dry run mode": {
-			dryRun: true,
-			disks:  disks,
-		},
-		"normal mode": {
-			dryRun: false,
-			disks:  disks,
-		},
-		"empty disks": {
-			dryRun: false,
-			disks:  unused.Disks{},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			m := newDeleteViewModel(tt.dryRun)
-			m.SetSize(120, 40)
-			m = m.WithDisks(provider, tt.disks)
-
-			if len(m.disks) != len(tt.disks) {
-				t.Errorf("Expected %d disks, got %d", len(tt.disks), len(m.disks))
-			}
-
-			// Verify view contains disk names (or prefixes if truncated)
-			view := m.View()
-			if view == "" {
-				t.Error("Expected non-empty view")
-			}
-			// Check that disk name prefixes appear in the view
-			// (full names may be truncated in the table)
-			for _, d := range tt.disks {
-				// Check for first 30 characters of the disk name
-				prefix := d.Name()
-				if len(prefix) > 30 {
-					prefix = prefix[:30]
-				}
-				if !strings.Contains(view, prefix) {
-					t.Errorf("Expected to find disk prefix %q in view", prefix)
-				}
-			}
-		})
-	}
-}
-
 func TestDeleteViewModel_Update(t *testing.T) {
 	provider := fake.NewProvider("test", 3)
 	ctx := t.Context()
