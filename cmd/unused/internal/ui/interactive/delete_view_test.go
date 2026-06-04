@@ -1,18 +1,17 @@
-//go:build fake
-
 package interactive
 
 import (
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/grafana/unused"
-	"github.com/grafana/unused/fake"
+	"github.com/grafana/unused/unusedtest"
 )
 
 func TestDeleteViewModel_Update(t *testing.T) {
-	provider := fake.NewProvider("test", 3)
+	provider := unusedtest.NewProvider("p1", nil)
 	ctx := t.Context()
 	disks, err := provider.ListUnusedDisks(ctx)
 	if err != nil {
@@ -41,7 +40,8 @@ func TestDeleteViewModel_Update(t *testing.T) {
 }
 
 func TestDeleteViewModel_View(t *testing.T) {
-	provider := fake.NewProvider("test", 3)
+	now := time.Now()
+	provider := unusedtest.NewProvider("p1", nil, unusedtest.NewDisk("Foo", nil, now, now))
 	ctx := t.Context()
 	disks, err := provider.ListUnusedDisks(ctx)
 	if err != nil {
@@ -62,7 +62,7 @@ func TestDeleteViewModel_View(t *testing.T) {
 			dryRun: false,
 			disks:  disks,
 			// Check for truncated prefix (table truncates long names)
-			expectInView: disks[0].Name()[:30],
+			expectInView: disks[0].Name()[:min(len(disks[0].Name()), 30)],
 		},
 		"empty disks shows message": {
 			dryRun:       false,
@@ -89,7 +89,7 @@ func TestDeleteViewModel_View(t *testing.T) {
 func TestDeleteViewModel_SetSize(t *testing.T) {
 	t.Skip("Non-implemented feature")
 
-	provider := fake.NewProvider("test", 3)
+	provider := unusedtest.NewProvider("p1", nil)
 	ctx := t.Context()
 	disks, err := provider.ListUnusedDisks(ctx)
 	if err != nil {
@@ -128,7 +128,7 @@ func TestDeleteViewModel_SetSize(t *testing.T) {
 }
 
 func TestDeleteViewModel_DryRunMode(t *testing.T) {
-	provider := fake.NewProvider("test", 3)
+	provider := unusedtest.NewProvider("p1", nil, unusedtest.NewDisk("Foo", nil, time.Now(), time.Now()))
 	ctx := t.Context()
 	disks, err := provider.ListUnusedDisks(ctx)
 	if err != nil {

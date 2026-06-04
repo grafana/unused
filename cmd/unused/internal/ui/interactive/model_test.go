@@ -1,5 +1,3 @@
-//go:build fake
-
 package interactive
 
 import (
@@ -9,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/grafana/unused"
-	"github.com/grafana/unused/fake"
+	"github.com/grafana/unused/unusedtest"
 )
 
 func TestModel_Init(t *testing.T) {
@@ -19,12 +17,12 @@ func TestModel_Init(t *testing.T) {
 		expectMsgType string
 	}{
 		"single provider auto-selects": {
-			providers:     []unused.Provider{fake.NewProvider("provider1", 5)},
+			providers:     []unused.Provider{unusedtest.NewProvider("p1", nil, nil)},
 			expectMsg:     true,
 			expectMsgType: "unused.Provider",
 		},
 		"multiple providers show list": {
-			providers:     []unused.Provider{fake.NewProvider("p1", 3), fake.NewProvider("p2", 4)},
+			providers:     []unused.Provider{unusedtest.NewProvider("p1", nil, nil), unusedtest.NewProvider("p2", nil, nil)},
 			expectMsg:     false,
 			expectMsgType: "",
 		},
@@ -53,7 +51,7 @@ func TestModel_Init(t *testing.T) {
 }
 
 func TestModel_Update_Navigation(t *testing.T) {
-	provider := fake.NewProvider("test", 5)
+	provider := unusedtest.NewProvider("p1", nil, nil)
 	m := New([]unused.Provider{provider}, []string{}, noFilter, false)
 
 	tests := map[string]struct {
@@ -108,8 +106,8 @@ func TestModel_Update_Navigation(t *testing.T) {
 }
 
 func TestModel_Update_StateTransitions(t *testing.T) {
-	provider1 := fake.NewProvider("provider1", 5)
-	provider2 := fake.NewProvider("provider2", 3)
+	provider1 := unusedtest.NewProvider("p1", nil, nil)
+	provider2 := unusedtest.NewProvider("p2", nil, nil)
 
 	tests := map[string]struct {
 		initialState state
@@ -153,7 +151,7 @@ func TestModel_Update_StateTransitions(t *testing.T) {
 }
 
 func TestModel_Update_MessageHandling(t *testing.T) {
-	provider := fake.NewProvider("test", 5)
+	provider := unusedtest.NewProvider("p1", nil, nil)
 
 	tests := map[string]struct {
 		msg tea.Msg
@@ -182,7 +180,7 @@ func TestModel_Update_MessageHandling(t *testing.T) {
 }
 
 func TestModel_View(t *testing.T) {
-	provider := fake.NewProvider("test", 5)
+	provider := unusedtest.NewProvider("p1", nil, nil)
 
 	tests := map[string]struct {
 		state        state

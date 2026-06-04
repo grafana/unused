@@ -1,17 +1,16 @@
-//go:build fake
-
 package interactive
 
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/grafana/unused"
-	"github.com/grafana/unused/fake"
+	"github.com/grafana/unused/unusedtest"
 )
 
 func TestProviderViewModel_WithDisks(t *testing.T) {
-	provider := fake.NewProvider("test", 5)
+	provider := unusedtest.NewProvider("p1", nil, unusedtest.NewDisk("Foo", nil, time.Now(), time.Now()))
 	ctx := t.Context()
 	disks, err := provider.ListUnusedDisks(ctx)
 	if err != nil {
@@ -55,7 +54,7 @@ func TestProviderViewModel_Empty(t *testing.T) {
 	m := newProviderViewModel([]string{})
 	m.SetSize(120, 40)
 
-	provider := fake.NewProvider("test", 5)
+	provider := unusedtest.NewProvider("p1", nil, unusedtest.NewDisk("Foo", nil, time.Now(), time.Now()))
 	ctx := t.Context()
 	disks, err := provider.ListUnusedDisks(ctx)
 	if err != nil {
