@@ -1,5 +1,3 @@
-//go:build fake
-
 package interactive
 
 import (
@@ -8,7 +6,7 @@ import (
 	"charm.land/bubbles/v2/key"
 )
 
-func TestKeybindingsHelp(t *testing.T) {
+func TestNavKeybindingsHelp(t *testing.T) {
 	// Verify all key bindings have help text
 	allKeys := []key.Binding{
 		navKeys.Quit,
