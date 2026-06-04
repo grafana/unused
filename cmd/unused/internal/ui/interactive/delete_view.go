@@ -165,6 +165,15 @@ var bold = lipgloss.NewStyle().Bold(true)
 func (m deleteViewModel) View() string {
 	sb := &strings.Builder{}
 
+	// Handle empty disk list
+	if len(m.disks) == 0 {
+		return lipgloss.JoinVertical(lipgloss.Left,
+			"There are no disks to delete.",
+			"",
+			m.help.View(m),
+		)
+	}
+
 	switch {
 	case m.delete:
 		fmt.Fprintf(sb, "Deleting %d/%d disks from %s %s\n", m.cur+1, len(m.disks), m.provider.Name(), m.provider.Meta().String())
