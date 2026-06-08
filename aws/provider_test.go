@@ -55,10 +55,31 @@ func (er mockEndpointResolver) ResolveEndpoint(ctx context.Context, params ec2.E
 	}, nil
 }
 
-func TestListUnusedDisks(t *testing.T) {
-	ctx := context.Background()
+func mockClient(t *testing.T, h http.HandlerFunc) (*ec2.Client, func()) {
+	t.Helper()
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	ts := httptest.NewServer(h)
+
+	cfg, err := config.LoadDefaultConfig(t.Context(),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("AKID", "SECRET", "SESSION")),
+	)
+	if err != nil {
+		t.Fatalf("cannot load AWS config: %v", err)
+	}
+
+	u, err := url.Parse(ts.URL)
+	if err != nil {
+		t.Fatalf("cannot parse test server URL: %v", err)
+	}
+
+	return ec2.NewFromConfig(cfg, func(o *ec2.Options) {
+		o.BaseEndpoint = &u.Host
+		o.EndpointResolverV2 = mockEndpointResolver(*u)
+	}), ts.Close
+}
+
+func TestListUnusedDisks(t *testing.T) {
+	client, cancel := mockClient(t, func(w http.ResponseWriter, req *http.Request) {
 		// How cannot love you, AWS
 		_, err := w.Write([]byte(`<DescribeVolumesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
@@ -112,31 +133,15 @@ func TestListUnusedDisks(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error writing response: %v", err)
 		}
-	}))
-	defer ts.Close()
+	})
+	t.Cleanup(cancel)
 
-	tsURL, _ := url.Parse(ts.URL)
-	er := mockEndpointResolver(*tsURL)
-
-	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
-			Value: awsutil.Credentials{
-				AccessKeyID:     "AKID",
-				SecretAccessKey: "SECRET",
-				SessionToken:    "SESSION",
-				Source:          "example hard coded credentials",
-			},
-		}))
-	if err != nil {
-		t.Fatalf("cannot load AWS config: %v", err)
-	}
-
-	p, err := aws.NewProvider(nil, ec2.NewFromConfig(cfg, ec2.WithEndpointResolverV2(ec2.EndpointResolverV2(er))), nil)
+	p, err := aws.NewProvider(nil, client, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	disks, err := p.ListUnusedDisks(ctx)
+	disks, err := p.ListUnusedDisks(t.Context())
 	if err != nil {
 		t.Fatal("unexpected error listing unused disks:", err)
 	}
@@ -164,33 +169,15 @@ func TestListUnusedDisks(t *testing.T) {
 
 func TestProviderDelete(t *testing.T) {
 	t.Run("successful deletion", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		client, cancel := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
 <DeleteVolumeResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
     <requestId>test-request-id</requestId>
     <return>true</return>
 </DeleteVolumeResponse>`))
-		}))
-		defer ts.Close()
-
-		ctx := context.Background()
-		cfg, err := config.LoadDefaultConfig(ctx,
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("AKID", "SECRET", "SESSION")),
-		)
-		if err != nil {
-			t.Fatalf("cannot load AWS config: %v", err)
-		}
-
-		u, err := url.Parse(ts.URL)
-		if err != nil {
-			t.Fatalf("cannot parse test server URL: %v", err)
-		}
-
-		client := ec2.NewFromConfig(cfg, func(o *ec2.Options) {
-			o.BaseEndpoint = &u.Host
-			o.EndpointResolverV2 = mockEndpointResolver(*u)
 		})
+		t.Cleanup(cancel)
 
 		provider, err := aws.NewProvider(nil, client, map[string]string{"profile": "test-profile"})
 		if err != nil {
@@ -203,14 +190,14 @@ func TestProviderDelete(t *testing.T) {
 			},
 		}
 
-		err = provider.Delete(ctx, disk)
+		err = provider.Delete(t.Context(), disk)
 		if err != nil {
 			t.Errorf("Delete() unexpected error: %v", err)
 		}
 	})
 
 	t.Run("deletion error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		client, cancel := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -221,26 +208,8 @@ func TestProviderDelete(t *testing.T) {
         </Error>
     </Errors>
 </Response>`))
-		}))
-		defer ts.Close()
-
-		ctx := context.Background()
-		cfg, err := config.LoadDefaultConfig(ctx,
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("AKID", "SECRET", "SESSION")),
-		)
-		if err != nil {
-			t.Fatalf("cannot load AWS config: %v", err)
-		}
-
-		u, err := url.Parse(ts.URL)
-		if err != nil {
-			t.Fatalf("cannot parse test server URL: %v", err)
-		}
-
-		client := ec2.NewFromConfig(cfg, func(o *ec2.Options) {
-			o.BaseEndpoint = &u.Host
-			o.EndpointResolverV2 = mockEndpointResolver(*u)
 		})
+		t.Cleanup(cancel)
 
 		provider, err := aws.NewProvider(nil, client, map[string]string{"profile": "test-profile"})
 		if err != nil {
@@ -253,39 +222,22 @@ func TestProviderDelete(t *testing.T) {
 			},
 		}
 
-		err = provider.Delete(ctx, disk)
+		err = provider.Delete(t.Context(), disk)
 		if err == nil {
 			t.Error("Delete() expected error, got nil")
 		}
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		client, cancel := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			// Simulate slow response
 			time.Sleep(100 * time.Millisecond)
 			w.WriteHeader(http.StatusOK)
-		}))
-		defer ts.Close()
-
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // Cancel immediately
-
-		cfg, err := config.LoadDefaultConfig(context.Background(),
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("AKID", "SECRET", "SESSION")),
-		)
-		if err != nil {
-			t.Fatalf("cannot load AWS config: %v", err)
-		}
-
-		u, err := url.Parse(ts.URL)
-		if err != nil {
-			t.Fatalf("cannot parse test server URL: %v", err)
-		}
-
-		client := ec2.NewFromConfig(cfg, func(o *ec2.Options) {
-			o.BaseEndpoint = &u.Host
-			o.EndpointResolverV2 = mockEndpointResolver(*u)
 		})
+		t.Cleanup(cancel)
+
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel() // Cancel immediately
 
 		provider, err := aws.NewProvider(nil, client, map[string]string{"profile": "test-profile"})
 		if err != nil {
