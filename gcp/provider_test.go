@@ -11,7 +11,6 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/grafana/unused"
 	"github.com/grafana/unused/gcp"
@@ -19,22 +18,6 @@ import (
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 )
-
-// mockDisk implements unused.Disk for testing purposes
-type mockDisk struct {
-	name string
-	meta unused.Meta
-}
-
-func (m mockDisk) ID() string                { return m.name }
-func (m mockDisk) Provider() unused.Provider { return nil }
-func (m mockDisk) Name() string              { return m.name }
-func (m mockDisk) CreatedAt() time.Time      { return time.Time{} }
-func (m mockDisk) Meta() unused.Meta         { return m.meta }
-func (m mockDisk) LastUsedAt() time.Time     { return time.Time{} }
-func (m mockDisk) SizeGB() int               { return 0 }
-func (m mockDisk) SizeBytes() float64        { return 0 }
-func (m mockDisk) DiskType() unused.DiskType { return unused.Unknown }
 
 func TestNewProvider(t *testing.T) {
 	l := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -221,10 +204,12 @@ func TestProviderDelete(t *testing.T) {
 			t.Fatal("unexpected error creating provider:", err)
 		}
 
-		disk := mockDisk{
-			name: "test-disk",
-			meta: unused.Meta{"zone": "us-central1-a"},
+		disk := &gcp.Disk{
+			Disk: &compute.Disk{
+				Name: "test-disk",
+			},
 		}
+		disk.SetMeta(unused.Meta{"zone": "us-central1-a"})
 
 		err = p.Delete(ctx, disk)
 		if err != nil {
@@ -254,10 +239,12 @@ func TestProviderDelete(t *testing.T) {
 			t.Fatal("unexpected error creating provider:", err)
 		}
 
-		disk := mockDisk{
-			name: "nonexistent-disk",
-			meta: unused.Meta{"zone": "us-central1-a"},
+		disk := &gcp.Disk{
+			Disk: &compute.Disk{
+				Name: "nonexisting-disk",
+			},
 		}
+		disk.SetMeta(unused.Meta{"zone": "us-central1-a"})
 
 		err = p.Delete(ctx, disk)
 		if err == nil {

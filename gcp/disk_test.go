@@ -97,3 +97,6 @@ func TestDiskType(t *testing.T) {
 		})
 	}
 }
+
+// SetMeta is defined as a Disk method ONLY for tests.
+func (d *Disk) SetMeta(m unused.Meta) { d.meta = m }
