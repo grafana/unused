@@ -17,22 +17,6 @@ import (
 	"github.com/grafana/unused/unusedtest"
 )
 
-// mockDisk implements unused.Disk for testing purposes
-type mockDisk struct {
-	name string
-	meta unused.Meta
-}
-
-func (m mockDisk) ID() string                { return m.name }
-func (m mockDisk) Provider() unused.Provider { return nil }
-func (m mockDisk) Name() string              { return m.name }
-func (m mockDisk) CreatedAt() time.Time      { return time.Time{} }
-func (m mockDisk) Meta() unused.Meta         { return m.meta }
-func (m mockDisk) LastUsedAt() time.Time     { return time.Time{} }
-func (m mockDisk) SizeGB() int               { return 0 }
-func (m mockDisk) SizeBytes() float64        { return 0 }
-func (m mockDisk) DiskType() unused.DiskType { return unused.Unknown }
-
 func TestNewProvider(t *testing.T) {
 	c, err := compute.NewDisksClient("my-subscription", nil, nil)
 	if err != nil {
@@ -253,10 +237,12 @@ func TestProviderDelete(t *testing.T) {
 			t.Fatalf("unexpected error creating provider: %v", err)
 		}
 
-		disk := mockDisk{
-			name: "test-disk",
-			meta: unused.Meta{azure.ResourceGroupMetaKey: "test-rg"},
+		disk := &azure.Disk{
+			Disk: &compute.Disk{
+				Name: new("test-disk"),
+			},
 		}
+		disk.SetMeta(unused.Meta{azure.ResourceGroupMetaKey: "test-rg"})
 
 		err = p.Delete(ctx, disk)
 		if err != nil {
@@ -295,10 +281,12 @@ func TestProviderDelete(t *testing.T) {
 			t.Fatalf("unexpected error creating provider: %v", err)
 		}
 
-		disk := mockDisk{
-			name: "nonexistent-disk",
-			meta: unused.Meta{azure.ResourceGroupMetaKey: "test-rg"},
+		disk := &azure.Disk{
+			Disk: &compute.Disk{
+				Name: new("nonexistent-disk"),
+			},
 		}
+		disk.SetMeta(unused.Meta{azure.ResourceGroupMetaKey: "test-rg"})
 
 		err = p.Delete(ctx, disk)
 		if err == nil {
@@ -340,10 +328,12 @@ func TestProviderDelete(t *testing.T) {
 			t.Fatalf("unexpected error creating provider: %v", err)
 		}
 
-		disk := mockDisk{
-			name: "test-disk",
-			meta: unused.Meta{azure.ResourceGroupMetaKey: "test-rg"},
+		disk := &azure.Disk{
+			Disk: &compute.Disk{
+				Name: new("test-disk"),
+			},
 		}
+		disk.SetMeta(unused.Meta{azure.ResourceGroupMetaKey: "test-rg"})
 
 		err = p.Delete(ctx, disk)
 		if err == nil {

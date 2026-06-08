@@ -122,3 +122,6 @@ func TestDiskMeta(t *testing.T) {
 		t.Errorf("Meta() = %v, want %v", got, meta)
 	}
 }
+
+// SetMeta is defined as a Disk method ONLY for tests.
+func (d *Disk) SetMeta(m unused.Meta) { d.meta = m }
