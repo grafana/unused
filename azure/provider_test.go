@@ -91,34 +91,10 @@ func TestProviderMeta(t *testing.T) {
 	}
 }
 
-func TestListUnusedDisks(t *testing.T) {
-	subID := uuid.New().String()
+func mockClient(t *testing.T, subID string, h http.HandlerFunc) (*compute.DisksClient, func()) {
+	t.Helper()
 
-	// Azure is really strange when it comes to marhsaling JSON, so,
-	// yeah, this is an awful hack.
-	mock := func(w http.ResponseWriter, req *http.Request) {
-		_, err := w.Write([]byte(`{
-"value": [
-  {"name":"disk-1","managedBy":"grafana"},
-  {"name":"disk-2","location":"germanywestcentral","tags": {
-      "created-by": "kubernetes-azure-dd",
-      "kubernetes.io-created-for-pv-name": "pvc-prometheus-1",
-      "kubernetes.io-created-for-pvc-name": "prometheus-1",
-      "kubernetes.io-created-for-pvc-namespace": "monitoring"
-  },"id":"/subscriptions/` + subID + `/resourceGroups/RGNAME/providers/Microsoft.Compute/disks/disk-2"},
-  {"name":"disk-3","managedBy":"grafana"}
-]
-}`))
-		if err != nil {
-			t.Fatalf("unexpected error writing response: %v", err)
-		}
-	}
-
-	var (
-		ctx = context.Background()
-		ts  = httptest.NewServer(http.HandlerFunc(mock))
-	)
-	defer ts.Close()
+	ts := httptest.NewServer(h)
 
 	c, err := compute.NewDisksClient(subID, nil, &policy.ClientOptions{
 		ClientOptions: corepolicy.ClientOptions{
@@ -136,12 +112,40 @@ func TestListUnusedDisks(t *testing.T) {
 		t.Fatalf("cannot create disks client: %v", err)
 	}
 
+	return c, ts.Close
+}
+
+func TestListUnusedDisks(t *testing.T) {
+	subID := uuid.New().String()
+
+	// Azure is really strange when it comes to marhsaling JSON, so,
+	// yeah, this is an awful hack.
+	c, cancel := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
+		t.Helper()
+		_, err := w.Write([]byte(`{
+"value": [
+  {"name":"disk-1","managedBy":"grafana"},
+  {"name":"disk-2","location":"germanywestcentral","tags": {
+      "created-by": "kubernetes-azure-dd",
+      "kubernetes.io-created-for-pv-name": "pvc-prometheus-1",
+      "kubernetes.io-created-for-pvc-name": "prometheus-1",
+      "kubernetes.io-created-for-pvc-namespace": "monitoring"
+  },"id":"/subscriptions/` + subID + `/resourceGroups/RGNAME/providers/Microsoft.Compute/disks/disk-2"},
+  {"name":"disk-3","managedBy":"grafana"}
+]
+}`))
+		if err != nil {
+			t.Fatalf("unexpected error writing response: %v", err)
+		}
+	})
+	t.Cleanup(cancel)
+
 	p, err := azure.NewProvider(c, unused.Meta{"SubscriptionID": subID})
 	if err != nil {
 		t.Fatalf("unexpected error creating provider: %v", err)
 	}
 
-	disks, err := p.ListUnusedDisks(ctx)
+	disks, err := p.ListUnusedDisks(t.Context())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -203,34 +207,15 @@ func TestProviderDelete(t *testing.T) {
 	subID := uuid.New().String()
 
 	t.Run("successful deletion", func(t *testing.T) {
-		mock := func(w http.ResponseWriter, req *http.Request) {
+		c, cancel := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
 			if req.Method != "DELETE" {
 				t.Errorf("expected DELETE request, got %s", req.Method)
 			}
 			// Return 200 OK to indicate synchronous completion (no polling needed)
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{}`))
-		}
-
-		ctx := context.Background()
-		ts := httptest.NewServer(http.HandlerFunc(mock))
-		defer ts.Close()
-
-		c, err := compute.NewDisksClient(subID, nil, &policy.ClientOptions{
-			ClientOptions: corepolicy.ClientOptions{
-				Cloud: cloud.Configuration{
-					Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
-						cloud.ResourceManager: {
-							Audience: "public",
-							Endpoint: ts.URL,
-						},
-					},
-				},
-			},
 		})
-		if err != nil {
-			t.Fatalf("cannot create disks client: %v", err)
-		}
+		t.Cleanup(cancel)
 
 		p, err := azure.NewProvider(c, unused.Meta{"SubscriptionID": subID})
 		if err != nil {
@@ -244,37 +229,18 @@ func TestProviderDelete(t *testing.T) {
 		}
 		disk.SetMeta(unused.Meta{azure.ResourceGroupMetaKey: "test-rg"})
 
-		err = p.Delete(ctx, disk)
+		err = p.Delete(t.Context(), disk)
 		if err != nil {
 			t.Errorf("Delete() unexpected error: %v", err)
 		}
 	})
 
 	t.Run("deletion error", func(t *testing.T) {
-		mock := func(w http.ResponseWriter, req *http.Request) {
+		c, cancel := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"error":{"code":"ResourceNotFound","message":"The disk does not exist."}}`))
-		}
-
-		ctx := context.Background()
-		ts := httptest.NewServer(http.HandlerFunc(mock))
-		defer ts.Close()
-
-		c, err := compute.NewDisksClient(subID, nil, &policy.ClientOptions{
-			ClientOptions: corepolicy.ClientOptions{
-				Cloud: cloud.Configuration{
-					Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
-						cloud.ResourceManager: {
-							Audience: "public",
-							Endpoint: ts.URL,
-						},
-					},
-				},
-			},
 		})
-		if err != nil {
-			t.Fatalf("cannot create disks client: %v", err)
-		}
+		t.Cleanup(cancel)
 
 		p, err := azure.NewProvider(c, unused.Meta{"SubscriptionID": subID})
 		if err != nil {
@@ -288,40 +254,22 @@ func TestProviderDelete(t *testing.T) {
 		}
 		disk.SetMeta(unused.Meta{azure.ResourceGroupMetaKey: "test-rg"})
 
-		err = p.Delete(ctx, disk)
+		err = p.Delete(t.Context(), disk)
 		if err == nil {
 			t.Error("Delete() expected error, got nil")
 		}
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
-		mock := func(w http.ResponseWriter, req *http.Request) {
+		c, cancel := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
 			// Simulate a slow operation
 			time.Sleep(100 * time.Millisecond)
 			w.WriteHeader(http.StatusAccepted)
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // Cancel immediately
-
-		ts := httptest.NewServer(http.HandlerFunc(mock))
-		defer ts.Close()
-
-		c, err := compute.NewDisksClient(subID, nil, &policy.ClientOptions{
-			ClientOptions: corepolicy.ClientOptions{
-				Cloud: cloud.Configuration{
-					Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
-						cloud.ResourceManager: {
-							Audience: "public",
-							Endpoint: ts.URL,
-						},
-					},
-				},
-			},
 		})
-		if err != nil {
-			t.Fatalf("cannot create disks client: %v", err)
-		}
+		t.Cleanup(cancel)
+
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel() // Cancel immediately
 
 		p, err := azure.NewProvider(c, unused.Meta{"SubscriptionID": subID})
 		if err != nil {
