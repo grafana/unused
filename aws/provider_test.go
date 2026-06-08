@@ -55,10 +55,11 @@ func (er mockEndpointResolver) ResolveEndpoint(ctx context.Context, params ec2.E
 	}, nil
 }
 
-func mockClient(t *testing.T, h http.HandlerFunc) (*ec2.Client, func()) {
+func mockClient(t *testing.T, h http.HandlerFunc) *ec2.Client {
 	t.Helper()
 
 	ts := httptest.NewServer(h)
+	t.Cleanup(ts.Close)
 
 	cfg, err := config.LoadDefaultConfig(t.Context(),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("AKID", "SECRET", "SESSION")),
@@ -75,11 +76,11 @@ func mockClient(t *testing.T, h http.HandlerFunc) (*ec2.Client, func()) {
 	return ec2.NewFromConfig(cfg, func(o *ec2.Options) {
 		o.BaseEndpoint = &u.Host
 		o.EndpointResolverV2 = mockEndpointResolver(*u)
-	}), ts.Close
+	})
 }
 
 func TestListUnusedDisks(t *testing.T) {
-	client, cancel := mockClient(t, func(w http.ResponseWriter, req *http.Request) {
+	client := mockClient(t, func(w http.ResponseWriter, req *http.Request) {
 		// How cannot love you, AWS
 		_, err := w.Write([]byte(`<DescribeVolumesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
@@ -134,7 +135,6 @@ func TestListUnusedDisks(t *testing.T) {
 			t.Fatalf("unexpected error writing response: %v", err)
 		}
 	})
-	t.Cleanup(cancel)
 
 	p, err := aws.NewProvider(nil, client, nil)
 	if err != nil {
@@ -169,7 +169,7 @@ func TestListUnusedDisks(t *testing.T) {
 
 func TestProviderDelete(t *testing.T) {
 	t.Run("successful deletion", func(t *testing.T) {
-		client, cancel := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		client := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
 <DeleteVolumeResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
@@ -177,7 +177,6 @@ func TestProviderDelete(t *testing.T) {
     <return>true</return>
 </DeleteVolumeResponse>`))
 		})
-		t.Cleanup(cancel)
 
 		provider, err := aws.NewProvider(nil, client, map[string]string{"profile": "test-profile"})
 		if err != nil {
@@ -197,7 +196,7 @@ func TestProviderDelete(t *testing.T) {
 	})
 
 	t.Run("deletion error", func(t *testing.T) {
-		client, cancel := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		client := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -209,7 +208,6 @@ func TestProviderDelete(t *testing.T) {
     </Errors>
 </Response>`))
 		})
-		t.Cleanup(cancel)
 
 		provider, err := aws.NewProvider(nil, client, map[string]string{"profile": "test-profile"})
 		if err != nil {
@@ -229,12 +227,11 @@ func TestProviderDelete(t *testing.T) {
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
-		client, cancel := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		client := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			// Simulate slow response
 			time.Sleep(100 * time.Millisecond)
 			w.WriteHeader(http.StatusOK)
 		})
-		t.Cleanup(cancel)
 
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel() // Cancel immediately

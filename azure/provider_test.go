@@ -91,10 +91,11 @@ func TestProviderMeta(t *testing.T) {
 	}
 }
 
-func mockClient(t *testing.T, subID string, h http.HandlerFunc) (*compute.DisksClient, func()) {
+func mockClient(t *testing.T, subID string, h http.HandlerFunc) *compute.DisksClient {
 	t.Helper()
 
 	ts := httptest.NewServer(h)
+	t.Cleanup(ts.Close)
 
 	c, err := compute.NewDisksClient(subID, nil, &policy.ClientOptions{
 		ClientOptions: corepolicy.ClientOptions{
@@ -112,7 +113,7 @@ func mockClient(t *testing.T, subID string, h http.HandlerFunc) (*compute.DisksC
 		t.Fatalf("cannot create disks client: %v", err)
 	}
 
-	return c, ts.Close
+	return c
 }
 
 func TestListUnusedDisks(t *testing.T) {
@@ -120,7 +121,7 @@ func TestListUnusedDisks(t *testing.T) {
 
 	// Azure is really strange when it comes to marhsaling JSON, so,
 	// yeah, this is an awful hack.
-	c, cancel := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
+	c := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
 		t.Helper()
 		_, err := w.Write([]byte(`{
 "value": [
@@ -138,7 +139,6 @@ func TestListUnusedDisks(t *testing.T) {
 			t.Fatalf("unexpected error writing response: %v", err)
 		}
 	})
-	t.Cleanup(cancel)
 
 	p, err := azure.NewProvider(c, unused.Meta{"SubscriptionID": subID})
 	if err != nil {
@@ -207,7 +207,7 @@ func TestProviderDelete(t *testing.T) {
 	subID := uuid.New().String()
 
 	t.Run("successful deletion", func(t *testing.T) {
-		c, cancel := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
+		c := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
 			if req.Method != "DELETE" {
 				t.Errorf("expected DELETE request, got %s", req.Method)
 			}
@@ -215,7 +215,6 @@ func TestProviderDelete(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{}`))
 		})
-		t.Cleanup(cancel)
 
 		p, err := azure.NewProvider(c, unused.Meta{"SubscriptionID": subID})
 		if err != nil {
@@ -236,11 +235,10 @@ func TestProviderDelete(t *testing.T) {
 	})
 
 	t.Run("deletion error", func(t *testing.T) {
-		c, cancel := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
+		c := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"error":{"code":"ResourceNotFound","message":"The disk does not exist."}}`))
 		})
-		t.Cleanup(cancel)
 
 		p, err := azure.NewProvider(c, unused.Meta{"SubscriptionID": subID})
 		if err != nil {
@@ -261,12 +259,11 @@ func TestProviderDelete(t *testing.T) {
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
-		c, cancel := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
+		c := mockClient(t, subID, func(w http.ResponseWriter, req *http.Request) {
 			// Simulate a slow operation
 			time.Sleep(100 * time.Millisecond)
 			w.WriteHeader(http.StatusAccepted)
 		})
-		t.Cleanup(cancel)
 
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel() // Cancel immediately

@@ -60,23 +60,24 @@ func TestNewProvider(t *testing.T) {
 	})
 }
 
-func mockService(t *testing.T, h http.HandlerFunc) (*compute.Service, func()) {
+func mockService(t *testing.T, h http.HandlerFunc) *compute.Service {
 	t.Helper()
 
 	ts := httptest.NewServer(h)
+	t.Cleanup(ts.Close)
 
 	svc, err := compute.NewService(t.Context(), option.WithAPIKey("123abc"), option.WithEndpoint(ts.URL))
 	if err != nil {
 		t.Fatalf("unexpected error creating GCP compute service: %v", err)
 	}
 
-	return svc, ts.Close
+	return svc
 }
 
 func TestProviderListUnusedDisks(t *testing.T) {
 	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
-	svc, cancel := mockService(t, func(w http.ResponseWriter, req *http.Request) {
+	svc := mockService(t, func(w http.ResponseWriter, req *http.Request) {
 		// are we requesting the right API endpoint?
 		if got, exp := req.URL.Path, "/projects/my-project/aggregated/disks"; exp != got {
 			t.Fatalf("expecting request to %s, got %s", exp, got)
@@ -100,7 +101,6 @@ func TestProviderListUnusedDisks(t *testing.T) {
 			t.Fatalf("unexpected error writing response: %v", err)
 		}
 	})
-	t.Cleanup(cancel)
 
 	p, err := gcp.NewProvider(l, svc, "my-project", nil)
 	if err != nil {
@@ -131,7 +131,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 	}
 
 	t.Run("disk without JSON in description", func(t *testing.T) {
-		svc, cancel := mockService(t, func(w http.ResponseWriter, req *http.Request) {
+		svc := mockService(t, func(w http.ResponseWriter, req *http.Request) {
 			// are we requesting the right API endpoint?
 			if got, exp := req.URL.Path, "/projects/my-project/aggregated/disks"; exp != got {
 				t.Fatalf("expecting request to %s, got %s", exp, got)
@@ -153,7 +153,6 @@ func TestProviderListUnusedDisks(t *testing.T) {
 				t.Fatalf("unexpected error writing response %v", err)
 			}
 		})
-		t.Cleanup(cancel)
 
 		var buf bytes.Buffer
 		l := slog.New(slog.NewTextHandler(&buf, nil))
@@ -184,7 +183,7 @@ func TestProviderDelete(t *testing.T) {
 	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	t.Run("successful deletion", func(t *testing.T) {
-		svc, cancel := mockService(t, func(w http.ResponseWriter, req *http.Request) {
+		svc := mockService(t, func(w http.ResponseWriter, req *http.Request) {
 			if req.Method != "DELETE" {
 				t.Fatalf("expecting DELETE request, got %s", req.Method)
 			}
@@ -193,7 +192,6 @@ func TestProviderDelete(t *testing.T) {
 				"status": "DONE",
 			})
 		})
-		t.Cleanup(cancel)
 
 		p, err := gcp.NewProvider(l, svc, "my-project", nil)
 		if err != nil {
@@ -214,7 +212,7 @@ func TestProviderDelete(t *testing.T) {
 	})
 
 	t.Run("deletion error", func(t *testing.T) {
-		svc, cancel := mockService(t, func(w http.ResponseWriter, req *http.Request) {
+		svc := mockService(t, func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": map[string]string{
@@ -223,7 +221,6 @@ func TestProviderDelete(t *testing.T) {
 				},
 			})
 		})
-		t.Cleanup(cancel)
 
 		p, err := gcp.NewProvider(l, svc, "my-project", nil)
 		if err != nil {
