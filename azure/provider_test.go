@@ -77,7 +77,7 @@ func TestNewProviderErrors(t *testing.T) {
 	}
 }
 
-func TestProviderMeta(t *testing.T) {
+func TestProvider_Meta(t *testing.T) {
 	t.Skip("skip this test while we figure out the right way to test this provider for metadata")
 	err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
 		c, err := compute.NewDisksClient("my-subscription", nil, nil)
@@ -116,7 +116,7 @@ func mockClient(t *testing.T, subID string, h http.HandlerFunc) *compute.DisksCl
 	return c
 }
 
-func TestListUnusedDisks(t *testing.T) {
+func TestProvider_ListUnusedDisks(t *testing.T) {
 	subID := uuid.New().String()
 
 	// Azure is really strange when it comes to marhsaling JSON, so,
@@ -203,7 +203,7 @@ func TestProviderMethods(t *testing.T) {
 	})
 }
 
-func TestProviderDelete(t *testing.T) {
+func TestProvider_Delete(t *testing.T) {
 	subID := uuid.New().String()
 
 	t.Run("successful deletion", func(t *testing.T) {

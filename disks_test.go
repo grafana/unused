@@ -10,7 +10,7 @@ import (
 	"github.com/grafana/unused/unusedtest"
 )
 
-func TestDisksSort(t *testing.T) {
+func TestDisks_Sort(t *testing.T) {
 	var (
 		now = time.Now()
 
@@ -73,7 +73,7 @@ func assertEqualDisks(t *testing.T, p, q unused.Disk) {
 	}
 }
 
-func TestDisksFilter(t *testing.T) {
+func TestDisks_Filter(t *testing.T) {
 	var (
 		now = time.Now()
 

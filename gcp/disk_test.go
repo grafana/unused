@@ -69,7 +69,7 @@ func TestDisk(t *testing.T) {
 	})
 }
 
-func TestDiskType(t *testing.T) {
+func TestDisk_Type(t *testing.T) {
 	tests := []struct {
 		name     string
 		diskType string

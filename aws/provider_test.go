@@ -36,7 +36,7 @@ func TestNewProvider(t *testing.T) {
 	}
 }
 
-func TestProviderMeta(t *testing.T) {
+func TestProvider_Meta(t *testing.T) {
 	err := unusedtest.TestProviderMeta(func(meta unused.Meta) (unused.Provider, error) {
 		cfg := awsutil.NewConfig()
 
@@ -79,7 +79,7 @@ func mockClient(t *testing.T, h http.HandlerFunc) *ec2.Client {
 	})
 }
 
-func TestListUnusedDisks(t *testing.T) {
+func TestProvider_ListUnusedDisks(t *testing.T) {
 	client := mockClient(t, func(w http.ResponseWriter, req *http.Request) {
 		// How cannot love you, AWS
 		_, err := w.Write([]byte(`<DescribeVolumesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
@@ -167,7 +167,7 @@ func TestListUnusedDisks(t *testing.T) {
 	}
 }
 
-func TestProviderDelete(t *testing.T) {
+func TestProvider_Delete(t *testing.T) {
 	t.Run("successful deletion", func(t *testing.T) {
 		client := mockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)

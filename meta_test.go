@@ -32,7 +32,7 @@ func TestMeta(t *testing.T) {
 	})
 }
 
-func TestMetaMatches(t *testing.T) {
+func TestMeta_Matches(t *testing.T) {
 	m := &Meta{
 		"def": "123",
 		"ghi": "456",
@@ -138,7 +138,7 @@ func TestCoalesce(t *testing.T) {
 	}
 }
 
-func TestEquals(t *testing.T) {
+func TestMeta_Equals(t *testing.T) {
 	tests := []struct {
 		name     string
 		m        Meta
@@ -192,7 +192,7 @@ func TestEquals(t *testing.T) {
 	}
 }
 
-func TestCreatedForPV(t *testing.T) {
+func TestMeta_CreatedForPV(t *testing.T) {
 	tests := []struct {
 		name     string
 		m        Meta
@@ -224,7 +224,7 @@ func TestCreatedForPV(t *testing.T) {
 	}
 }
 
-func TestCreatedForPVC(t *testing.T) {
+func TestMeta_CreatedForPVC(t *testing.T) {
 	tests := []struct {
 		name     string
 		m        Meta
@@ -256,7 +256,7 @@ func TestCreatedForPVC(t *testing.T) {
 	}
 }
 
-func TestCreatedForNamespace(t *testing.T) {
+func TestMeta_CreatedForNamespace(t *testing.T) {
 	tests := []struct {
 		name     string
 		m        Meta
@@ -288,7 +288,7 @@ func TestCreatedForNamespace(t *testing.T) {
 	}
 }
 
-func TestZone(t *testing.T) {
+func TestMeta_Zone(t *testing.T) {
 	tests := []struct {
 		name     string
 		m        Meta

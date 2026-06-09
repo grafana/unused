@@ -58,7 +58,7 @@ func TestDisk(t *testing.T) {
 	}
 }
 
-func TestDiskLastUsedAt(t *testing.T) {
+func TestDisk_LastUsedAt(t *testing.T) {
 	createdAt := time.Date(2021, 7, 16, 5, 55, 0, 0, time.UTC)
 	volumeID := "vol-123"
 
@@ -75,7 +75,7 @@ func TestDiskLastUsedAt(t *testing.T) {
 	}
 }
 
-func TestDiskType(t *testing.T) {
+func TestDisk_Type(t *testing.T) {
 	tests := []struct {
 		name       string
 		volumeType types.VolumeType
@@ -108,7 +108,7 @@ func TestDiskType(t *testing.T) {
 	}
 }
 
-func TestDiskName(t *testing.T) {
+func TestDisk_Name(t *testing.T) {
 	tests := []struct {
 		name     string
 		tags     []types.Tag

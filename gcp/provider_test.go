@@ -74,7 +74,7 @@ func mockService(t *testing.T, h http.HandlerFunc) *compute.Service {
 	return svc
 }
 
-func TestProviderListUnusedDisks(t *testing.T) {
+func TestProvider_ListUnusedDisks(t *testing.T) {
 	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	svc := mockService(t, func(w http.ResponseWriter, req *http.Request) {
@@ -179,7 +179,7 @@ func TestProviderListUnusedDisks(t *testing.T) {
 	})
 }
 
-func TestProviderDelete(t *testing.T) {
+func TestProvider_Delete(t *testing.T) {
 	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	t.Run("successful deletion", func(t *testing.T) {
