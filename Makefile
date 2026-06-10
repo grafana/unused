@@ -28,10 +28,14 @@ build: ## Builds the project
 	go build ${BUILDFLAGS} ${PKGS}
 
 test: ## Runs tests the project (non-benchmark)
-	go test ${TESTFLAGS} ${PKGS}
+	go test ${TESTFLAGS} -cover -coverprofile=cover.out ${PKGS}
 
 benchmark: ## Runs benchmark tests
 	go test ${TESTFLAGS} ${BENCHFLAGS} ${PKGS}
+
+coverage: test ## Generates test coverage report and HTML output
+	go tool cover -html=cover.out -o cover.html
+	@echo "Coverage report generated: cover.html"
 
 checks: ## Runs vetting, static checks, and linting checks
 	go vet ${PKGS}
