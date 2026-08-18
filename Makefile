@@ -47,3 +47,9 @@ docker: ## Builds docker image and applies a tag
 push: docker ## Pushes docker image (runs build first; use ENV=dev or ENV=prod)
 	docker push $(IMAGE_PREFIX)/$(IMAGE_NAME):$(GIT_VERSION)
 	docker push $(IMAGE_PREFIX)/$(IMAGE_NAME):latest
+
+update-deps:
+	@# Thank you, @mem
+	go list -m -f '{{if not (or .Indirect .Main)}}{{.Path}}{{end}}' all | xargs go get -u
+	go mod download
+	go mod tidy
