@@ -163,6 +163,15 @@ func deleteDisk(d *diskToDelete, dryRun bool) tea.Cmd {
 var bold = lipgloss.NewStyle().Bold(true)
 
 func (m deleteViewModel) View() string {
+	// Handle empty disk list
+	if len(m.disks) == 0 {
+		return lipgloss.JoinVertical(lipgloss.Left,
+			"There are no disks to delete.",
+			"",
+			m.help.View(m),
+		)
+	}
+
 	sb := &strings.Builder{}
 
 	switch {

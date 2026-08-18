@@ -50,7 +50,7 @@ func TestNewProvider(t *testing.T) {
 	}
 }
 
-func TestProviderDelete(t *testing.T) {
+func TestProvider_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	setup := func() (unused.Provider, unused.Disks) {

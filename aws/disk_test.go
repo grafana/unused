@@ -57,3 +57,122 @@ func TestDisk(t *testing.T) {
 		})
 	}
 }
+
+func TestDisk_LastUsedAt(t *testing.T) {
+	createdAt := time.Date(2021, 7, 16, 5, 55, 0, 0, time.UTC)
+	volumeID := "vol-123"
+
+	d := &Disk{
+		Volume: types.Volume{
+			VolumeId:   &volumeID,
+			CreateTime: &createdAt,
+		},
+	}
+
+	// AWS doesn't track last used time, should return zero time
+	if got := d.LastUsedAt(); !got.IsZero() {
+		t.Errorf("LastUsedAt() = %v, want zero time", got)
+	}
+}
+
+func TestDisk_Type(t *testing.T) {
+	tests := []struct {
+		name       string
+		volumeType types.VolumeType
+		expected   unused.DiskType
+	}{
+		{"gp2", types.VolumeTypeGp2, unused.SSD},
+		{"gp3", types.VolumeTypeGp3, unused.SSD},
+		{"io1", types.VolumeTypeIo1, unused.SSD},
+		{"io2", types.VolumeTypeIo2, unused.SSD},
+		{"st1", types.VolumeTypeSt1, unused.HDD},
+		{"sc1", types.VolumeTypeSc1, unused.HDD},
+		{"standard", types.VolumeTypeStandard, unused.HDD},
+		{"unknown", types.VolumeType("unknown"), unused.Unknown},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			volumeID := "vol-123"
+			d := &Disk{
+				Volume: types.Volume{
+					VolumeId:   &volumeID,
+					VolumeType: tt.volumeType,
+				},
+			}
+
+			if got := d.DiskType(); got != tt.expected {
+				t.Errorf("DiskType() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestDisk_Name(t *testing.T) {
+	tests := []struct {
+		name     string
+		tags     []types.Tag
+		expected string
+	}{
+		{
+			name: "Name tag present",
+			tags: []types.Tag{
+				{Key: aws.String("Name"), Value: aws.String("my-disk")},
+			},
+			expected: "my-disk",
+		},
+		{
+			name: "CSIVolumeName tag present",
+			tags: []types.Tag{
+				{Key: aws.String("CSIVolumeName"), Value: aws.String("csi-disk")},
+			},
+			expected: "csi-disk",
+		},
+		{
+			name: "Name takes precedence over CSIVolumeName",
+			tags: []types.Tag{
+				{Key: aws.String("Name"), Value: aws.String("my-disk")},
+				{Key: aws.String("CSIVolumeName"), Value: aws.String("csi-disk")},
+			},
+			expected: "my-disk",
+		},
+		{
+			name:     "no Name tag",
+			tags:     []types.Tag{{Key: aws.String("Other"), Value: aws.String("value")}},
+			expected: "",
+		},
+		{
+			name:     "empty tags",
+			tags:     []types.Tag{},
+			expected: "",
+		},
+		{
+			name:     "nil tags",
+			tags:     nil,
+			expected: "",
+		},
+		{
+			name: "empty Name tag value",
+			tags: []types.Tag{
+				{Key: aws.String("Name"), Value: aws.String("")},
+			},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			volumeID := "vol-123"
+			d := &Disk{
+				Volume: types.Volume{
+					VolumeId: &volumeID,
+					Tags:     tt.tags,
+				},
+			}
+
+			if got := d.Name(); got != tt.expected {
+				t.Errorf("Name() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}
