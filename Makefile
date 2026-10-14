@@ -6,6 +6,9 @@ BENCHFLAGS = -benchmem -bench=${BENCH}
 
 
 # For docker/push, set ENV=dev (default) or ENV=prod, e.g. make push ENV=prod
+# The tagged publish workflow (.github/workflows/publish.yml) is the release
+# path (semver tag only); docker/push is for out-of-band pushes and also moves
+# the :latest tag, which the workflow does not.
 ENV ?= dev
 ifeq ($(filter dev prod,$(ENV)),)
 $(error ENV must be dev or prod (got: $(ENV)))
