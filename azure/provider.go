@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	compute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v8"
+	compute "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v9"
 	"github.com/grafana/unused"
 )
 
