@@ -1,13 +1,13 @@
 module github.com/grafana/unused
 
-go 1.26.0
+go 1.26.7
 
 toolchain go1.26.11
 
 require (
 	charm.land/bubbles/v2 v2.1.1
 	charm.land/bubbletea/v2 v2.0.8
-	charm.land/lipgloss/v2 v2.0.6
+	charm.land/lipgloss/v2 v2.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v8 v8.2.0
 	github.com/aws/aws-sdk-go-v2 v1.43.7
