@@ -90,8 +90,8 @@ github.com/clipperhouse/uax29/v2 v2.7.0 h1:+gs4oBZ2gPfVrKPthwbMzWZDaAFPGYK72F0NJ
 github.com/clipperhouse/uax29/v2 v2.7.0/go.mod h1:EFJ2TJMRUaplDxHKj1qAEhCtQPW2tJSwu5BF98AuoVM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/evertras/bubble-table v0.22.3 h1:fPt9L5issLtbN/lzEBf6JEK+ygv9ajVUihDY+760dxI=
-github.com/evertras/bubble-table v0.22.3/go.mod h1:f3xHDRcXh6fcMsbTRsqOIrrFQZdyQBBNSofGanmOAOM=
+github.com/evertras/bubble-table v0.23.0 h1:m8PSrj/nPjxxMWqCh4VLgispQ8HbGWHdxzKXas0ut7s=
+github.com/evertras/bubble-table v0.23.0/go.mod h1:f3xHDRcXh6fcMsbTRsqOIrrFQZdyQBBNSofGanmOAOM=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
